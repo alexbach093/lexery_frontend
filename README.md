@@ -80,6 +80,34 @@ This repository follows a structured development process:
 4. **Pre-commit hooks** - Automated linting and formatting
 5. **CI validation** - All PRs must pass lint, typecheck, and build
 
+### Commit Message Format
+
+We use [Conventional Commits](https://www.conventionalcommits.org/). Format: `type(scope): subject`
+
+**Types:**
+
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, etc.)
+- `refactor`: Code refactoring
+- `perf`: Performance improvements
+- `test`: Adding or updating tests
+- `build`: Build system changes
+- `ci`: CI/CD changes
+- `chore`: Other changes (dependencies, configs)
+
+**Examples:**
+
+```bash
+feat(auth): add login form validation
+fix(ui): correct button alignment on mobile
+docs: update deployment instructions
+chore: upgrade next.js to v16
+```
+
+Commits are validated automatically via git hooks.
+
 ## Documentation
 
 - [Bootstrap Process](./docs/BOOTSTRAP.md) - Detailed setup documentation
