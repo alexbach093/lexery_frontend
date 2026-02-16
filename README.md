@@ -124,7 +124,7 @@ See `.env.example` for available variables.
 
 ## Deployment
 
-### Docker
+### Docker (Local Testing)
 
 ```bash
 # Build image
@@ -132,11 +132,60 @@ docker build -t lexery-frontend .
 
 # Run container
 docker run -p 3000:3000 lexery-frontend
+
+# Test
+curl http://localhost:3000
 ```
 
-### Azure App Service
+### Azure Container Apps / App Service
 
-Configuration for Azure deployment is included. See deployment documentation for details.
+The application is ready for Azure deployment with Docker:
+
+**Prerequisites:**
+
+- Azure Container Registry (ACR) or Docker Hub
+- Azure Container Apps or App Service with container support
+
+**Deployment Steps:**
+
+1. Build and push image:
+
+```bash
+# Login to ACR
+az acr login --name <your-acr-name>
+
+# Build and tag
+docker build -t <your-acr-name>.azurecr.io/lexery-frontend:latest .
+
+# Push
+docker push <your-acr-name>.azurecr.io/lexery-frontend:latest
+```
+
+2. Deploy to Azure Container Apps:
+
+```bash
+az containerapp create \
+  --name lexery-frontend \
+  --resource-group <resource-group> \
+  --image <your-acr-name>.azurecr.io/lexery-frontend:latest \
+  --target-port 3000 \
+  --ingress external \
+  --environment <environment-name>
+```
+
+3. Set environment variables in Azure Portal or CLI:
+
+```bash
+az containerapp update \
+  --name lexery-frontend \
+  --resource-group <resource-group> \
+  --set-env-vars \
+    NEXT_PUBLIC_API_BASE_URL=<api-url> \
+    NEXT_PUBLIC_APP_ENV=production
+```
+
+**CI/CD Integration:**
+GitHub Actions workflow template for automated deployment can be added to `.github/workflows/deploy.yml` (requires Azure credentials as secrets).
 
 ## Contributing
 
