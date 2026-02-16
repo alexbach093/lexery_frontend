@@ -1,0 +1,195 @@
+{
+  "node": {
+    "id": "0:1283",
+    "name": "boot white",
+    "type": "FRAME",
+    "size": {
+      "x": -6519,
+      "y": -6478,
+      "width": 1440,
+      "height": 1024
+    }
+  },
+  "screenshot": {
+    "url": "https://figma-alpha-api.s3.us-west-2.amazonaws.com/images/8b1298e5-0a0f-4105-8225-fdee0f3ca1ac",
+    "description": "Screenshot of boot white"
+  },
+  "colors": {
+    "all": [
+      {
+        "hex": "#000000",
+        "rgba": "rgba(0, 0, 0, 1)",
+        "alpha": 1,
+        "type": "background"
+      },
+      {
+        "hex": "#000000",
+        "rgba": "rgba(0, 0, 0, 1)",
+        "alpha": 1,
+        "type": "fill"
+      },
+      {
+        "hex": "#000000",
+        "rgba": "rgba(0, 0, 0, 0)",
+        "alpha": 0,
+        "type": "background"
+      },
+      {
+        "hex": "#000000",
+        "rgba": "rgba(0, 0, 0, 0)",
+        "alpha": 0,
+        "type": "background"
+      }
+    ],
+    "unique": [
+      {
+        "hex": "#000000",
+        "rgba": "rgba(0, 0, 0, 0)",
+        "alpha": 0,
+        "type": "background"
+      }
+    ],
+    "primary": {
+      "hex": "#000000",
+      "rgba": "rgba(0, 0, 0, 0)",
+      "alpha": 0,
+      "type": "background"
+    }
+  },
+  "textContent": [],
+  "layout": {
+    "direction": "none",
+    "padding": {
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 0
+    }
+  },
+  "svgElements": [
+    {
+      "id": "0:1297",
+      "name": "out cube",
+      "type": "VECTOR",
+      "size": {
+        "x": -5817.328628172559,
+        "y": -5965.884483632773,
+        "width": 36.51710473505864,
+        "height": 42.29398999085788
+      }
+    },
+    {
+      "id": "0:1298",
+      "name": "out cube",
+      "type": "VECTOR",
+      "size": {
+        "x": -5854.000553706896,
+        "y": -5987.18249878833,
+        "width": 43.996159175646426,
+        "height": 46.61202467766543
+      }
+    },
+    {
+      "id": "0:1299",
+      "name": "out cube",
+      "type": "VECTOR",
+      "size": {
+        "x": -5835.664390629712,
+        "y": -5976.591531726791,
+        "width": 73.40608984846222,
+        "height": 63.5918583973762
+      }
+    },
+    {
+      "id": "0:1300",
+      "name": "out cube",
+      "type": "VECTOR",
+      "size": {
+        "x": -5780.65664763849,
+        "y": -5987.223202060682,
+        "width": 36.71475310723963,
+        "height": 42.40810895464074
+      }
+    },
+    {
+      "id": "0:1301",
+      "name": "out cube",
+      "type": "VECTOR",
+      "size": {
+        "x": -5835.66443929888,
+        "y": -6018.998783084826,
+        "width": 73.4061385176301,
+        "height": 63.59189310378497
+      }
+    },
+    {
+      "id": "0:1302",
+      "name": "out cube",
+      "type": "VECTOR",
+      "size": {
+        "x": -5835.66443929888,
+        "y": -6018.998783084826,
+        "width": 73.4061385176301,
+        "height": 63.59189310378497
+      }
+    },
+    {
+      "id": "0:1303",
+      "name": "inside cube",
+      "type": "VECTOR",
+      "size": {
+        "x": -5831.801866034287,
+        "y": -5978.660574314175,
+        "width": 43.82432697178683,
+        "height": 37.952981562330024
+      }
+    },
+    {
+      "id": "0:1304",
+      "name": "inside cube",
+      "type": "VECTOR",
+      "size": {
+        "x": -5798.992733759573,
+        "y": -5978.660444060026,
+        "width": 32.86822204082273,
+        "height": 44.27846168133601
+      }
+    },
+    {
+      "id": "0:1305",
+      "name": "inside cube",
+      "type": "VECTOR",
+      "size": {
+        "x": -5820.877549628037,
+        "y": -5997.636648532925,
+        "width": 43.82432697178683,
+        "height": 37.952981562330024
+      }
+    },
+    {
+      "id": "0:1306",
+      "name": "inside cube",
+      "type": "VECTOR",
+      "size": {
+        "x": -5820.877549628037,
+        "y": -5997.636648532925,
+        "width": 43.82432697178683,
+        "height": 37.952981562330024
+      }
+    },
+    {
+      "id": "0:1307",
+      "name": "inside cube",
+      "type": "VECTOR",
+      "size": {
+        "x": -5809.935220723041,
+        "y": -5965.941419393699,
+        "width": 21.79410744179131,
+        "height": 25.23382664185374
+      }
+    }
+  ],
+  "structure": "- FRAME: boot white (0:1283)\n  Size: 1440x1024px\n  - FRAME: #6 (0:1284)\n    Size: 1440x1025px\n    - RECTANGLE: boot white 1 (28:190)\n      Size: 1440x1024px\n    - GROUP: animation normal (0:1296)\n      Size: 110x106px\n      - VECTOR: out cube (0:1297)\n        Size: 37x42px\n      - VECTOR: out cube (0:1298)\n        Size: 44x47px\n      - VECTOR: out cube (0:1299)\n        Size: 73x64px\n      - VECTOR: out cube (0:1300)\n        Size: 37x42px\n      - VECTOR: out cube (0:1301)\n        Size: 73x64px\n      - VECTOR: out cube (0:1302)\n        Size: 73x64px\n      - VECTOR: inside cube (0:1303)\n        Size: 44x38px\n      - VECTOR: inside cube (0:1304)\n        Size: 33x44px\n      - VECTOR: inside cube (0:1305)\n        Size: 44x38px\n      - VECTOR: inside cube (0:1306)\n        Size: 44x38px\n      - VECTOR: inside cube (0:1307)\n        Size: 22x25px\n",
+  "extractedAt": "2026-02-16T20:20:43.619Z",
+  "figmaUrl": "https://www.figma.com/design/IO0sKndZpfYlW5OVXoIpuC/Untitled?node-id=0:1283&m=dev"
+}

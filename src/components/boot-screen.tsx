@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -19,26 +18,24 @@ interface BootScreenProps {
    * Custom className for styling
    */
   className?: string;
-  /**
-   * Show loading progress indicator
-   * @default true
-   */
-  showProgress?: boolean;
-  /**
-   * Custom loading message
-   */
-  message?: string;
 }
 
+/**
+ * Boot Screen Component - Exact replica of Figma design
+ * 
+ * Design specs from Figma:
+ * - Canvas: 1440x1024px
+ * - Background: Blue to white gradient (top to bottom)
+ * - Icon: 3D cube ~110x106px centered
+ * - Style: Minimal, clean, professional
+ */
 export function BootScreen({
   duration = 3000,
   onComplete,
   className,
-  showProgress = true,
-  message = 'Initializing Legal AI...',
 }: BootScreenProps) {
   const [progress, setProgress] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
     // Simulate boot sequence with progress
@@ -50,10 +47,12 @@ export function BootScreen({
 
       if (newProgress >= 100) {
         clearInterval(interval);
-        setIsLoaded(true);
+        setIsExiting(true);
+        
+        // Wait for exit animation before calling onComplete
         setTimeout(() => {
           onComplete?.();
-        }, 300);
+        }, 500);
       }
     }, 16); // ~60fps
 
@@ -63,104 +62,122 @@ export function BootScreen({
   return (
     <div
       className={cn(
-        'bg-background fixed inset-0 z-50 flex flex-col items-center justify-center transition-opacity duration-500',
-        isLoaded && 'pointer-events-none opacity-0',
+        'fixed inset-0 z-50',
+        'bg-gradient-to-b from-[#4A90E2] via-[#7BB3E8] to-white',
+        'flex items-center justify-center',
+        'transition-opacity duration-500',
+        isExiting && 'opacity-0',
         className
       )}
       role="status"
       aria-live="polite"
-      aria-label="Application loading"
+      aria-label="Loading application"
     >
-      {/* Background gradient effect */}
-      <div className="from-background via-background to-muted/20 absolute inset-0 bg-gradient-to-br" />
-
-      {/* Content container */}
-      <div className="relative z-10 flex flex-col items-center gap-8 px-4 sm:gap-12">
-        {/* Logo with pulse animation */}
-        <div className="relative">
-          <div
-            className={cn(
-              'bg-primary/20 absolute inset-0 -z-10 animate-pulse rounded-full blur-2xl transition-all',
-              isLoaded && 'opacity-0'
-            )}
-          />
-          <div className="animate-fade-in-up">
-            <Image
-              src="/lexery-logo.svg"
-              alt="LEXERY Legal AI"
-              width={240}
-              height={57}
-              priority
-              className="text-foreground h-12 w-auto sm:h-14"
+      {/* 3D Cube Icon - Exact from Figma */}
+      <div className="relative flex items-center justify-center">
+        <div className="relative animate-float">
+          <svg
+            width="77"
+            height="89"
+            viewBox="0 0 77 89"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="animate-pulse-subtle"
+          >
+            <path
+              d="M38.2805 86.6718L38.5019 44.3262"
+              stroke="black"
+              strokeWidth="3.49928"
+              strokeMiterlimit="5.01585"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-          </div>
+            <path
+              d="M1.76181 65.4621L16.6775 56.4634L1.78529 23.0022"
+              stroke="black"
+              strokeWidth="3.49928"
+              strokeMiterlimit="5.01585"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M1.7523 65.4612L38.4884 86.6707L75.2479 65.4205"
+              stroke="black"
+              strokeWidth="3.49928"
+              strokeMiterlimit="5.01585"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M75.2186 22.9615L60.4096 56.4634L75.1951 65.4213"
+              stroke="black"
+              strokeWidth="3.49928"
+              strokeMiterlimit="5.01585"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M1.75225 23.0022L38.5118 1.75197L75.2479 22.9616"
+              stroke="black"
+              strokeWidth="3.49928"
+              strokeMiterlimit="5.01585"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M1.75225 23.0022L38.6862 44.3261L75.2479 22.9616"
+              stroke="black"
+              strokeWidth="3.49928"
+              strokeMiterlimit="5.01585"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M38.5278 69.5338L16.589 56.8674L16.589 31.5346"
+              stroke="black"
+              strokeWidth="3.49928"
+              strokeMiterlimit="5.01585"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M38.4687 69.5339L60.4075 56.8675L60.4075 31.5347"
+              stroke="black"
+              strokeWidth="3.49928"
+              strokeMiterlimit="5.01585"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M16.5572 31.535L38.496 18.8686L60.4349 31.535"
+              stroke="black"
+              strokeWidth="3.49928"
+              strokeMiterlimit="5.01585"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M16.5572 31.535L38.6142 44.2696L60.4349 31.535"
+              stroke="black"
+              strokeWidth="3.49928"
+              strokeMiterlimit="5.01585"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M38.3641 69.5338L38.4823 44.2692"
+              stroke="black"
+              strokeWidth="3.49928"
+              strokeMiterlimit="5.01585"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
 
-        {/* Loading indicator */}
-        <div className="flex w-full max-w-xs flex-col items-center gap-4 sm:max-w-sm">
-          {/* Spinner */}
-          <div className="relative h-16 w-16">
-            {/* Outer ring */}
-            <div className="animate-spin-slow border-primary/20 border-t-primary absolute inset-0 rounded-full border-2" />
-            {/* Inner ring */}
-            <div className="animate-spin-reverse border-primary/10 border-b-primary/50 absolute inset-2 rounded-full border-2" />
-            {/* Center dot */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="bg-primary h-2 w-2 animate-pulse rounded-full" />
-            </div>
-          </div>
-
-          {/* Loading message */}
-          <div className="animate-fade-in-up animation-delay-300 text-center">
-            <p className="text-foreground/80 text-sm font-medium sm:text-base">{message}</p>
-          </div>
-
-          {/* Progress bar */}
-          {showProgress && (
-            <div
-              className="animate-fade-in-up animation-delay-500 w-full"
-              role="progressbar"
-              aria-valuenow={Math.round(progress)}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            >
-              <div className="bg-muted h-1 w-full overflow-hidden rounded-full">
-                <div
-                  className="from-primary/50 via-primary to-primary/50 h-full bg-gradient-to-r transition-all duration-300 ease-out"
-                  style={{
-                    width: `${progress}%`,
-                    transform: `scaleX(${progress / 100})`,
-                    transformOrigin: 'left',
-                  }}
-                />
-              </div>
-              <p className="text-muted-foreground mt-2 text-center text-xs">
-                {Math.round(progress)}%
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Tagline */}
-        <div className="animate-fade-in-up animation-delay-700 text-center">
-          <p className="text-muted-foreground text-xs font-medium tracking-wider uppercase sm:text-sm">
-            Intelligent Legal Solutions
-          </p>
-        </div>
-      </div>
-
-      {/* Bottom branding */}
-      <div className="animate-fade-in-up animation-delay-1000 absolute bottom-8">
-        <p className="text-muted-foreground text-xs">Powered by Advanced AI Technology</p>
-      </div>
-
-      {/* Accessibility announcement */}
-      <div className="sr-only" aria-atomic="true">
-        Loading progress: {Math.round(progress)}%{isLoaded && ' Complete'}
+        {/* Screen reader progress announcement */}
+        <span className="sr-only">Loading: {Math.round(progress)}% complete</span>
       </div>
     </div>
   );
 }
-
-// Export display name for debugging
-BootScreen.displayName = 'BootScreen';

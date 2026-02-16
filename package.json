@@ -18,7 +18,10 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check",
-    "prepare": "husky"
+    "prepare": "husky",
+    "figma:extract": "node scripts/extract-figma-design.mjs",
+    "figma:generate": "node scripts/generate-boot-screen.mjs",
+    "figma:build": "npm run figma:extract && npm run figma:generate"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -47,6 +50,7 @@
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }

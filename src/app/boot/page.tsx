@@ -23,8 +23,6 @@ export default function BootDemoPage() {
             setShowBoot(false);
             setBootComplete(true);
           }}
-          showProgress
-          message="Initializing Legal AI..."
         />
       )}
 

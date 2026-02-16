@@ -36,9 +36,35 @@ pnpm start            # Start production server
 pnpm lint             # Run ESLint
 pnpm lint:fix         # Fix ESLint issues
 pnpm typecheck        # Run TypeScript type checking
-pnpm format           # Format code with Prettier (added later)
-pnpm format:check     # Check code formatting (added later)
+pnpm format           # Format code with Prettier
+pnpm format:check     # Check code formatting
+
+# Figma Design Extraction
+npm run figma:extract    # Extract design data from Figma
+npm run figma:generate   # Generate React component from extracted data
+npm run figma:build      # Extract + Generate in one command
 ```
+
+### 🎨 Figma to React Workflow
+
+This project includes tools to extract designs from Figma and automatically generate React components:
+
+```bash
+# 1. Set up your Figma token in .env
+FIGMA_TOKEN=figd_your_token_here
+
+# 2. Extract and generate component
+npm run figma:build
+
+# 3. Use the component
+import { BootScreen } from '@/components/BootScreen';
+```
+
+**Documentation:**
+- 📚 [Figma Extraction Guide](./FIGMA_EXTRACTION_GUIDE.md) - Quick start
+- 🚀 [Complete Summary](./FIGMA_TO_REACT_SUMMARY.md) - Full workflow details
+- ⚡ [Quick Reference](./QUICK_REFERENCE.md) - Commands and examples
+- 📖 [Implementation Guide](./docs/boot-screen-implementation.md) - Detailed usage
 
 ## Tech Stack
 
@@ -58,15 +84,20 @@ lexery-frontend/
 ├── .github/          # GitHub workflows and templates
 ├── docs/             # Project documentation
 ├── public/           # Static assets
+├── scripts/          # Build and utility scripts
+│   ├── extract-figma-design.mjs    # Figma API extraction
+│   └── generate-boot-screen.mjs    # Component generator
 ├── src/
 │   ├── app/          # Next.js App Router pages & layouts
 │   ├── components/   # React components
+│   │   └── BootScreen.tsx          # Boot screen component
 │   ├── lib/          # Utilities and helpers
 │   ├── styles/       # Global styles
 │   └── types/        # TypeScript type definitions
 ├── .editorconfig     # Editor configuration
 ├── .env.example      # Environment variables template
 ├── .nvmrc            # Node version
+├── figma-extraction-report.json    # Generated design data
 └── package.json      # Dependencies and scripts
 ```
 
