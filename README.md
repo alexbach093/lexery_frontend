@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lexery Frontend
 
-## Getting Started
+Frontend application for Lexery - Legal AI platform.
 
-First, run the development server:
+## Prerequisites
+
+- Node.js >= 22.x (see `.nvmrc`)
+- pnpm (via corepack)
+
+## Quick Start
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Enable pnpm (if not already enabled)
+corepack enable
+
+# Install dependencies
+pnpm install
+
+# Run development server
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Development
+pnpm dev              # Start dev server with hot reload
 
-## Learn More
+# Production
+pnpm build            # Build for production
+pnpm start            # Start production server
 
-To learn more about Next.js, take a look at the following resources:
+# Code Quality
+pnpm lint             # Run ESLint
+pnpm lint:fix         # Fix ESLint issues
+pnpm typecheck        # Run TypeScript type checking
+pnpm format           # Format code with Prettier (added later)
+pnpm format:check     # Check code formatting (added later)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript 5
+- **Styling**: Tailwind CSS 4
+- **UI Components**: shadcn/ui (to be initialized)
+- **Package Manager**: pnpm 10.x
+- **Code Quality**: ESLint, Prettier, Husky (to be configured)
+- **CI/CD**: GitHub Actions
+- **Deployment**: Azure-ready (Docker)
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+lexery-frontend/
+├── .github/          # GitHub workflows and templates
+├── docs/             # Project documentation
+├── public/           # Static assets
+├── src/
+│   ├── app/          # Next.js App Router pages & layouts
+│   ├── components/   # React components
+│   ├── lib/          # Utilities and helpers
+│   ├── styles/       # Global styles
+│   └── types/        # TypeScript type definitions
+├── .editorconfig     # Editor configuration
+├── .env.example      # Environment variables template
+├── .nvmrc            # Node version
+└── package.json      # Dependencies and scripts
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Development Workflow
+
+This repository follows a structured development process:
+
+1. **No arbitrary UI implementation** - All components will be imported from Figma Dev Mode
+2. **Git workflow** - Feature branches → PR → Review → Merge
+3. **Conventional commits** - Follow commit message conventions (enforced by commitlint)
+4. **Pre-commit hooks** - Automated linting and formatting
+5. **CI validation** - All PRs must pass lint, typecheck, and build
+
+## Documentation
+
+- [Bootstrap Process](./docs/BOOTSTRAP.md) - Detailed setup documentation
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and configure:
+
+```bash
+cp .env.example .env.local
+```
+
+See `.env.example` for available variables.
+
+## Deployment
+
+### Docker
+
+```bash
+# Build image
+docker build -t lexery-frontend .
+
+# Run container
+docker run -p 3000:3000 lexery-frontend
+```
+
+### Azure App Service
+
+Configuration for Azure deployment is included. See deployment documentation for details.
+
+## Contributing
+
+1. Create a feature branch from `main`
+2. Make your changes following code style guidelines
+3. Ensure all checks pass (`lint`, `typecheck`, `build`)
+4. Submit a PR using the provided template
+
+## License
+
+MIT - See [LICENSE](./LICENSE) file for details
