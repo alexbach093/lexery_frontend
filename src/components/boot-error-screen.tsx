@@ -1,7 +1,9 @@
 'use client';
 
 import Lottie from 'lottie-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+
+import bootAnimationData from '@/assets/boot-animation.json';
 
 interface BootErrorScreenProps {
   /**
@@ -34,15 +36,6 @@ export function BootErrorScreen({
   onRetry,
   className,
 }: BootErrorScreenProps) {
-  const [animationData, setAnimationData] = useState(null);
-
-  useEffect(() => {
-    fetch('/images/boot-animation.json')
-      .then((res) => res.json())
-      .then((data) => setAnimationData(data))
-      .catch((err) => console.error('Failed to load animation:', err));
-  }, []);
-
   // Prevent body scroll when error screen is active
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -80,110 +73,96 @@ export function BootErrorScreen({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundImage: 'url(/images/boot-background-clean.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Loading Animation - Same as boot screen */}
+      <div className="boot-background-layer" aria-hidden />
       <div
+        className="boot-screen-content"
         style={{
-          marginBottom: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'absolute',
+          inset: 0,
         }}
       >
-        {animationData && (
-          <div
+        {/* Loading Animation - Same as boot screen */}
+        <div
+          style={{
+            marginBottom: '16px',
+          }}
+        >
+          <Lottie
+            animationData={bootAnimationData}
+            loop={true}
+            autoplay={true}
             style={{
-              width: '165px',
-              height: '165px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              width: '120px',
+              height: '120px',
+              maxWidth: '90vw',
+            }}
+          />
+        </div>
+
+        {/* Error Message */}
+        <div
+          style={{
+            maxWidth: '500px',
+            textAlign: 'center',
+            padding: '0 24px',
+          }}
+        >
+          <h1
+            style={{
+              fontSize: '24px',
+              fontWeight: '600',
+              color: '#000000',
+              marginBottom: '12px',
+              lineHeight: '1.4',
             }}
           >
-            <Lottie
-              animationData={animationData}
-              loop={true}
-              autoplay={true}
-              rendererSettings={{
-                preserveAspectRatio: 'xMidYMid meet',
-                progressiveLoad: false,
-                hideOnTransparent: true,
-                className: 'lottie-animation',
-              }}
+            {errorMessage}
+          </h1>
+
+          {errorCode && (
+            <p
               style={{
-                width: '330px',
-                height: '330px',
-                transform: 'scale(0.5)',
-                transformOrigin: 'center center',
-                imageRendering: '-webkit-optimize-contrast',
-                WebkitFontSmoothing: 'antialiased',
-                backfaceVisibility: 'hidden',
-                willChange: 'transform',
+                fontSize: '14px',
+                color: '#6B7280',
+                marginBottom: '32px',
+                fontFamily: 'monospace',
               }}
-            />
-          </div>
-        )}
-      </div>
+            >
+              Код помилки: {errorCode}
+            </p>
+          )}
 
-      {/* Error Message */}
-      <div
-        style={{
-          maxWidth: '500px',
-          textAlign: 'center',
-          padding: '0 24px',
-        }}
-      >
-        <h1
-          style={{
-            fontSize: '24px',
-            fontWeight: '600',
-            color: '#000000',
-            marginBottom: '12px',
-            lineHeight: '1.4',
-          }}
-        >
-          {errorMessage}
-        </h1>
-
-        {errorCode && (
-          <p
+          {/* Action Button */}
+          <button
+            onClick={() => window.location.reload()}
             style={{
-              fontSize: '14px',
-              color: '#6B7280',
-              marginBottom: '32px',
-              fontFamily: 'monospace',
+              padding: '12px 32px',
+              fontSize: '16px',
+              fontWeight: '500',
+              color: '#FFFFFF',
+              backgroundColor: '#000000',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              minWidth: '200px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#333333';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#000000';
             }}
           >
-            Код помилки: {errorCode}
-          </p>
-        )}
-
-        {/* Action Button */}
-        <button
-          onClick={() => window.location.reload()}
-          style={{
-            padding: '12px 32px',
-            fontSize: '16px',
-            fontWeight: '500',
-            color: '#FFFFFF',
-            backgroundColor: '#000000',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            minWidth: '200px',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#333333';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#000000';
-          }}
-        >
-          Оновити сторінку
-        </button>
+            Оновити сторінку
+          </button>
+        </div>
       </div>
     </div>
   );

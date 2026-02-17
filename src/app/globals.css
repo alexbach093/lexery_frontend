@@ -244,6 +244,34 @@
   }
 }
 
+/* Boot screen background layer – extends past edges so blur never shows white line */
+.boot-background-layer {
+  position: absolute;
+  left: -3%;
+  top: -3%;
+  width: 106%;
+  height: 106%;
+  background-image: url(/images/boot-background-clean.png);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+/* Blur on laptop/smaller screens to reduce grain; large screens unchanged */
+@media (max-width: 1680px) {
+  .boot-background-layer {
+    filter: blur(2px);
+    -webkit-filter: blur(2px);
+  }
+}
+
+/* Content must sit above the background layer */
+.boot-screen-content {
+  position: relative;
+  z-index: 1;
+}
+
 /* Prevent scroll on boot screen pages */
 body:has([role='status'][aria-label='Loading application']) {
   overflow: hidden !important;

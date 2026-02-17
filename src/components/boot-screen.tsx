@@ -3,6 +3,8 @@
 import Lottie from 'lottie-react';
 import { useEffect, useState } from 'react';
 
+import bootAnimationData from '@/assets/boot-animation.json';
+
 interface BootScreenProps {
   /**
    * Duration of the boot sequence in milliseconds
@@ -30,14 +32,6 @@ interface BootScreenProps {
 export function BootScreen({ duration = 3000, onComplete, className }: BootScreenProps) {
   const [progress, setProgress] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
-  const [animationData, setAnimationData] = useState(null);
-
-  useEffect(() => {
-    fetch('/images/boot-animation.json')
-      .then((res) => res.json())
-      .then((data) => setAnimationData(data))
-      .catch((err) => console.error('Failed to load animation:', err));
-  }, []);
 
   // Prevent body scroll when boot screen is active
   useEffect(() => {
@@ -95,52 +89,36 @@ export function BootScreen({ duration = 3000, onComplete, className }: BootScree
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundImage: 'url(/images/boot-background-clean.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
         transition: 'opacity 500ms ease-out',
         opacity: isExiting ? 0 : 1,
       }}
     >
-      {/* Loading Animation - Lottie */}
-      {animationData && (
-        <div
+      <div className="boot-background-layer" aria-hidden />
+      <div
+        className="boot-screen-content"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'absolute',
+          inset: 0,
+        }}
+      >
+        {/* Loading Animation - Lottie */}
+        <Lottie
+          animationData={bootAnimationData}
+          loop={true}
+          autoplay={true}
           style={{
-            width: '165px',
-            height: '165px',
+            width: '120px',
+            height: '120px',
             maxWidth: '90vw',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
           }}
-        >
-          <Lottie
-            animationData={animationData}
-            loop={true}
-            autoplay={true}
-            rendererSettings={{
-              preserveAspectRatio: 'xMidYMid meet',
-              progressiveLoad: false,
-              hideOnTransparent: true,
-              className: 'lottie-animation',
-            }}
-            style={{
-              width: '330px',
-              height: '330px',
-              transform: 'scale(0.5)',
-              transformOrigin: 'center center',
-              imageRendering: '-webkit-optimize-contrast',
-              WebkitFontSmoothing: 'antialiased',
-              backfaceVisibility: 'hidden',
-              willChange: 'transform',
-            }}
-          />
-        </div>
-      )}
-
+        />
+      </div>
       {/* Screen reader progress */}
       <span
+        className="boot-screen-content"
         style={{
           position: 'absolute',
           width: '1px',
