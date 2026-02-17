@@ -14,7 +14,7 @@ export default function BootDemoPage() {
   };
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-background min-h-screen overflow-hidden">
       {/* Boot screen overlay */}
       {showBoot && (
         <BootScreen

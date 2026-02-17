@@ -148,7 +148,7 @@
   .animate-float {
     animation: float 3s ease-in-out infinite;
   }
-  
+
   .animate-pulse-subtle {
     animation: pulse-subtle 2s ease-in-out infinite;
   }
@@ -206,4 +206,48 @@
   .animation-delay-1000 {
     animation-delay: 1000ms;
   }
+}
+
+/* High-quality Lottie rendering */
+.lottie-animation {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
+}
+
+.lottie-animation svg {
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+  image-rendering: -webkit-optimize-contrast;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.lottie-animation path,
+.lottie-animation line,
+.lottie-animation polyline,
+.lottie-animation polygon {
+  shape-rendering: geometricPrecision;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Retina display optimization */
+@media only screen and (-webkit-min-device-pixel-ratio: 2),
+  only screen and (min-resolution: 192dpi),
+  only screen and (min-resolution: 2dppx) {
+  .lottie-animation {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* Prevent scroll on boot screen pages */
+body:has([role='status'][aria-label='Loading application']) {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
 }

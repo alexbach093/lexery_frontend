@@ -39,6 +39,24 @@ export function BootScreen({ duration = 3000, onComplete, className }: BootScree
       .catch((err) => console.error('Failed to load animation:', err));
   }, []);
 
+  // Prevent body scroll when boot screen is active
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.width = '';
+      document.body.style.height = '';
+    };
+  }, []);
+
   useEffect(() => {
     const startTime = Date.now();
     const interval = setInterval(() => {
@@ -68,6 +86,11 @@ export function BootScreen({ duration = 3000, onComplete, className }: BootScree
       style={{
         position: 'fixed',
         inset: 0,
+        width: '100vw',
+        height: '100vh',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden',
         zIndex: 9999,
         display: 'flex',
         alignItems: 'center',
@@ -82,16 +105,38 @@ export function BootScreen({ duration = 3000, onComplete, className }: BootScree
     >
       {/* Loading Animation - Lottie */}
       {animationData && (
-        <Lottie
-          animationData={animationData}
-          loop={true}
-          autoplay={true}
+        <div
           style={{
-            width: '120px',
-            height: '120px',
+            width: '165px',
+            height: '165px',
             maxWidth: '90vw',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-        />
+        >
+          <Lottie
+            animationData={animationData}
+            loop={true}
+            autoplay={true}
+            rendererSettings={{
+              preserveAspectRatio: 'xMidYMid meet',
+              progressiveLoad: false,
+              hideOnTransparent: true,
+              className: 'lottie-animation',
+            }}
+            style={{
+              width: '330px',
+              height: '330px',
+              transform: 'scale(0.5)',
+              transformOrigin: 'center center',
+              imageRendering: '-webkit-optimize-contrast',
+              WebkitFontSmoothing: 'antialiased',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform',
+            }}
+          />
+        </div>
       )}
 
       {/* Screen reader progress */}
