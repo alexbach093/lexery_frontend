@@ -1,0 +1,191 @@
+'use client';
+
+import { useEffect } from 'react';
+
+export interface FilePreviewProps {
+  /** The file to display (name, size, type). */
+  file: File;
+  /** Object URL for thumbnail (image/*). Must be revoked by consumer or on unmount. */
+  previewUrl: string | null;
+  /** Called when the user clicks the remove (X) button. */
+  onRemove: () => void;
+}
+
+const THUMBNAIL_SIZE = 36;
+const THUMBNAIL_RADIUS = 5;
+const CARD_RADIUS = 8;
+/** Fixed max width so the pill doesn’t stretch; right side stays clear of AI space edge (Perplexity-style). */
+const CARD_MAX_WIDTH = 320;
+
+/** Human-readable file size (e.g. 20.4 KB, 1.2 MB) with one decimal place. */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) {
+    return `${kb % 1 === 0 ? kb : kb.toFixed(1)} KB`;
+  }
+  const mb = kb / 1024;
+  return `${mb % 1 === 0 ? mb : mb.toFixed(1)} MB`;
+}
+
+function isImageOrSvg(file: File): boolean {
+  return file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.svg');
+}
+
+/** Generic image/file placeholder: landscape with mountain and sun (per design). */
+function PlaceholderIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      {/* Sun */}
+      <circle cx="18" cy="6" r="3" fill="#9A9A9A" />
+      {/* Mountain / hill silhouette */}
+      <path d="M2 24L10 10h4l8-6v20H2z" fill="#B0B0B0" />
+      {/* Folded corner */}
+      <path d="M18 4v2h2l-2-2z" fill="#A0A0A0" />
+    </svg>
+  );
+}
+
+/**
+ * File preview card: thumbnail, file name, file size, remove button.
+ * Matches design: #EBEBEB card, thumbnail with landscape placeholder, dark grey text, X without background.
+ * Revokes previewUrl on unmount to avoid memory leaks.
+ */
+export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
+
+  const showImageThumbnail = isImageOrSvg(file) && previewUrl;
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '8px 12px',
+        minHeight: '48px',
+        backgroundColor: '#EBEBEB',
+        borderRadius: CARD_RADIUS,
+        width: 'fit-content',
+        maxWidth: CARD_MAX_WIDTH,
+        minWidth: 0,
+        boxSizing: 'border-box',
+      }}
+    >
+      {/* Left: square thumbnail — light grey bg, rounded; image or landscape placeholder */}
+      <div
+        style={{
+          width: THUMBNAIL_SIZE,
+          height: THUMBNAIL_SIZE,
+          borderRadius: THUMBNAIL_RADIUS,
+          overflow: 'hidden',
+          flexShrink: 0,
+          backgroundColor: '#D3D3D3',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {showImageThumbnail ? (
+          <img
+            src={previewUrl}
+            alt=""
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+            }}
+          />
+        ) : (
+          <PlaceholderIcon />
+        )}
+      </div>
+
+      {/* Middle: file name + size */}
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2px',
+          justifyContent: 'center',
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: 600,
+            fontSize: '13px',
+            lineHeight: '18px',
+            letterSpacing: '0.13px',
+            color: '#333333',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {file.name}
+        </span>
+        <span
+          style={{
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: 400,
+            fontSize: '11px',
+            lineHeight: '15px',
+            letterSpacing: '0.11px',
+            color: '#888888',
+          }}
+        >
+          {formatFileSize(file.size)}
+        </span>
+      </div>
+
+      {/* Right: X icon only, no background, dark grey */}
+      <button
+        type="button"
+        onClick={onRemove}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '22px',
+          height: '22px',
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          borderRadius: '4px',
+          padding: 0,
+          flexShrink: 0,
+        }}
+        className="workspace-action-btn hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+        aria-label="Видалити файл"
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 14 14"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <path d="M3 3l8 8M11 3l-8 8" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+    </div>
+  );
+}

@@ -105,13 +105,13 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
         >
           {/* Новий чат */}
           <button
+            className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
             style={{
               display: 'flex',
               gap: '12px',
               alignItems: 'center',
               height: '44px',
               padding: '12px 15px',
-              backgroundColor: '#F4F4F6',
               borderRadius: '4px',
               border: 'none',
               cursor: 'pointer',
@@ -136,13 +136,13 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
 
           {/* Проєкти */}
           <button
+            className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
             style={{
               display: 'flex',
               gap: '12px',
               alignItems: 'center',
               height: '44px',
               padding: '12px',
-              backgroundColor: '#FFFFFF',
               borderRadius: '4px',
               border: 'none',
               cursor: 'pointer',
@@ -212,13 +212,13 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
           >
             {/* Налаштування */}
             <button
+              className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
               style={{
                 display: 'flex',
                 gap: '12px',
                 alignItems: 'center',
                 height: '44px',
                 padding: '12px',
-                backgroundColor: '#FFFFFF',
                 borderRadius: '4px',
                 border: 'none',
                 cursor: 'pointer',
@@ -243,13 +243,13 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
 
             {/* Виникла помилка */}
             <button
+              className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
               style={{
                 display: 'flex',
                 gap: '12px',
                 alignItems: 'center',
                 height: '44px',
                 padding: '12px',
-                backgroundColor: '#FFFFFF',
                 borderRadius: '4px',
                 border: 'none',
                 cursor: 'pointer',

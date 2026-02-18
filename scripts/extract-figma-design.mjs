@@ -18,10 +18,10 @@ function loadEnv() {
   if (!existsSync(envPath)) {
     return;
   }
-  
+
   const envContent = readFileSync(envPath, 'utf-8');
   const lines = envContent.split('\n');
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed && !trimmed.startsWith('#')) {
@@ -38,7 +38,7 @@ function loadEnv() {
 loadEnv();
 
 const FIGMA_FILE_ID = 'IO0sKndZpfYlW5OVXoIpuC';
-const NODE_ID = '0:1283'; // Figma uses : not - in node IDs
+const NODE_ID = process.env.FIGMA_NODE_ID || '0:1283'; // Figma uses : not - in node IDs
 const FIGMA_TOKEN = process.env.FIGMA_TOKEN;
 
 if (!FIGMA_TOKEN) {
@@ -50,7 +50,7 @@ if (!FIGMA_TOKEN) {
 
 async function fetchFigmaFile() {
   const url = `https://api.figma.com/v1/files/${FIGMA_FILE_ID}`;
-  
+
   const response = await fetch(url, {
     headers: {
       'X-Figma-Token': FIGMA_TOKEN,
@@ -67,7 +67,7 @@ async function fetchFigmaFile() {
 
 async function fetchFigmaImages(nodeIds) {
   const url = `https://api.figma.com/v1/images/${FIGMA_FILE_ID}?ids=${nodeIds.join(',')}&format=png&scale=2`;
-  
+
   const response = await fetch(url, {
     headers: {
       'X-Figma-Token': FIGMA_TOKEN,
@@ -76,7 +76,9 @@ async function fetchFigmaImages(nodeIds) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Figma Images API error: ${response.status} ${response.statusText}\n${errorText}`);
+    throw new Error(
+      `Figma Images API error: ${response.status} ${response.statusText}\n${errorText}`
+    );
   }
 
   return await response.json();
@@ -113,17 +115,17 @@ function rgbaToString(r, g, b, a) {
 
 function extractColors(node) {
   const colors = [];
-  
+
   if (node.backgroundColor) {
     const { r, g, b, a = 1 } = node.backgroundColor;
     colors.push({
       hex: rgbToHex(r, g, b),
       rgba: rgbaToString(r, g, b, a),
       alpha: a,
-      type: 'background'
+      type: 'background',
     });
   }
-  
+
   if (node.fills && Array.isArray(node.fills)) {
     node.fills.forEach((fill) => {
       if (fill.visible !== false && fill.type === 'SOLID' && fill.color) {
@@ -133,24 +135,24 @@ function extractColors(node) {
           hex: rgbToHex(r, g, b),
           rgba: rgbaToString(r, g, b, a),
           alpha: a,
-          type: 'fill'
+          type: 'fill',
         });
       }
     });
   }
-  
+
   if (node.children) {
-    node.children.forEach(child => {
+    node.children.forEach((child) => {
       colors.push(...extractColors(child));
     });
   }
-  
+
   return colors;
 }
 
 function extractTextContent(node) {
   const textNodes = [];
-  
+
   function traverse(n) {
     if (n.type === 'TEXT' && n.characters) {
       textNodes.push({
@@ -169,7 +171,7 @@ function extractTextContent(node) {
       n.children.forEach(traverse);
     }
   }
-  
+
   traverse(node);
   return textNodes;
 }
@@ -177,7 +179,8 @@ function extractTextContent(node) {
 function analyzeLayout(node) {
   return {
     layoutMode: node.layoutMode,
-    direction: node.layoutMode === 'VERTICAL' ? 'column' : node.layoutMode === 'HORIZONTAL' ? 'row' : 'none',
+    direction:
+      node.layoutMode === 'VERTICAL' ? 'column' : node.layoutMode === 'HORIZONTAL' ? 'row' : 'none',
     gap: node.itemSpacing,
     padding: {
       top: node.paddingTop || 0,
@@ -194,10 +197,15 @@ function analyzeLayout(node) {
 
 function extractSVGs(node) {
   const svgs = [];
-  
+
   function traverse(n) {
     // Look for vector nodes that might be SVGs
-    if (n.type === 'VECTOR' || n.type === 'BOOLEAN_OPERATION' || n.type === 'STAR' || n.type === 'POLYGON') {
+    if (
+      n.type === 'VECTOR' ||
+      n.type === 'BOOLEAN_OPERATION' ||
+      n.type === 'STAR' ||
+      n.type === 'POLYGON'
+    ) {
       svgs.push({
         id: n.id,
         name: n.name,
@@ -209,7 +217,7 @@ function extractSVGs(node) {
       n.children.forEach(traverse);
     }
   }
-  
+
   traverse(node);
   return svgs;
 }
@@ -217,26 +225,26 @@ function extractSVGs(node) {
 function generateNodeTree(node, depth = 0) {
   const indent = '  '.repeat(depth);
   let output = `${indent}- ${node.type}: ${node.name} (${node.id})\n`;
-  
+
   if (node.absoluteBoundingBox) {
     const { width, height } = node.absoluteBoundingBox;
     output += `${indent}  Size: ${Math.round(width)}x${Math.round(height)}px\n`;
   }
-  
+
   if (node.type === 'TEXT' && node.characters) {
     output += `${indent}  Text: "${node.characters.substring(0, 50)}${node.characters.length > 50 ? '...' : ''}"\n`;
   }
-  
+
   if (node.layoutMode) {
     output += `${indent}  Layout: ${node.layoutMode}\n`;
   }
-  
+
   if (node.children) {
-    node.children.forEach(child => {
+    node.children.forEach((child) => {
       output += generateNodeTree(child, depth + 1);
     });
   }
-  
+
   return output;
 }
 
@@ -249,31 +257,31 @@ async function main() {
     // Fetch the Figma file
     console.log('📥 Fetching Figma file...');
     const fileData = await fetchFigmaFile();
-    
+
     // Find the specific node
     console.log('🔍 Finding target node...');
     const targetNode = getNodeById(fileData, NODE_ID);
-    
+
     if (!targetNode) {
       console.error(`❌ Node with ID ${NODE_ID} not found`);
       process.exit(1);
     }
-    
+
     console.log(`✅ Found node: ${targetNode.name} (${targetNode.type})\n`);
-    
+
     // Extract screenshot URL
     console.log('📸 Fetching screenshot...');
     const imagesData = await fetchFigmaImages([NODE_ID]);
     const screenshotUrl = imagesData.images?.[NODE_ID];
-    
+
     // Extract all data
     const allColors = extractColors(targetNode);
-    const uniqueColors = [...new Map(allColors.map(c => [c.hex, c])).values()];
+    const uniqueColors = [...new Map(allColors.map((c) => [c.hex, c])).values()];
     const textContent = extractTextContent(targetNode);
     const layout = analyzeLayout(targetNode);
     const nodeTree = generateNodeTree(targetNode);
     const svgElements = extractSVGs(targetNode);
-    
+
     // Generate report
     const report = {
       node: {
@@ -298,35 +306,39 @@ async function main() {
       extractedAt: new Date().toISOString(),
       figmaUrl: `https://www.figma.com/design/${FIGMA_FILE_ID}/Untitled?node-id=${NODE_ID}&m=dev`,
     };
-    
+
     // Output report
     console.log('═'.repeat(60));
     console.log('📊 DESIGN EXTRACTION REPORT');
     console.log('═'.repeat(60));
     console.log();
-    
+
     console.log('📱 NODE INFORMATION:');
     console.log(`   Name: ${report.node.name}`);
     console.log(`   Type: ${report.node.type}`);
     console.log(`   ID: ${report.node.id}`);
     if (report.node.size) {
-      console.log(`   Size: ${Math.round(report.node.size.width)}x${Math.round(report.node.size.height)}px`);
+      console.log(
+        `   Size: ${Math.round(report.node.size.width)}x${Math.round(report.node.size.height)}px`
+      );
     }
     console.log();
-    
+
     console.log('📸 SCREENSHOT:');
     console.log(`   URL: ${screenshotUrl || 'Not available'}`);
     if (screenshotUrl) {
-      console.log(`   You can download the screenshot and save it to: public/images/boot-screen.png`);
+      console.log(
+        `   You can download the screenshot and save it to: public/images/boot-screen.png`
+      );
     }
     console.log();
-    
+
     console.log('🎨 COLORS PALETTE:');
     uniqueColors.forEach((color, i) => {
       console.log(`   ${i + 1}. ${color.hex} (${color.rgba})`);
     });
     console.log();
-    
+
     console.log('📝 TEXT CONTENT:');
     if (textContent.length === 0) {
       console.log('   No text content found');
@@ -341,12 +353,14 @@ async function main() {
         console.log();
       });
     }
-    
+
     console.log('📐 LAYOUT:');
     console.log(`   Mode: ${layout.layoutMode || 'Absolute'}`);
     console.log(`   Direction: ${layout.direction}`);
     console.log(`   Gap: ${layout.gap || 0}px`);
-    console.log(`   Padding: ${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`);
+    console.log(
+      `   Padding: ${layout.padding.top}px ${layout.padding.right}px ${layout.padding.bottom}px ${layout.padding.left}px`
+    );
     if (layout.primaryAxisAlignment) {
       console.log(`   Primary Axis Alignment: ${layout.primaryAxisAlignment}`);
     }
@@ -354,7 +368,7 @@ async function main() {
       console.log(`   Counter Axis Alignment: ${layout.counterAxisAlignment}`);
     }
     console.log();
-    
+
     if (svgElements.length > 0) {
       console.log('🎭 SVG/VECTOR ELEMENTS:');
       svgElements.forEach((svg, i) => {
@@ -363,17 +377,17 @@ async function main() {
       console.log('   Note: Vector SVG exports need to be done via Figma export or screenshot');
       console.log();
     }
-    
+
     console.log('🌲 NODE STRUCTURE:');
     console.log(nodeTree);
     console.log();
-    
+
     // Save to file
     const outputPath = './figma-extraction-report.json';
     writeFileSync(outputPath, JSON.stringify(report, null, 2));
     console.log(`💾 Full report saved to: ${outputPath}`);
     console.log();
-    
+
     console.log('═'.repeat(60));
     console.log('✅ Extraction complete!');
     console.log('═'.repeat(60));
@@ -383,7 +397,6 @@ async function main() {
     console.log('   2. Review the figma-extraction-report.json file');
     console.log('   3. Generate the React component based on this data');
     console.log();
-    
   } catch (error) {
     console.error('❌ Error:', error.message);
     if (error.message.includes('403')) {

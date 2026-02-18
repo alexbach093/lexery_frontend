@@ -9,12 +9,6 @@ export default function BootErrorDemoPage() {
   const [errorMessage, setErrorMessage] = useState('Не вдалося завантажити додаток');
   const [errorCode, setErrorCode] = useState('ERR_CONNECTION_REFUSED');
 
-  const handleRetry = () => {
-    console.log('Retry clicked');
-    // Simulate retry logic
-    alert('Спроба підключення...');
-  };
-
   const handleReset = () => {
     setShowError(true);
   };
@@ -22,9 +16,7 @@ export default function BootErrorDemoPage() {
   return (
     <div className="bg-background min-h-screen overflow-hidden">
       {/* Error screen overlay */}
-      {showError && (
-        <BootErrorScreen errorMessage={errorMessage} errorCode={errorCode} onRetry={handleRetry} />
-      )}
+      {showError && <BootErrorScreen errorMessage={errorMessage} errorCode={errorCode} />}
 
       {/* Main content (won't be visible when error screen is shown) */}
       {!showError && (
@@ -121,7 +113,6 @@ function App() {
     <BootErrorScreen
       errorMessage="Не вдалося завантажити додаток"
       errorCode="ERR_CONNECTION_REFUSED"
-      onRetry={() => window.location.reload()}
     />
   );
 }`}</code>

@@ -15,10 +15,6 @@ interface BootErrorScreenProps {
    */
   errorCode?: string;
   /**
-   * Callback when retry button is clicked
-   */
-  onRetry?: () => void;
-  /**
    * Custom className for styling
    */
   className?: string;
@@ -33,7 +29,6 @@ interface BootErrorScreenProps {
 export function BootErrorScreen({
   errorMessage = 'Не вдалося завантажити додаток',
   errorCode,
-  onRetry,
   className,
 }: BootErrorScreenProps) {
   // Prevent body scroll when error screen is active
@@ -130,38 +125,12 @@ export function BootErrorScreen({
               style={{
                 fontSize: '14px',
                 color: '#6B7280',
-                marginBottom: '32px',
                 fontFamily: 'monospace',
               }}
             >
               Код помилки: {errorCode}
             </p>
           )}
-
-          {/* Action Button */}
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              padding: '12px 32px',
-              fontSize: '16px',
-              fontWeight: '500',
-              color: '#FFFFFF',
-              backgroundColor: '#000000',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              minWidth: '200px',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#333333';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#000000';
-            }}
-          >
-            Оновити сторінку
-          </button>
         </div>
       </div>
     </div>
