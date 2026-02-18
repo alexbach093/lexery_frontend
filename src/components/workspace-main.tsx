@@ -1,12 +1,14 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { FilePreview } from './file-preview';
 
 interface WorkspaceMainProps {
   className?: string;
+  /** Called when workspace has mounted and is ready (e.g. for hiding boot overlay). */
+  onReady?: () => void;
 }
 
 const TEXTAREA_MIN_HEIGHT = 82;
@@ -24,12 +26,16 @@ interface AttachedFile {
  * Figma: node 0:1339 (AI box)
  * Contains: Greeting, Chat input, Action buttons
  */
-export function WorkspaceMain({ className }: WorkspaceMainProps) {
+export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   const [value, setValue] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isEmpty = value.trim().length === 0;
+
+  useEffect(() => {
+    onReady?.();
+  }, [onReady]);
 
   const resizeTextarea = useCallback((el: HTMLTextAreaElement) => {
     // Reset to auto first so it can shrink when lines are deleted
@@ -54,7 +60,6 @@ export function WorkspaceMain({ className }: WorkspaceMainProps) {
         e.preventDefault();
         if (value.trim()) {
           // TODO: wire up to actual send handler
-          console.log('Send:', value);
           setValue('');
           if (textareaRef.current) {
             textareaRef.current.style.height = `${TEXTAREA_MIN_HEIGHT}px`;
@@ -70,12 +75,12 @@ export function WorkspaceMain({ className }: WorkspaceMainProps) {
     <main
       className={className}
       style={{
-        marginLeft: '260px',
-        height: '100vh',
+        height: '100%',
         backgroundColor: '#FFFFFF',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
+        flex: 1,
       }}
     >
       {/* Top Bar - Поради Button */}
@@ -426,7 +431,6 @@ export function WorkspaceMain({ className }: WorkspaceMainProps) {
                 disabled={isEmpty}
                 onClick={() => {
                   // TODO: wire up to actual send handler
-                  console.log('Send:', value);
                   setValue('');
                   if (textareaRef.current) {
                     textareaRef.current.style.height = `${TEXTAREA_MIN_HEIGHT}px`;
