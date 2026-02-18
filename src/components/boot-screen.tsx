@@ -104,11 +104,11 @@ export function BootScreen({ duration = 3000, onComplete, className }: BootScree
           inset: 0,
         }}
       >
-        {/* Loading Animation - Lottie */}
+        {/* Loading Animation - Lottie (Frame 36799 (2).json) */}
         <Lottie
           animationData={bootAnimationData}
-          loop={true}
-          autoplay={true}
+          loop
+          autoplay
           style={{
             width: '120px',
             height: '120px',
