@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface FilePreviewProps {
   /** The file to display (name, size, type). */
@@ -28,8 +28,11 @@ export function formatFileSize(bytes: number): string {
   return `${mb % 1 === 0 ? mb : mb.toFixed(1)} MB`;
 }
 
+const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/i;
+
 function isImageOrSvg(file: File): boolean {
-  return file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.svg');
+  if (file.type.startsWith('image/')) return true;
+  return IMAGE_EXTENSIONS.test(file.name);
 }
 
 /** Generic image/file placeholder: landscape with mountain and sun (per design). */
@@ -59,6 +62,8 @@ function PlaceholderIcon() {
  * Revokes previewUrl on unmount to avoid memory leaks.
  */
 export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
+  const [imageError, setImageError] = useState(false);
+
   useEffect(() => {
     return () => {
       if (previewUrl) {
@@ -67,7 +72,13 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
     };
   }, [previewUrl]);
 
-  const showImageThumbnail = isImageOrSvg(file) && previewUrl;
+  // Скидаємо помилку, коли змінюється файл або previewUrl (асинхронно, щоб уникнути cascading render)
+  useEffect(() => {
+    const t = setTimeout(() => setImageError(false), 0);
+    return () => clearTimeout(t);
+  }, [file.name, file.size, previewUrl]);
+
+  const showImageThumbnail = isImageOrSvg(file) && previewUrl && !imageError;
 
   return (
     <div
@@ -100,6 +111,7 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
         }}
       >
         {showImageThumbnail ? (
+          // eslint-disable-next-line @next/next/no-img-element -- blob URL for user-uploaded preview
           <img
             src={previewUrl}
             alt=""
@@ -109,6 +121,7 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
               objectFit: 'cover',
               display: 'block',
             }}
+            onError={() => setImageError(true)}
           />
         ) : (
           <PlaceholderIcon />

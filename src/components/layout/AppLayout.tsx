@@ -3,18 +3,17 @@
 import { WorkspaceSidebar } from '@/components/workspace-sidebar';
 
 const SIDEBAR_WIDTH = 260;
-const FADE_IN_MS = 500;
+const SIDEBAR_FADE_MS = 600;
 
 interface AppLayoutProps {
   children: React.ReactNode;
-  /** When true, sidebar (and optionally UI under boot) is hidden; when false, fades in with workspace. */
+  /** When true, sidebar and main are hidden under boot overlay; when false, they fade in. */
   bootOverlayVisible?: boolean;
 }
 
 /**
  * Shared app layout: sidebar + main content area.
- * Used by /boot (onboarding) and /workspace (main AI interface).
- * Sidebar and shell live in one place; each route supplies its content via children.
+ * Boot — частина головної сторінки (/), не окремий маршрут.
  */
 export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutProps) {
   return (
@@ -30,7 +29,7 @@ export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutPro
         style={{
           opacity: bootOverlayVisible ? 0 : 1,
           pointerEvents: bootOverlayVisible ? 'none' : 'auto',
-          transition: bootOverlayVisible ? 'none' : `opacity ${FADE_IN_MS}ms ease-out`,
+          transition: `opacity ${SIDEBAR_FADE_MS}ms ease-out`,
         }}
       >
         <WorkspaceSidebar />
@@ -43,6 +42,7 @@ export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutPro
           flexDirection: 'column',
           position: 'relative',
           backgroundColor: '#FFFFFF',
+          overflow: 'hidden',
         }}
       >
         {children}

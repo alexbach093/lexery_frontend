@@ -21,7 +21,8 @@
     "prepare": "husky",
     "figma:extract": "node scripts/extract-figma-design.mjs",
     "figma:generate": "node scripts/generate-boot-screen.mjs",
-    "figma:build": "npm run figma:extract && npm run figma:generate"
+    "figma:build": "npm run figma:extract && npm run figma:generate",
+    "figma:chat-icons": "node scripts/export-chat-action-icons.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

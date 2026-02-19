@@ -1,35 +1,18 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-
-import { BootScreen } from '@/components/boot-screen';
-import { AppLayout } from '@/components/layout';
+import { useEffect } from 'react';
 
 /**
- * Boot Page - Start/onboarding screen (first launch).
- * Uses shared AppLayout (sidebar + main area). After boot completes, redirects to /workspace.
+ * Boot — більше не окремий маршрут. Редірект на головну (/),
+ * де boot є частиною воркспейсу (показується при першому завантаженні).
  */
 export default function BootPage() {
   const router = useRouter();
 
-  return (
-    <AppLayout>
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100%',
-        }}
-      >
-        <BootScreen
-          duration={3000}
-          onComplete={() => {
-            router.push('/workspace');
-          }}
-        />
-      </div>
-    </AppLayout>
-  );
+  useEffect(() => {
+    router.replace('/');
+  }, [router]);
+
+  return null;
 }
