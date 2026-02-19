@@ -122,7 +122,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
         </button>
       </div>
 
-      {/* Center Content */}
+      {/* Center Content — greeting and AI space centered on screen */}
       <div
         style={{
           display: 'flex',

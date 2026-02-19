@@ -6,30 +6,22 @@ import { BootScreen } from '@/components/boot-screen';
 import { AppLayout } from '@/components/layout';
 import { WorkspaceMain } from '@/components/workspace-main';
 
-/** Minimum time the boot screen is shown (ms). */
-const MIN_BOOT_MS = 2000;
 /** Fade-out duration (ms). */
 const FADE_OUT_MS = 500;
 
 /**
- * Root page: boot runs on top while workspace loads; when ready, boot fades out smoothly.
- * Workspace stays in layout (opacity only) to avoid reflow and blinking.
+ * Root page: boot runs on top while workspace loads; when ready, boot fades out.
+ * No minimum boot time — if site loads at once, boot finishes at once.
  */
 export default function HomePage() {
   const [showBoot, setShowBoot] = useState(true);
   const [bootFading, setBootFading] = useState(false);
   const [workspaceReady, setWorkspaceReady] = useState(false);
-  const [minBootElapsed, setMinBootElapsed] = useState(false);
   const fadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fadeStartedRef = useRef(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setMinBootElapsed(true), MIN_BOOT_MS);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (!fadeStartedRef.current && workspaceReady && minBootElapsed) {
+    if (!fadeStartedRef.current && workspaceReady) {
       fadeStartedRef.current = true;
       const startFade = () => {
         setBootFading(true);
@@ -48,7 +40,7 @@ export default function HomePage() {
     return () => {
       if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
     };
-  }, [workspaceReady, minBootElapsed]);
+  }, [workspaceReady]);
 
   const showBootOverlay = showBoot || bootFading;
 
@@ -83,10 +75,7 @@ export default function HomePage() {
           }}
           aria-hidden={bootFading}
         >
-          <BootScreen
-            duration={Math.max(MIN_BOOT_MS, 3000)}
-            onComplete={() => setShowBoot(false)}
-          />
+          <BootScreen duration={3000} onComplete={() => setShowBoot(false)} />
         </div>
       )}
     </AppLayout>

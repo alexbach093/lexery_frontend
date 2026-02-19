@@ -68,58 +68,27 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '14px',
-            alignItems: 'center',
-            height: '40px',
-            padding: '10px 12px',
-            backgroundColor: '#F4F4F6',
-            borderRadius: '4px',
-          }}
-        >
-          <Image src="/images/workspace/search.svg" alt="" width={20} height={20} />
-          <p
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '19.6px',
-              letterSpacing: '0.14px',
-              color: '#7E7E7E',
-            }}
-          >
-            Пошук
-          </p>
-        </div>
-
-        {/* Navigation Items */}
+        {/* Пошук, потім блок кнопок: однакова менша відстань (15px), між кнопками 4px */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '4px',
+            gap: '15px',
           }}
         >
-          {/* Новий чат */}
-          <button
-            className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+          {/* Search Bar */}
+          <div
             style={{
               display: 'flex',
               gap: '12px',
               alignItems: 'center',
               height: '44px',
               padding: '12px 15px',
+              backgroundColor: '#F4F4F6',
               borderRadius: '4px',
-              border: 'none',
-              cursor: 'pointer',
-              width: '100%',
-              textAlign: 'left',
             }}
           >
-            <Image src="/images/workspace/new-chat.svg" alt="" width={15} height={15} />
+            <Image src="/images/workspace/search.svg" alt="" width={18} height={18} />
             <p
               style={{
                 fontFamily: 'Inter, sans-serif',
@@ -127,67 +96,108 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
                 fontSize: '14px',
                 lineHeight: '19.6px',
                 letterSpacing: '0.14px',
-                color: '#000000',
+                color: '#7E7E7E',
               }}
             >
-              Новий чат
+              Пошук
             </p>
-          </button>
+          </div>
 
-          {/* Проєкти */}
-          <button
-            className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+          {/* Новий чат, Проєкти, Історія — 4px між собою */}
+          <div
             style={{
               display: 'flex',
-              gap: '12px',
-              alignItems: 'center',
-              height: '44px',
-              padding: '12px',
-              borderRadius: '4px',
-              border: 'none',
-              cursor: 'pointer',
-              width: '100%',
-              textAlign: 'left',
+              flexDirection: 'column',
+              gap: '4px',
             }}
           >
-            <Image src="/images/workspace/projects.svg" alt="" width={20} height={20} />
-            <p
+            {/* Новий чат */}
+            <button
+              className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
               style={{
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 400,
-                fontSize: '14px',
-                lineHeight: '19.6px',
-                letterSpacing: '0.14px',
-                color: '#000000',
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center',
+                height: '44px',
+                padding: '12px 15px',
+                borderRadius: '4px',
+                border: 'none',
+                cursor: 'pointer',
+                width: '100%',
+                textAlign: 'left',
               }}
             >
-              Проєкти
-            </p>
-          </button>
-        </div>
+              <Image src="/images/workspace/new-chat.svg" alt="" width={17} height={17} />
+              <p
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '14px',
+                  lineHeight: '19.6px',
+                  letterSpacing: '0.14px',
+                  color: '#000000',
+                }}
+              >
+                Новий чат
+              </p>
+            </button>
 
-        {/* Історія Section */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'center',
-            height: '18px',
-          }}
-        >
-          <p
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '17.107px',
-              letterSpacing: '0.14px',
-              color: '#5E5E5E',
-            }}
-          >
-            Історія
-          </p>
-          <Image src="/images/workspace/history.svg" alt="" width={4} height={8} />
+            {/* Проєкти */}
+            <button
+              className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+              style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center',
+                height: '44px',
+                padding: '12px 15px',
+                borderRadius: '4px',
+                border: 'none',
+                cursor: 'pointer',
+                width: '100%',
+                textAlign: 'left',
+              }}
+            >
+              <Image src="/images/workspace/projects.svg" alt="" width={18} height={18} />
+              <p
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '14px',
+                  lineHeight: '19.6px',
+                  letterSpacing: '0.14px',
+                  color: '#000000',
+                }}
+              >
+                Проєкти
+              </p>
+            </button>
+
+            {/* Історія */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center',
+                height: '44px',
+                padding: '12px 15px',
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '14px',
+                  lineHeight: '17.107px',
+                  letterSpacing: '0.14px',
+                  color: '#5E5E5E',
+                }}
+              >
+                Історія
+              </p>
+              <Image src="/images/workspace/history.svg" alt="" width={6} height={10} />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -201,13 +211,13 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
             padding: '0',
           }}
         >
-          {/* Bottom Navigation */}
+          {/* Bottom Navigation — 4px між кнопками */}
           <div
             style={{
               display: 'flex',
               flexDirection: 'column',
               gap: '4px',
-              padding: '0 16px',
+              padding: '0 15px',
             }}
           >
             {/* Налаштування */}
@@ -218,7 +228,7 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
                 gap: '12px',
                 alignItems: 'center',
                 height: '44px',
-                padding: '12px',
+                padding: '12px 15px',
                 borderRadius: '4px',
                 border: 'none',
                 cursor: 'pointer',
@@ -226,7 +236,7 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
                 textAlign: 'left',
               }}
             >
-              <Image src="/images/workspace/settings.svg" alt="" width={20} height={20} />
+              <Image src="/images/workspace/settings.svg" alt="" width={18} height={18} />
               <p
                 style={{
                   fontFamily: 'Inter, sans-serif',
@@ -249,7 +259,7 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
                 gap: '12px',
                 alignItems: 'center',
                 height: '44px',
-                padding: '12px',
+                padding: '12px 15px',
                 borderRadius: '4px',
                 border: 'none',
                 cursor: 'pointer',
@@ -257,7 +267,7 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
                 textAlign: 'left',
               }}
             >
-              <Image src="/images/workspace/error.svg" alt="" width={20} height={20} />
+              <Image src="/images/workspace/error.svg" alt="" width={18} height={18} />
               <p
                 style={{
                   fontFamily: 'Inter, sans-serif',
