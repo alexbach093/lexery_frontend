@@ -168,12 +168,99 @@ function PaperclipIcon() {
   );
 }
 
-/** Кілька вкладень: рядок "N вкладень" + розгортання списку файлів (як на скріні). */
+/** Кілька вкладень: рядок "N вкладень" + випадаючий список файлів (не зміщує сторінку). */
 function UserAttachmentsMultiple({ attachments }: { attachments: MessageAttachment[] }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const n = attachments.length;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+    <div
+      style={{
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+      }}
+    >
+      {expanded && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            marginTop: '6px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: '6px',
+            zIndex: 20,
+          }}
+        >
+          {attachments.map((att, i) => (
+            <div
+              key={`${att.name}-${att.size}-${i}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 10px',
+                backgroundColor: '#F5F5F5',
+                border: '1px solid #E8E8E8',
+                borderRadius: '10px',
+                width: 'max-content',
+                maxWidth: '220px',
+                boxSizing: 'border-box',
+              }}
+            >
+              {att.previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- blob URL from user upload
+                <img
+                  src={att.previewUrl}
+                  alt=""
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 4,
+                    objectFit: 'cover',
+                    display: 'block',
+                    flexShrink: 0,
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 4,
+                    backgroundColor: '#E0E0E0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <circle cx="18" cy="6" r="3" fill="#9A9A9A" />
+                    <path d="M2 24L10 10h4l8-6v20H2z" fill="#B0B0B0" />
+                  </svg>
+                </div>
+              )}
+              <span
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: '#333333',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {att.name}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
@@ -215,71 +302,6 @@ function UserAttachmentsMultiple({ attachments }: { attachments: MessageAttachme
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {expanded &&
-        attachments.map((att, i) => (
-          <div
-            key={`${att.name}-${att.size}-${i}`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '6px 10px',
-              backgroundColor: '#F5F5F5',
-              border: '1px solid #E8E8E8',
-              borderRadius: '10px',
-              width: 'max-content',
-              maxWidth: '220px',
-              boxSizing: 'border-box',
-            }}
-          >
-            {att.previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- blob URL from user upload
-              <img
-                src={att.previewUrl}
-                alt=""
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 4,
-                  objectFit: 'cover',
-                  display: 'block',
-                  flexShrink: 0,
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 4,
-                  backgroundColor: '#E0E0E0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <circle cx="18" cy="6" r="3" fill="#9A9A9A" />
-                  <path d="M2 24L10 10h4l8-6v20H2z" fill="#B0B0B0" />
-                </svg>
-              </div>
-            )}
-            <span
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '13px',
-                fontWeight: 500,
-                color: '#333333',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {att.name}
-            </span>
-          </div>
-        ))}
     </div>
   );
 }
@@ -298,7 +320,7 @@ function UserFileBubble({ attachment }: { attachment: MessageAttachment }) {
         backgroundColor: '#F5F5F5',
         borderTopLeftRadius: '10px',
         borderTopRightRadius: '10px',
-        borderBottomRightRadius: '5px',
+        borderBottomRightRadius: '7px',
         borderBottomLeftRadius: '10px',
         width: 'max-content',
         maxWidth: '180px',
@@ -453,11 +475,6 @@ export function ChatMessage({
           gap: '6px',
         }}
       >
-        {attachments.length === 1 ? (
-          <UserFileBubble attachment={attachments[0]} />
-        ) : attachments.length > 1 ? (
-          <UserAttachmentsMultiple attachments={attachments} />
-        ) : null}
         {content ? (
           <div
             style={{
@@ -465,10 +482,14 @@ export function ChatMessage({
               width: 'max-content',
               maxWidth: '570px',
               background: '#F5F5F5',
-              borderTopLeftRadius: '18px',
-              borderTopRightRadius: '5px',
-              borderBottomRightRadius: '18px',
-              borderBottomLeftRadius: '18px',
+              ...(attachments.length > 0
+                ? {
+                    borderTopLeftRadius: '18px',
+                    borderTopRightRadius: '18px',
+                    borderBottomRightRadius: '7px',
+                    borderBottomLeftRadius: '18px',
+                  }
+                : { borderRadius: '18px' }),
               padding: '9px 14px',
               fontFamily: 'Inter, sans-serif',
               fontSize: '15px',
@@ -483,6 +504,11 @@ export function ChatMessage({
           >
             {content}
           </div>
+        ) : null}
+        {attachments.length === 1 ? (
+          <UserFileBubble attachment={attachments[0]} />
+        ) : attachments.length > 1 ? (
+          <UserAttachmentsMultiple attachments={attachments} />
         ) : null}
         <div
           className="flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
