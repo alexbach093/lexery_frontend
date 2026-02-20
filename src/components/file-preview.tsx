@@ -11,11 +11,11 @@ export interface FilePreviewProps {
   onRemove: () => void;
 }
 
-const THUMBNAIL_SIZE = 36;
-const THUMBNAIL_RADIUS = 5;
-const CARD_RADIUS = 8;
+const THUMBNAIL_SIZE = 28;
+const THUMBNAIL_RADIUS = 4;
+const CARD_RADIUS = 6;
 /** Fixed max width so the pill doesn’t stretch; right side stays clear of AI space edge (Perplexity-style). */
-const CARD_MAX_WIDTH = 320;
+const CARD_MAX_WIDTH = 240;
 
 /** Human-readable file size (e.g. 20.4 KB, 1.2 MB) with one decimal place. */
 export function formatFileSize(bytes: number): string {
@@ -39,8 +39,8 @@ function isImageOrSvg(file: File): boolean {
 function PlaceholderIcon() {
   return (
     <svg
-      width="20"
-      height="20"
+      width="16"
+      height="16"
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -85,9 +85,9 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
-        padding: '8px 12px',
-        minHeight: '48px',
+        gap: '8px',
+        padding: '6px 10px',
+        minHeight: '38px',
         backgroundColor: '#EBEBEB',
         borderRadius: CARD_RADIUS,
         width: 'fit-content',
@@ -143,9 +143,9 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
           style={{
             fontFamily: 'Inter, sans-serif',
             fontWeight: 600,
-            fontSize: '13px',
-            lineHeight: '18px',
-            letterSpacing: '0.13px',
+            fontSize: '12px',
+            lineHeight: '16px',
+            letterSpacing: '0.12px',
             color: '#333333',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -158,9 +158,9 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
           style={{
             fontFamily: 'Inter, sans-serif',
             fontWeight: 400,
-            fontSize: '11px',
-            lineHeight: '15px',
-            letterSpacing: '0.11px',
+            fontSize: '10px',
+            lineHeight: '14px',
+            letterSpacing: '0.1px',
             color: '#888888',
           }}
         >
@@ -176,8 +176,8 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: '22px',
-          height: '22px',
+          width: '18px',
+          height: '18px',
           border: 'none',
           background: 'transparent',
           cursor: 'pointer',
@@ -189,8 +189,8 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
         aria-label="Видалити файл"
       >
         <svg
-          width="12"
-          height="12"
+          width="10"
+          height="10"
           viewBox="0 0 14 14"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"

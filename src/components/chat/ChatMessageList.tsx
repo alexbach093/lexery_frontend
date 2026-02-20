@@ -44,6 +44,7 @@ export function ChatMessageList({
           content={msg.content}
           timestamp={msg.timestamp}
           suggestions={msg.suggestions}
+          attachments={msg.attachments}
           onSuggestionClick={onSuggestionClick}
         />
       ))}

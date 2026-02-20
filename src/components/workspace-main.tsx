@@ -17,9 +17,9 @@ interface WorkspaceMainProps {
 /** AI box on main workspace (greeting screen) — більший. */
 const HOME_TEXTAREA_MIN_HEIGHT = 82;
 const HOME_TEXTAREA_MAX_HEIGHT = 240;
-/** AI box in chat (sticky) — ширина узгоджена з контентом чату. */
+/** AI box in chat (sticky) — ширина узгоджена з контентом чату; поле росте вгору при багаторядковому вводі. */
 const CHAT_TEXTAREA_MIN_HEIGHT = 30;
-const CHAT_TEXTAREA_MAX_HEIGHT = 30;
+const CHAT_TEXTAREA_MAX_HEIGHT = 120;
 const CHAT_INPUT_MAX_WIDTH = 738;
 
 /** One attached file and its object URL for preview (revoked on remove). */
@@ -47,10 +47,21 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isEmpty = value.trim().length === 0;
   const hasMessages = messages.length > 0;
+  /** У чаті: спочатку тільки іконка міняється, потім (після затримки) текст і розмір. */
+  const [tipsButtonCompact, setTipsButtonCompact] = useState(false);
 
   useEffect(() => {
     onReady?.();
   }, [onReady]);
+
+  useEffect(() => {
+    if (!hasMessages) {
+      const t = setTimeout(() => setTipsButtonCompact(false), 0);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setTipsButtonCompact(true), 0);
+    return () => clearTimeout(t);
+  }, [hasMessages]);
 
   const resizeTextarea = useCallback((el: HTMLTextAreaElement, isChat: boolean) => {
     el.style.height = 'auto';
@@ -63,10 +74,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
 
   const resetInput = useCallback(() => {
     setValue('');
-    setAttachedFiles((prev) => {
-      prev.forEach((p) => p.previewUrl && URL.revokeObjectURL(p.previewUrl));
-      return [];
-    });
+    setAttachedFiles([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = `${CHAT_TEXTAREA_MIN_HEIGHT}px`;
       textareaRef.current.style.overflowY = 'hidden';
@@ -76,8 +84,23 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   const handleSend = useCallback(() => {
     const text = value.trim();
     if (!text && attachedFiles.length === 0) return;
-    const userContent = text || '(файл прикріплено)';
-    setMessages((prev) => [...prev, { id: generateId(), role: 'user', content: userContent }]);
+    const attachments =
+      attachedFiles.length > 0
+        ? attachedFiles.map((a) => ({
+            name: a.file.name,
+            size: a.file.size,
+            previewUrl: a.previewUrl,
+          }))
+        : undefined;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: generateId(),
+        role: 'user',
+        content: text || '',
+        attachments,
+      },
+    ]);
     resetInput();
     setIsAssistantTyping(true);
     // TODO: replace mock response with real API call
@@ -94,7 +117,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
       ]);
       setIsAssistantTyping(false);
     }, 1500);
-  }, [value, attachedFiles.length, resetInput]);
+  }, [value, attachedFiles, resetInput]);
 
   const handleSuggestionClick = useCallback((suggestionText: string) => {
     setMessages((prev) => [...prev, { id: generateId(), role: 'user', content: suggestionText }]);
@@ -145,7 +168,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
         overflow: 'visible',
       }}
     >
-      {/* Top Bar - Поради Button */}
+      {/* Top Bar: привітання — Поради (лампочка + текст); у чаті — спочатку нова іконка, потім текст і розмір */}
       <div
         style={{
           position: 'absolute',
@@ -153,36 +176,89 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
           right: '28px',
         }}
       >
-        <button
-          style={{
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            minHeight: '33px',
-            padding: '10px',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E0E7E8',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            minWidth: '90px',
-            boxSizing: 'border-box',
-          }}
-        >
-          <Image src="/images/workspace/tips.svg" alt="" width={13} height={13} />
-          <p
+        {!hasMessages ? (
+          <button
             style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '19.6px',
-              letterSpacing: '0.14px',
-              color: '#040404',
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              minHeight: '33px',
+              padding: '10px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E7E8',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              minWidth: '90px',
+              boxSizing: 'border-box',
             }}
           >
-            Поради
-          </p>
-        </button>
+            <Image src="/images/workspace/tips.svg" alt="" width={13} height={13} />
+            <p
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 400,
+                fontSize: '14px',
+                lineHeight: '19.6px',
+                letterSpacing: '0.14px',
+                color: '#040404',
+              }}
+            >
+              Поради
+            </p>
+          </button>
+        ) : tipsButtonCompact ? (
+          <button
+            type="button"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              padding: 0,
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E7E8',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              boxSizing: 'border-box',
+            }}
+            aria-label="Поради"
+          >
+            <Image src="/images/workspace/tips-chat.svg" alt="" width={32} height={32} />
+          </button>
+        ) : (
+          <button
+            style={{
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              minHeight: '33px',
+              padding: '10px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E7E8',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              minWidth: '90px',
+              boxSizing: 'border-box',
+            }}
+          >
+            <Image src="/images/workspace/tips-chat.svg" alt="" width={32} height={32} />
+            <p
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 400,
+                fontSize: '14px',
+                lineHeight: '19.6px',
+                letterSpacing: '0.14px',
+                color: '#040404',
+              }}
+            >
+              Поради
+            </p>
+          </button>
+        )}
       </div>
 
       {/* Content: either greeting + centered input, or chat list + sticky input */}
@@ -223,26 +299,34 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               {/* Attached file preview(s) — thumbnail, name, size, remove. TODO: back-end upload will use attachedFiles when send is implemented. */}
               {attachedFiles.length > 0 && (
                 <div
+                  className="scrollbar-hidden"
                   style={{
                     display: 'flex',
-                    flexDirection: 'column',
+                    flexDirection: 'row',
+                    flexWrap: 'nowrap',
                     alignItems: 'flex-start',
                     gap: '8px',
                     marginBottom: '12px',
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
                   }}
                 >
                   {attachedFiles.map((item, index) => (
-                    <FilePreview
+                    <div
                       key={`${item.file.name}-${item.file.size}-${index}`}
-                      file={item.file}
-                      previewUrl={item.previewUrl}
-                      onRemove={() => {
-                        if (item.previewUrl) {
-                          URL.revokeObjectURL(item.previewUrl);
-                        }
-                        setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
-                      }}
-                    />
+                      style={{ flexShrink: 0 }}
+                    >
+                      <FilePreview
+                        file={item.file}
+                        previewUrl={item.previewUrl}
+                        onRemove={() => {
+                          if (item.previewUrl) {
+                            URL.revokeObjectURL(item.previewUrl);
+                          }
+                          setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+                        }}
+                      />
+                    </div>
                   ))}
                 </div>
               )}
@@ -578,7 +662,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
             <div
               style={{
                 width: `${CHAT_INPUT_MAX_WIDTH}px`,
-                height: '103px',
+                minHeight: '103px',
                 margin: '-12px auto 0',
                 backgroundColor: 'rgba(245, 246, 246, 1)',
                 borderRadius: '16px',
@@ -591,24 +675,32 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
             >
               {attachedFiles.length > 0 && (
                 <div
+                  className="scrollbar-hidden"
                   style={{
                     display: 'flex',
-                    flexDirection: 'column',
+                    flexDirection: 'row',
+                    flexWrap: 'nowrap',
                     alignItems: 'flex-start',
                     gap: '8px',
                     marginBottom: '12px',
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
                   }}
                 >
                   {attachedFiles.map((item, index) => (
-                    <FilePreview
+                    <div
                       key={`${item.file.name}-${item.file.size}-${index}`}
-                      file={item.file}
-                      previewUrl={item.previewUrl}
-                      onRemove={() => {
-                        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
-                        setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
-                      }}
-                    />
+                      style={{ flexShrink: 0 }}
+                    >
+                      <FilePreview
+                        file={item.file}
+                        previewUrl={item.previewUrl}
+                        onRemove={() => {
+                          if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+                          setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+                        }}
+                      />
+                    </div>
                   ))}
                 </div>
               )}

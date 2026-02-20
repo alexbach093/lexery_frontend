@@ -318,3 +318,12 @@ body:has([role='status'][aria-label='Loading application']) {
     opacity: 1;
   }
 }
+
+/* Horizontal scroll without visible scrollbar (гортання вправо/вліво без смуги скролу) */
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
