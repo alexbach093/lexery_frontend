@@ -42,7 +42,7 @@ export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutPro
           flexDirection: 'column',
           position: 'relative',
           backgroundColor: '#FFFFFF',
-          overflow: 'hidden',
+          overflow: 'visible',
         }}
       >
         {children}

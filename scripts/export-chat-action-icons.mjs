@@ -2,8 +2,9 @@
 /* eslint-disable no-console */
 
 /**
- * Export chat action icons from Figma — from Frame 36733 inside node 0:1912.
- * Figma: https://www.figma.com/design/IO0sKndZpfYlW5OVXoIpuC/Untitled?node-id=0-1912&m=dev
+ * Export chat action icons from Figma.
+ * Node 122:303 (node-id=122-303) — Frame 36733 with 4 icons, bolder stroke (0.9).
+ * https://www.figma.com/design/IO0sKndZpfYlW5OVXoIpuC/Untitled?node-id=122-303&m=dev
  */
 
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
@@ -29,7 +30,7 @@ function loadEnv() {
 loadEnv();
 
 const FIGMA_FILE_ID = 'IO0sKndZpfYlW5OVXoIpuC';
-const CHAT_ACTIONS_NODE_ID = '0:1912'; // node-id=0-1912 from Figma URL
+const CHAT_ACTIONS_NODE_ID = '122:303'; // node-id=122-303 — Frame 36733, bolder stroke (0.9)
 const FIGMA_TOKEN = process.env.FIGMA_TOKEN;
 
 const ICON_NAMES = ['copy', 'thumbs-up', 'thumbs-down', 'refresh'];
@@ -41,19 +42,6 @@ async function getNodeStructure() {
   });
   if (!response.ok) throw new Error(`Figma nodes API: ${response.status} ${await response.text()}`);
   return response.json();
-}
-
-/** Find first node whose name includes the given string (e.g. "36733"). */
-function findNodeByName(node, nameSubstring) {
-  if (!node) return null;
-  if (node.name && String(node.name).includes(nameSubstring)) return node;
-  if (node.children) {
-    for (const child of node.children) {
-      const found = findNodeByName(child, nameSubstring);
-      if (found) return found;
-    }
-  }
-  return null;
 }
 
 /** Get direct children of the frame that are GROUP or FRAME (one per icon). Order = left-to-right in design. */
@@ -84,36 +72,24 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('📥 Fetching chat action icons from Figma (node 0:1912, Frame 36733)...\n');
+  console.log('📥 Fetching chat action icons from Figma (node', CHAT_ACTIONS_NODE_ID + ')...\n');
 
   const data = await getNodeStructure();
   const root = data.nodes?.[CHAT_ACTIONS_NODE_ID]?.document;
   if (!root) {
-    console.error('❌ Node 0:1912 not found. Check the Figma link and node-id.');
+    console.error('❌ Node', CHAT_ACTIONS_NODE_ID, 'not found. Check the Figma link and node-id.');
     process.exit(1);
   }
 
-  const frame36733 = findNodeByName(root, '36733');
-  if (!frame36733) {
-    console.error(
-      '❌ Frame 36733 not found under node 0:1912. Check that the frame name contains "36733" in Figma.'
-    );
-    process.exit(1);
-  }
-  console.log('📋 Using frame:', frame36733.name, `(${frame36733.type})\n`);
-
-  const iconNodes = getIconGroupNodes(frame36733);
+  // Node 122:303 is Frame 36733 itself with 4 GROUP children (copy, thumbs-up, thumbs-down, refresh)
+  const iconNodes = getIconGroupNodes(root);
   const toExport = iconNodes.slice(0, 4);
   if (toExport.length === 0) {
-    console.error('❌ No GROUP/FRAME children found inside Frame 36733.');
+    console.error('❌ No GROUP/FRAME children found.');
     process.exit(1);
   }
+  console.log('📋 Using frame:', root.name, `(${root.type}), ${toExport.length} icons\n`);
   if (toExport.length < 4) {
-    console.log(
-      '📋 Icon groups in frame:',
-      iconNodes.length,
-      iconNodes.map((n) => n.name)
-    );
     console.warn('⚠️ Expected 4 icons. Exporting', toExport.length, 'groups.');
   }
 

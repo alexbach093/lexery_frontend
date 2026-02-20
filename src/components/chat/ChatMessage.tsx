@@ -52,6 +52,8 @@ function AssistantContent({ content }: { content: string }) {
             color: '#000000',
             margin: 0,
             marginBottom: i < lines.length - 1 ? '4px' : 0,
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
           }}
         >
           {parseContent(line)}
@@ -81,7 +83,7 @@ function ActionIconsRow() {
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
-        marginTop: '8px',
+        marginTop: '14px',
       }}
       role="group"
       aria-label="Дії з відповіддю"
@@ -192,13 +194,30 @@ export function ChatMessage({
   isTyping = false,
 }: ChatMessageProps) {
   if (role === 'user') {
+    const iconBtnStyle: React.CSSProperties = {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 28,
+      height: 28,
+      border: 'none',
+      background: 'transparent',
+      cursor: 'pointer',
+      padding: 0,
+      flexShrink: 0,
+      borderRadius: 6,
+    };
     return (
       <div
+        className="group"
         style={{
           alignSelf: 'flex-end',
-          width: '100%',
+          width: 'max-content',
+          maxWidth: '100%',
           display: 'flex',
-          justifyContent: 'flex-end',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: '6px',
         }}
       >
         <div
@@ -216,9 +235,34 @@ export function ChatMessage({
             letterSpacing: '0.13px',
             color: '#000000',
             boxSizing: 'border-box',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
           }}
         >
           {content}
+        </div>
+        <div
+          className="flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+          style={{ flexShrink: 0, marginLeft: '-4px' }}
+          role="group"
+          aria-label="Дії з повідомленням"
+        >
+          <button
+            type="button"
+            style={iconBtnStyle}
+            aria-label="Копіювати"
+            className="rounded hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+          >
+            <Image src="/images/chat/copy.svg" alt="" width={14} height={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            style={iconBtnStyle}
+            aria-label="Редагувати"
+            className="rounded hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+          >
+            <Image src="/images/chat/edit.svg" alt="" width={14} height={14} aria-hidden />
+          </button>
         </div>
       </div>
     );

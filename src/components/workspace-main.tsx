@@ -20,7 +20,7 @@ const HOME_TEXTAREA_MAX_HEIGHT = 240;
 /** AI box in chat (sticky) — ширина узгоджена з контентом чату. */
 const CHAT_TEXTAREA_MIN_HEIGHT = 30;
 const CHAT_TEXTAREA_MAX_HEIGHT = 30;
-const CHAT_INPUT_MAX_WIDTH = 688;
+const CHAT_INPUT_MAX_WIDTH = 738;
 
 /** One attached file and its object URL for preview (revoked on remove). */
 interface AttachedFile {
@@ -137,12 +137,12 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
       className={className}
       style={{
         height: '100%',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: 'transparent',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
         flex: 1,
-        overflow: 'hidden',
+        overflow: 'visible',
       }}
     >
       {/* Top Bar - Поради Button */}
@@ -548,9 +548,13 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               flex: 1,
               minHeight: 0,
               overflowY: 'auto',
+              overflowX: 'visible',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              position: 'relative',
+              zIndex: 0,
+              backgroundColor: 'transparent',
             }}
           >
             <ChatMessageList
@@ -563,16 +567,20 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
             style={{
               position: 'sticky',
               bottom: 0,
-              padding: '13px 20px',
-              backgroundColor: '#FFFFFF',
+              padding: '13px 20px 24px',
+              backgroundColor: 'rgba(0, 0, 0, 0)',
+              borderTopLeftRadius: '20px',
+              borderTopRightRadius: '20px',
+              zIndex: 10,
+              isolation: 'isolate',
             }}
           >
             <div
               style={{
                 width: `${CHAT_INPUT_MAX_WIDTH}px`,
                 height: '103px',
-                margin: '0 auto',
-                backgroundColor: '#F5F6F6',
+                margin: '-12px auto 0',
+                backgroundColor: 'rgba(245, 246, 246, 1)',
                 borderRadius: '16px',
                 padding: '13px 13px 8px 13px',
                 boxSizing: 'border-box',

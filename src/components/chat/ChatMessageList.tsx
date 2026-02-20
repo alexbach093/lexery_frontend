@@ -31,7 +31,7 @@ export function ChatMessageList({
         flexDirection: 'column',
         gap: '72px',
         padding: '52px 0 138px 0',
-        maxWidth: '688px',
+        maxWidth: '738px',
         margin: '0 auto',
         width: '100%',
         boxSizing: 'border-box',
