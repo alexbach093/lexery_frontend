@@ -52,8 +52,8 @@ function AssistantContent({ content }: { content: string }) {
           style={{
             fontFamily: 'Inter, sans-serif',
             fontWeight: 400,
-            fontSize: '15px',
-            lineHeight: '21px',
+            fontSize: '14px',
+            lineHeight: '20px',
             letterSpacing: '0.13px',
             color: '#000000',
             margin: 0,
@@ -69,19 +69,70 @@ function AssistantContent({ content }: { content: string }) {
   );
 }
 
+type TooltipId = 'copy' | 'thumbs-up' | 'thumbs-down' | 'refresh' | null;
+
 /** Action icons row below AI response — copy, like, dislike, regenerate, "Переглянути процес". Icons from public/images/chat/*.svg */
 function ActionIconsRow() {
-  const iconSize = 14;
+  const iconSize = 16;
+  const size = 32; // square clickable area (circle = border-radius on container)
+  const [tooltipVisibleId, setTooltipVisibleId] = useState<TooltipId>(null);
+  const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const halfSecondTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoveredIdRef = useRef<TooltipId>(null);
+  const hasWaitedEnoughRef = useRef(false);
+
+  const showTooltipAfterDelay = (id: TooltipId) => {
+    hoveredIdRef.current = id;
+    setTooltipVisibleId(null);
+    if (hasWaitedEnoughRef.current) {
+      setTooltipVisibleId(id);
+      return;
+    }
+    if (!tooltipTimeoutRef.current) {
+      tooltipTimeoutRef.current = setTimeout(() => {
+        setTooltipVisibleId(hoveredIdRef.current);
+        tooltipTimeoutRef.current = null;
+      }, 1000);
+      halfSecondTimeoutRef.current = setTimeout(() => {
+        hasWaitedEnoughRef.current = true;
+        halfSecondTimeoutRef.current = null;
+      }, 500);
+    }
+  };
+  const hideTooltip = () => {
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    if (halfSecondTimeoutRef.current) {
+      clearTimeout(halfSecondTimeoutRef.current);
+      halfSecondTimeoutRef.current = null;
+    }
+    hasWaitedEnoughRef.current = false;
+    hoveredIdRef.current = null;
+    setTooltipVisibleId(null);
+  };
+
+  useEffect(
+    () => () => {
+      if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
+      if (halfSecondTimeoutRef.current) clearTimeout(halfSecondTimeoutRef.current);
+    },
+    []
+  );
+
   const btnStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 24,
-    height: 24,
-    border: 'none',
-    background: 'transparent',
-    cursor: 'pointer',
+    width: size,
+    height: size,
     padding: 0,
+    cursor: 'pointer',
+    border: 'none',
+    borderRadius: 9999,
+    background: 'transparent',
+    transition: 'background-color 150ms ease',
   };
   return (
     <div
@@ -94,51 +145,178 @@ function ActionIconsRow() {
       role="group"
       aria-label="Дії з відповіддю"
     >
-      <button type="button" style={btnStyle} aria-label="Копіювати">
-        <Image src="/images/chat/copy.svg" alt="" width={iconSize} height={iconSize} aria-hidden />
-      </button>
-      <button type="button" style={btnStyle} aria-label="Подобається">
-        <Image
-          src="/images/chat/thumbs-up.svg"
-          alt=""
-          width={iconSize}
-          height={iconSize}
-          aria-hidden
-        />
-      </button>
-      <button type="button" style={btnStyle} aria-label="Не подобається">
-        <Image
-          src="/images/chat/thumbs-down.svg"
-          alt=""
-          width={iconSize}
-          height={iconSize}
-          aria-hidden
-        />
-      </button>
-      <button type="button" style={btnStyle} aria-label="Згенерувати знову">
-        <Image
-          src="/images/chat/refresh.svg"
-          alt=""
-          width={iconSize}
-          height={iconSize}
-          aria-hidden
-        />
-      </button>
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+        onMouseLeave={hideTooltip}
+        onBlurCapture={hideTooltip}
+      >
+        <div
+          className="chat-action-tooltip-anchor"
+          onMouseEnter={() => showTooltipAfterDelay('copy')}
+          onFocusCapture={() => showTooltipAfterDelay('copy')}
+        >
+          <button
+            type="button"
+            style={btnStyle}
+            className="chat-action-btn chat-action-btn--circle"
+            aria-label="Копіювати"
+            aria-describedby="chat-action-tooltip-copy"
+          >
+            <Image
+              src="/images/chat/copy.svg"
+              alt=""
+              width={iconSize}
+              height={iconSize}
+              aria-hidden
+              className="chat-action-icon"
+            />
+          </button>
+          <span
+            id="chat-action-tooltip-copy"
+            className="chat-action-tooltip"
+            role="tooltip"
+            style={{
+              opacity: tooltipVisibleId === 'copy' ? 1 : 0,
+              visibility: tooltipVisibleId === 'copy' ? 'visible' : 'hidden',
+              transform:
+                tooltipVisibleId === 'copy'
+                  ? 'translateX(-50%) translateY(0)'
+                  : 'translateX(-50%) translateY(4px)',
+            }}
+          >
+            Копіювати
+          </span>
+        </div>
+        <div
+          className="chat-action-tooltip-anchor"
+          onMouseEnter={() => showTooltipAfterDelay('thumbs-up')}
+          onFocusCapture={() => showTooltipAfterDelay('thumbs-up')}
+        >
+          <button
+            type="button"
+            style={btnStyle}
+            className="chat-action-btn chat-action-btn--circle"
+            aria-label="Подобається"
+            aria-describedby="chat-action-tooltip-thumbs-up"
+          >
+            <Image
+              src="/images/chat/thumbs-up.svg"
+              alt=""
+              width={iconSize}
+              height={iconSize}
+              aria-hidden
+              className="chat-action-icon"
+            />
+          </button>
+          <span
+            id="chat-action-tooltip-thumbs-up"
+            className="chat-action-tooltip"
+            role="tooltip"
+            style={{
+              opacity: tooltipVisibleId === 'thumbs-up' ? 1 : 0,
+              visibility: tooltipVisibleId === 'thumbs-up' ? 'visible' : 'hidden',
+              transform:
+                tooltipVisibleId === 'thumbs-up'
+                  ? 'translateX(-50%) translateY(0)'
+                  : 'translateX(-50%) translateY(4px)',
+            }}
+          >
+            Подобається
+          </span>
+        </div>
+        <div
+          className="chat-action-tooltip-anchor"
+          onMouseEnter={() => showTooltipAfterDelay('thumbs-down')}
+          onFocusCapture={() => showTooltipAfterDelay('thumbs-down')}
+        >
+          <button
+            type="button"
+            style={btnStyle}
+            className="chat-action-btn chat-action-btn--circle"
+            aria-label="Не подобається"
+            aria-describedby="chat-action-tooltip-thumbs-down"
+          >
+            <Image
+              src="/images/chat/thumbs-down.svg"
+              alt=""
+              width={iconSize}
+              height={iconSize}
+              aria-hidden
+              className="chat-action-icon"
+            />
+          </button>
+          <span
+            id="chat-action-tooltip-thumbs-down"
+            className="chat-action-tooltip"
+            role="tooltip"
+            style={{
+              opacity: tooltipVisibleId === 'thumbs-down' ? 1 : 0,
+              visibility: tooltipVisibleId === 'thumbs-down' ? 'visible' : 'hidden',
+              transform:
+                tooltipVisibleId === 'thumbs-down'
+                  ? 'translateX(-50%) translateY(0)'
+                  : 'translateX(-50%) translateY(4px)',
+            }}
+          >
+            Не подобається
+          </span>
+        </div>
+        <div
+          className="chat-action-tooltip-anchor"
+          onMouseEnter={() => showTooltipAfterDelay('refresh')}
+          onFocusCapture={() => showTooltipAfterDelay('refresh')}
+        >
+          <button
+            type="button"
+            style={btnStyle}
+            className="chat-action-btn chat-action-btn--circle"
+            aria-label="Згенерувати знову"
+            aria-describedby="chat-action-tooltip-refresh"
+          >
+            <Image
+              src="/images/chat/refresh.svg"
+              alt=""
+              width={iconSize}
+              height={iconSize}
+              aria-hidden
+              className="chat-action-icon"
+            />
+          </button>
+          <span
+            id="chat-action-tooltip-refresh"
+            className="chat-action-tooltip"
+            role="tooltip"
+            style={{
+              opacity: tooltipVisibleId === 'refresh' ? 1 : 0,
+              visibility: tooltipVisibleId === 'refresh' ? 'visible' : 'hidden',
+              transform:
+                tooltipVisibleId === 'refresh'
+                  ? 'translateX(-50%) translateY(0)'
+                  : 'translateX(-50%) translateY(4px)',
+            }}
+          >
+            Згенерувати знову
+          </span>
+        </div>
+      </div>
       <button
         type="button"
         style={{
           ...btnStyle,
           width: 'auto',
           height: 'auto',
-          padding: '2px 0',
+          padding: '4px 12px',
           marginLeft: '12px',
+          borderRadius: 6,
           fontFamily: 'Inter, sans-serif',
-          fontSize: '14px',
+          fontSize: '13px',
           fontWeight: 400,
           color: '#9A9A9A',
+          backgroundColor: 'transparent',
         }}
+        className="chat-action-btn chat-action-btn--no-highlight hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
         aria-label="Переглянути процес"
-        className="hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+        title="Переглянути процес"
       >
         Переглянути процес
       </button>
@@ -453,18 +631,20 @@ export function ChatMessage({
   }, []);
 
   if (role === 'user') {
+    const iconSize = 16;
     const iconBtnStyle: React.CSSProperties = {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      width: 28,
-      height: 28,
-      border: 'none',
-      background: 'transparent',
-      cursor: 'pointer',
+      width: 32,
+      height: 32,
       padding: 0,
+      cursor: 'pointer',
       flexShrink: 0,
-      borderRadius: 6,
+      border: 'none',
+      borderRadius: 9999,
+      background: 'transparent',
+      transition: 'background-color 150ms ease',
     };
     return (
       <div
@@ -504,9 +684,9 @@ export function ChatMessage({
                   : { borderRadius: '18px' }),
               padding: '9px 14px',
               fontFamily: 'Inter, sans-serif',
-              fontSize: '15px',
+              fontSize: '14px',
               fontWeight: 400,
-              lineHeight: '21px',
+              lineHeight: '20px',
               letterSpacing: '0.13px',
               color: '#000000',
               boxSizing: 'border-box',
@@ -527,18 +707,34 @@ export function ChatMessage({
           <button
             type="button"
             style={iconBtnStyle}
+            className="chat-action-btn chat-action-btn--circle focus-visible:outline-none"
             aria-label="Копіювати"
-            className="rounded hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+            title="Копіювати"
           >
-            <Image src="/images/chat/copy.svg" alt="" width={14} height={14} aria-hidden />
+            <Image
+              src="/images/chat/copy.svg"
+              alt=""
+              width={iconSize}
+              height={iconSize}
+              aria-hidden
+              className="chat-action-icon"
+            />
           </button>
           <button
             type="button"
             style={iconBtnStyle}
+            className="chat-action-btn chat-action-btn--circle focus-visible:outline-none"
             aria-label="Редагувати"
-            className="rounded hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+            title="Редагувати"
           >
-            <Image src="/images/chat/edit.svg" alt="" width={14} height={14} aria-hidden />
+            <Image
+              src="/images/chat/edit.svg"
+              alt=""
+              width={iconSize}
+              height={iconSize}
+              aria-hidden
+              className="chat-action-icon"
+            />
           </button>
         </div>
       </div>
