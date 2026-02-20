@@ -196,7 +196,7 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden="true"
         >
-          <path d="M3 3l8 8M11 3l-8 8" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M3 3l8 8M11 3l-8 8" stroke="#000000" strokeWidth="1" strokeLinecap="round" />
         </svg>
       </button>
     </div>

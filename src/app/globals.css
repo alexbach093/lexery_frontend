@@ -281,25 +281,31 @@
 }
 
 .workspace-icon-btn {
-  transition:
-    background-color 0.12s ease,
-    transform 0.12s ease;
+  transform-origin: center;
+  transition: transform 0.12s ease;
 }
 .workspace-icon-btn svg {
-  transition: filter 0.12s ease;
+  transform-origin: center;
+  transition:
+    filter 0.12s ease,
+    transform 0.12s ease;
 }
 
 .workspace-icon-btn:hover {
-  background-color: rgba(0, 0, 0, 0.07);
   transform: scale(1.15);
 }
 .workspace-icon-btn:hover svg {
   filter: brightness(0) saturate(100%) invert(0.4);
 }
 
-.workspace-icon-btn:active {
-  background-color: rgba(0, 0, 0, 0.15);
+.workspace-icon-btn:active svg {
   transform: scale(0.92);
+}
+
+/* Кнопка розгортання файлів — без scale при hover/active */
+button.workspace-icon-btn--no-hover-scale:hover,
+button.workspace-icon-btn--no-hover-scale:active {
+  transform: none !important;
 }
 
 .workspace-send-btn:not(:disabled) {
@@ -319,6 +325,11 @@
 }
 
 .workspace-send-btn:disabled:focus-visible {
+  outline: none;
+}
+
+/* Панель файлів: без обводки при фокусі */
+.workspace-files-panel-field:focus {
   outline: none;
 }
 

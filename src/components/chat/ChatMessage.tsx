@@ -70,6 +70,7 @@ function AssistantContent({ content }: { content: string }) {
 }
 
 type TooltipId = 'copy' | 'thumbs-up' | 'thumbs-down' | 'refresh' | null;
+type UserMessageTooltipId = 'copy' | 'edit' | null;
 
 /** Action icons row below AI response — copy, like, dislike, regenerate, "Переглянути процес". Icons from public/images/chat/*.svg */
 function ActionIconsRow() {
@@ -619,6 +620,12 @@ export function ChatMessage({
   isTyping = false,
 }: ChatMessageProps) {
   const attachmentsRef = useRef(attachments);
+  const [userTooltipVisibleId, setUserTooltipVisibleId] = useState<UserMessageTooltipId>(null);
+  const userTooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userHalfSecondTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userHoveredIdRef = useRef<UserMessageTooltipId>(null);
+  const userHasWaitedEnoughRef = useRef(false);
+
   useEffect(() => {
     attachmentsRef.current = attachments;
   }, [attachments]);
@@ -629,6 +636,13 @@ export function ChatMessage({
       });
     };
   }, []);
+  useEffect(
+    () => () => {
+      if (userTooltipTimeoutRef.current) clearTimeout(userTooltipTimeoutRef.current);
+      if (userHalfSecondTimeoutRef.current) clearTimeout(userHalfSecondTimeoutRef.current);
+    },
+    []
+  );
 
   if (role === 'user') {
     const iconSize = 16;
@@ -645,6 +659,37 @@ export function ChatMessage({
       borderRadius: 9999,
       background: 'transparent',
       transition: 'background-color 150ms ease',
+    };
+    const showUserTooltipAfterDelay = (id: UserMessageTooltipId) => {
+      userHoveredIdRef.current = id;
+      setUserTooltipVisibleId(null);
+      if (userHasWaitedEnoughRef.current) {
+        setUserTooltipVisibleId(id);
+        return;
+      }
+      if (!userTooltipTimeoutRef.current) {
+        userTooltipTimeoutRef.current = setTimeout(() => {
+          setUserTooltipVisibleId(userHoveredIdRef.current);
+          userTooltipTimeoutRef.current = null;
+        }, 1000);
+        userHalfSecondTimeoutRef.current = setTimeout(() => {
+          userHasWaitedEnoughRef.current = true;
+          userHalfSecondTimeoutRef.current = null;
+        }, 500);
+      }
+    };
+    const hideUserTooltip = () => {
+      if (userTooltipTimeoutRef.current) {
+        clearTimeout(userTooltipTimeoutRef.current);
+        userTooltipTimeoutRef.current = null;
+      }
+      if (userHalfSecondTimeoutRef.current) {
+        clearTimeout(userHalfSecondTimeoutRef.current);
+        userHalfSecondTimeoutRef.current = null;
+      }
+      userHasWaitedEnoughRef.current = false;
+      userHoveredIdRef.current = null;
+      setUserTooltipVisibleId(null);
     };
     return (
       <div
@@ -704,38 +749,86 @@ export function ChatMessage({
           role="group"
           aria-label="Дії з повідомленням"
         >
-          <button
-            type="button"
-            style={iconBtnStyle}
-            className="chat-action-btn chat-action-btn--circle focus-visible:outline-none"
-            aria-label="Копіювати"
-            title="Копіювати"
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+            onMouseLeave={hideUserTooltip}
+            onBlurCapture={hideUserTooltip}
           >
-            <Image
-              src="/images/chat/copy.svg"
-              alt=""
-              width={iconSize}
-              height={iconSize}
-              aria-hidden
-              className="chat-action-icon"
-            />
-          </button>
-          <button
-            type="button"
-            style={iconBtnStyle}
-            className="chat-action-btn chat-action-btn--circle focus-visible:outline-none"
-            aria-label="Редагувати"
-            title="Редагувати"
-          >
-            <Image
-              src="/images/chat/edit.svg"
-              alt=""
-              width={iconSize}
-              height={iconSize}
-              aria-hidden
-              className="chat-action-icon"
-            />
-          </button>
+            <div
+              className="chat-action-tooltip-anchor"
+              onMouseEnter={() => showUserTooltipAfterDelay('copy')}
+              onFocusCapture={() => showUserTooltipAfterDelay('copy')}
+            >
+              <button
+                type="button"
+                style={iconBtnStyle}
+                className="chat-action-btn chat-action-btn--circle focus-visible:outline-none"
+                aria-label="Копіювати"
+                aria-describedby="user-msg-tooltip-copy"
+              >
+                <Image
+                  src="/images/chat/copy.svg"
+                  alt=""
+                  width={iconSize}
+                  height={iconSize}
+                  aria-hidden
+                  className="chat-action-icon"
+                />
+              </button>
+              <span
+                id="user-msg-tooltip-copy"
+                className="chat-action-tooltip"
+                role="tooltip"
+                style={{
+                  opacity: userTooltipVisibleId === 'copy' ? 1 : 0,
+                  visibility: userTooltipVisibleId === 'copy' ? 'visible' : 'hidden',
+                  transform:
+                    userTooltipVisibleId === 'copy'
+                      ? 'translateX(-50%) translateY(0)'
+                      : 'translateX(-50%) translateY(4px)',
+                }}
+              >
+                Копіювати
+              </span>
+            </div>
+            <div
+              className="chat-action-tooltip-anchor"
+              onMouseEnter={() => showUserTooltipAfterDelay('edit')}
+              onFocusCapture={() => showUserTooltipAfterDelay('edit')}
+            >
+              <button
+                type="button"
+                style={iconBtnStyle}
+                className="chat-action-btn chat-action-btn--circle focus-visible:outline-none"
+                aria-label="Редагувати"
+                aria-describedby="user-msg-tooltip-edit"
+              >
+                <Image
+                  src="/images/chat/edit.svg"
+                  alt=""
+                  width={iconSize}
+                  height={iconSize}
+                  aria-hidden
+                  className="chat-action-icon"
+                />
+              </button>
+              <span
+                id="user-msg-tooltip-edit"
+                className="chat-action-tooltip"
+                role="tooltip"
+                style={{
+                  opacity: userTooltipVisibleId === 'edit' ? 1 : 0,
+                  visibility: userTooltipVisibleId === 'edit' ? 'visible' : 'hidden',
+                  transform:
+                    userTooltipVisibleId === 'edit'
+                      ? 'translateX(-50%) translateY(0)'
+                      : 'translateX(-50%) translateY(4px)',
+                }}
+              >
+                Редагувати
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     );
