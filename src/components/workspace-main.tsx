@@ -32,6 +32,205 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
+/** Формати файлів для фільтра — кнопки-чіпи, множинний вибір */
+const FILE_FORMAT_OPTIONS: { id: string; label: string; exts: string[]; mime?: string }[] = [
+  { id: 'jpeg', label: 'JPEG', exts: ['jpg', 'jpeg'], mime: 'image/jpeg' },
+  { id: 'png', label: 'PNG', exts: ['png'], mime: 'image/png' },
+  { id: 'gif', label: 'GIF', exts: ['gif'], mime: 'image/gif' },
+  { id: 'webp', label: 'WebP', exts: ['webp'], mime: 'image/webp' },
+  { id: 'svg', label: 'SVG', exts: ['svg'], mime: 'image/svg' },
+  { id: 'pdf', label: 'PDF', exts: ['pdf'], mime: 'application/pdf' },
+  { id: 'doc', label: 'DOC', exts: ['doc'], mime: 'application/msword' },
+  {
+    id: 'docx',
+    label: 'DOCX',
+    exts: ['docx'],
+    mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  },
+  { id: 'txt', label: 'TXT', exts: ['txt'], mime: 'text/plain' },
+  { id: 'xls', label: 'XLS', exts: ['xls'], mime: 'application/vnd.ms-excel' },
+  {
+    id: 'xlsx',
+    label: 'XLSX',
+    exts: ['xlsx'],
+    mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  },
+  { id: 'ppt', label: 'PPT', exts: ['ppt'], mime: 'application/vnd.ms-powerpoint' },
+  {
+    id: 'pptx',
+    label: 'PPTX',
+    exts: ['pptx'],
+    mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  },
+];
+
+function getFileFormatId(file: File): string | null {
+  const name = file.name.toLowerCase();
+  const ext = name.includes('.') ? name.replace(/.*\./, '').replace(/\?.*$/, '') : '';
+  for (const opt of FILE_FORMAT_OPTIONS) {
+    if (opt.exts.some((e) => e === ext) || (opt.mime && file.type === opt.mime)) return opt.id;
+  }
+  return null;
+}
+
+/** Чіпи форматів (внутрішній контент для попапу). */
+function FileFormatFilterChips({
+  selectedFormats,
+  onChange,
+  compact,
+}: {
+  selectedFormats: Set<string>;
+  onChange: (set: Set<string>) => void;
+  compact?: boolean;
+}) {
+  const toggle = (id: string) => {
+    onChange(
+      (() => {
+        const next = new Set(selectedFormats);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      })()
+    );
+  };
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: compact ? '6px' : '8px',
+      }}
+      role="group"
+      aria-label="Фільтр за форматом файлу"
+    >
+      {FILE_FORMAT_OPTIONS.map((opt) => {
+        const active = selectedFormats.has(opt.id);
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => toggle(opt.id)}
+            aria-pressed={active}
+            style={{
+              padding: compact ? '6px 10px' : '8px 12px',
+              borderRadius: '6px',
+              border: `1px solid ${active ? '#2A2A2A' : '#E0E0E0'}`,
+              backgroundColor: active ? '#2A2A2A' : '#fff',
+              color: active ? '#fff' : '#2A2A2A',
+              fontSize: compact ? '12px' : '13px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Кнопка «Фільтр»: відкриває попап з чіпами форматів (зручно, не займає місце в рядку). */
+function FileFilterButton({
+  selectedFormats,
+  onChange,
+}: {
+  selectedFormats: Set<string>;
+  onChange: (set: Set<string>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  const count = selectedFormats.size;
+  const label = count > 0 ? `Фільтр (${count})` : 'Фільтр';
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        type="button"
+        className="workspace-files-panel-field"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-label="Відкрити фільтр за форматом файлу"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          padding: '10px 12px',
+          borderRadius: '8px',
+          border: '1px solid #E0E0E0',
+          backgroundColor: '#fff',
+          fontSize: '14px',
+          color: '#2A2A2A',
+          cursor: 'pointer',
+          minWidth: '100px',
+          boxSizing: 'border-box',
+          textAlign: 'left',
+        }}
+      >
+        <span>{label}</span>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            flexShrink: 0,
+            transform: open ? 'rotate(180deg)' : 'none',
+            transition: 'transform 0.2s ease',
+          }}
+          aria-hidden
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Фільтр за форматом файлу"
+          style={{
+            position: 'absolute',
+            top: '100%',
+            right: 0,
+            left: 'auto',
+            marginTop: '6px',
+            padding: '10px 12px',
+            borderRadius: '12px',
+            backgroundColor: '#fff',
+            border: '1px solid #E8E8E8',
+            zIndex: 50,
+            minWidth: '280px',
+            maxWidth: '360px',
+          }}
+        >
+          <FileFormatFilterChips selectedFormats={selectedFormats} onChange={onChange} compact />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * Workspace Main Content - AI Chat Interface
  *
@@ -57,42 +256,27 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   /** Кнопка розгортання залишається в DOM під час анімації згортання (0.4s). */
   const [expandButtonClosing, setExpandButtonClosing] = useState(false);
   const expandCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** Розгорнутий вид: фільтр за типом файлу. */
-  const [fileTypeFilter, setFileTypeFilter] = useState<'all' | 'image' | 'document' | 'other'>(
-    'all'
-  );
+  /** Розгорнутий вид: множина обраних форматів (порожня = показувати всі файли). */
+  const [selectedFormats, setSelectedFormats] = useState<Set<string>>(new Set());
   /** Розгорнутий вид: пошук за назвою файлу. */
   const [fileSearchQuery, setFileSearchQuery] = useState('');
-
-  const getFileCategory = useCallback((file: File): 'image' | 'document' | 'other' => {
-    if (
-      file.type.startsWith('image/') ||
-      /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/i.test(file.name)
-    )
-      return 'image';
-    if (
-      /\.(pdf|docx?|xlsx?|pptx?|txt|rtf|odt|ods|odp)(\?|$)/i.test(file.name) ||
-      file.type.includes('pdf') ||
-      file.type.includes('document') ||
-      file.type.includes('text')
-    )
-      return 'document';
-    return 'other';
-  }, []);
+  /** Висота області з файлами без фільтра — зберігаємо, щоб при фільтрі/пошуку розмір не змінювався. */
+  const [savedFileListHeight, setSavedFileListHeight] = useState<number | null>(null);
+  const fileListScrollRef = useRef<HTMLDivElement>(null);
 
   const filteredAttachedFiles = useMemo(() => {
     const q = fileSearchQuery.trim().toLowerCase();
     return attachedFiles
       .map((item, originalIndex) => ({ item, originalIndex }))
       .filter(({ item }) => {
-        if (fileTypeFilter !== 'all') {
-          const cat = getFileCategory(item.file);
-          if (fileTypeFilter !== cat) return false;
+        if (selectedFormats.size > 0) {
+          const formatId = getFileFormatId(item.file);
+          if (formatId === null || !selectedFormats.has(formatId)) return false;
         }
         if (q && !item.file.name.toLowerCase().includes(q)) return false;
         return true;
       });
-  }, [attachedFiles, fileTypeFilter, fileSearchQuery, getFileCategory]);
+  }, [attachedFiles, selectedFormats, fileSearchQuery]);
 
   useEffect(() => {
     onReady?.();
@@ -113,7 +297,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
         setFilesOverflow(false);
         setFilesExpanded(false);
         setExpandButtonClosing(false);
-        setFileTypeFilter('all');
+        setSelectedFormats(new Set());
         setFileSearchQuery('');
       });
       return;
@@ -128,6 +312,24 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     ro.observe(el);
     return () => ro.disconnect();
   }, [attachedFiles.length, filesExpanded]);
+
+  /** Коли панель відкрита і немає фільтра/пошуку — зберігаємо висоту області з файлами. */
+  useEffect(() => {
+    if (!filesExpanded || selectedFormats.size > 0 || fileSearchQuery.trim()) return;
+    const el = fileListScrollRef.current;
+    if (!el) return;
+    const id = requestAnimationFrame(() => {
+      const h = el.clientHeight;
+      if (h > 0) setSavedFileListHeight(h);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [
+    filesExpanded,
+    selectedFormats.size,
+    fileSearchQuery,
+    attachedFiles.length,
+    filteredAttachedFiles.length,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -397,70 +599,6 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     marginBottom: '12px',
                   }}
                 >
-                  <div
-                    style={{
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      flex: 1,
-                      minWidth: 0,
-                    }}
-                  >
-                    <select
-                      className="workspace-files-panel-field"
-                      value={fileTypeFilter}
-                      onChange={(e) =>
-                        setFileTypeFilter(e.target.value as 'all' | 'image' | 'document' | 'other')
-                      }
-                      style={{
-                        padding: '10px 36px 10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid #E0E0E0',
-                        backgroundColor: '#fff',
-                        fontSize: '14px',
-                        color: '#2A2A2A',
-                        cursor: 'pointer',
-                        boxSizing: 'border-box',
-                        appearance: 'none',
-                        WebkitAppearance: 'none',
-                        MozAppearance: 'none',
-                        width: '100%',
-                        minWidth: '120px',
-                      }}
-                      aria-label="Фільтр за типом файлу"
-                    >
-                      <option value="all">Усі</option>
-                      <option value="image">Зображення</option>
-                      <option value="document">Документи</option>
-                      <option value="other">Інше</option>
-                    </select>
-                    <span
-                      aria-hidden
-                      style={{
-                        position: 'absolute',
-                        right: '14px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        pointerEvents: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M6 9l6 6 6-6" />
-                      </svg>
-                    </span>
-                  </div>
                   <input
                     type="search"
                     className="workspace-files-panel-field"
@@ -468,8 +606,8 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     value={fileSearchQuery}
                     onChange={(e) => setFileSearchQuery(e.target.value)}
                     style={{
-                      flex: 1,
-                      minWidth: 0,
+                      width: '220px',
+                      maxWidth: '100%',
                       padding: '10px 12px',
                       borderRadius: '8px',
                       border: '1px solid #E0E0E0',
@@ -479,8 +617,15 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     }}
                     aria-label="Пошук файлів"
                   />
+                  <div style={{ marginLeft: 'auto' }}>
+                    <FileFilterButton
+                      selectedFormats={selectedFormats}
+                      onChange={setSelectedFormats}
+                    />
+                  </div>
                 </div>
                 <div
+                  ref={fileListScrollRef}
                   className="scrollbar-hidden"
                   style={{
                     display: 'flex',
@@ -490,6 +635,10 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     gap: '8px',
                     overflowY: 'auto',
                     maxHeight: '420px',
+                    ...((selectedFormats.size > 0 || fileSearchQuery.trim()) &&
+                    savedFileListHeight != null
+                      ? { minHeight: savedFileListHeight }
+                      : {}),
                   }}
                 >
                   {filteredAttachedFiles.map(({ item, originalIndex }) => (
@@ -946,72 +1095,6 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       marginBottom: '12px',
                     }}
                   >
-                    <div
-                      style={{
-                        position: 'relative',
-                        display: 'flex',
-                        alignItems: 'center',
-                        flex: 1,
-                        minWidth: 0,
-                      }}
-                    >
-                      <select
-                        className="workspace-files-panel-field"
-                        value={fileTypeFilter}
-                        onChange={(e) =>
-                          setFileTypeFilter(
-                            e.target.value as 'all' | 'image' | 'document' | 'other'
-                          )
-                        }
-                        style={{
-                          padding: '10px 36px 10px 12px',
-                          borderRadius: '8px',
-                          border: '1px solid #E0E0E0',
-                          backgroundColor: '#fff',
-                          fontSize: '14px',
-                          color: '#2A2A2A',
-                          cursor: 'pointer',
-                          boxSizing: 'border-box',
-                          appearance: 'none',
-                          WebkitAppearance: 'none',
-                          MozAppearance: 'none',
-                          width: '100%',
-                          minWidth: '120px',
-                        }}
-                        aria-label="Фільтр за типом файлу"
-                      >
-                        <option value="all">Усі</option>
-                        <option value="image">Зображення</option>
-                        <option value="document">Документи</option>
-                        <option value="other">Інше</option>
-                      </select>
-                      <span
-                        aria-hidden
-                        style={{
-                          position: 'absolute',
-                          right: '14px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          pointerEvents: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M6 9l6 6 6-6" />
-                        </svg>
-                      </span>
-                    </div>
                     <input
                       type="search"
                       className="workspace-files-panel-field"
@@ -1019,8 +1102,8 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       value={fileSearchQuery}
                       onChange={(e) => setFileSearchQuery(e.target.value)}
                       style={{
-                        flex: 1,
-                        minWidth: 0,
+                        width: '220px',
+                        maxWidth: '100%',
                         padding: '10px 12px',
                         borderRadius: '8px',
                         border: '1px solid #E0E0E0',
@@ -1030,8 +1113,15 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       }}
                       aria-label="Пошук файлів"
                     />
+                    <div style={{ marginLeft: 'auto' }}>
+                      <FileFilterButton
+                        selectedFormats={selectedFormats}
+                        onChange={setSelectedFormats}
+                      />
+                    </div>
                   </div>
                   <div
+                    ref={fileListScrollRef}
                     className="scrollbar-hidden"
                     style={{
                       display: 'flex',
@@ -1041,6 +1131,10 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       gap: '8px',
                       overflowY: 'auto',
                       maxHeight: '420px',
+                      ...((selectedFormats.size > 0 || fileSearchQuery.trim()) &&
+                      savedFileListHeight != null
+                        ? { minHeight: savedFileListHeight }
+                        : {}),
                     }}
                   >
                     {filteredAttachedFiles.map(({ item, originalIndex }) => (

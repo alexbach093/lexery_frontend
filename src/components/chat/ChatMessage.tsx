@@ -74,13 +74,15 @@ type UserMessageTooltipId = 'copy' | 'edit' | null;
 
 /** Action icons row below AI response — copy, like, dislike, regenerate, "Переглянути процес". Icons from public/images/chat/*.svg */
 function ActionIconsRow() {
-  const iconSize = 16;
+  const iconSize = 14;
   const size = 32; // square clickable area (circle = border-radius on container)
   const [tooltipVisibleId, setTooltipVisibleId] = useState<TooltipId>(null);
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const halfSecondTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoveredIdRef = useRef<TooltipId>(null);
   const hasWaitedEnoughRef = useRef(false);
+
+  const TOOLTIP_DELAY_MS = 1000;
 
   const showTooltipAfterDelay = (id: TooltipId) => {
     hoveredIdRef.current = id;
@@ -89,16 +91,22 @@ function ActionIconsRow() {
       setTooltipVisibleId(id);
       return;
     }
-    if (!tooltipTimeoutRef.current) {
-      tooltipTimeoutRef.current = setTimeout(() => {
-        setTooltipVisibleId(hoveredIdRef.current);
-        tooltipTimeoutRef.current = null;
-      }, 1000);
-      halfSecondTimeoutRef.current = setTimeout(() => {
-        hasWaitedEnoughRef.current = true;
-        halfSecondTimeoutRef.current = null;
-      }, 500);
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
     }
+    if (halfSecondTimeoutRef.current) {
+      clearTimeout(halfSecondTimeoutRef.current);
+      halfSecondTimeoutRef.current = null;
+    }
+    tooltipTimeoutRef.current = setTimeout(() => {
+      setTooltipVisibleId(hoveredIdRef.current);
+      tooltipTimeoutRef.current = null;
+    }, TOOLTIP_DELAY_MS);
+    halfSecondTimeoutRef.current = setTimeout(() => {
+      hasWaitedEnoughRef.current = true;
+      halfSecondTimeoutRef.current = null;
+    }, TOOLTIP_DELAY_MS);
   };
   const hideTooltip = () => {
     if (tooltipTimeoutRef.current) {
@@ -140,14 +148,14 @@ function ActionIconsRow() {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
+        gap: '6px',
         marginTop: '14px',
       }}
       role="group"
       aria-label="Дії з відповіддю"
     >
       <div
-        style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+        style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
         onMouseLeave={hideTooltip}
         onBlurCapture={hideTooltip}
       >
@@ -307,7 +315,7 @@ function ActionIconsRow() {
           width: 'auto',
           height: 'auto',
           padding: '4px 12px',
-          marginLeft: '12px',
+          marginLeft: '6px',
           borderRadius: 6,
           fontFamily: 'Inter, sans-serif',
           fontSize: '13px',
@@ -572,7 +580,7 @@ function TypingIndicator() {
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '4px',
+        gap: 0,
       }}
       aria-live="polite"
       aria-label="Набір відповіді"
@@ -645,7 +653,7 @@ export function ChatMessage({
   );
 
   if (role === 'user') {
-    const iconSize = 16;
+    const iconSize = 14;
     const iconBtnStyle: React.CSSProperties = {
       display: 'flex',
       alignItems: 'center',
@@ -660,6 +668,8 @@ export function ChatMessage({
       background: 'transparent',
       transition: 'background-color 150ms ease',
     };
+    const USER_TOOLTIP_DELAY_MS = 1000;
+
     const showUserTooltipAfterDelay = (id: UserMessageTooltipId) => {
       userHoveredIdRef.current = id;
       setUserTooltipVisibleId(null);
@@ -667,16 +677,22 @@ export function ChatMessage({
         setUserTooltipVisibleId(id);
         return;
       }
-      if (!userTooltipTimeoutRef.current) {
-        userTooltipTimeoutRef.current = setTimeout(() => {
-          setUserTooltipVisibleId(userHoveredIdRef.current);
-          userTooltipTimeoutRef.current = null;
-        }, 1000);
-        userHalfSecondTimeoutRef.current = setTimeout(() => {
-          userHasWaitedEnoughRef.current = true;
-          userHalfSecondTimeoutRef.current = null;
-        }, 500);
+      if (userTooltipTimeoutRef.current) {
+        clearTimeout(userTooltipTimeoutRef.current);
+        userTooltipTimeoutRef.current = null;
       }
+      if (userHalfSecondTimeoutRef.current) {
+        clearTimeout(userHalfSecondTimeoutRef.current);
+        userHalfSecondTimeoutRef.current = null;
+      }
+      userTooltipTimeoutRef.current = setTimeout(() => {
+        setUserTooltipVisibleId(userHoveredIdRef.current);
+        userTooltipTimeoutRef.current = null;
+      }, USER_TOOLTIP_DELAY_MS);
+      userHalfSecondTimeoutRef.current = setTimeout(() => {
+        userHasWaitedEnoughRef.current = true;
+        userHalfSecondTimeoutRef.current = null;
+      }, USER_TOOLTIP_DELAY_MS);
     };
     const hideUserTooltip = () => {
       if (userTooltipTimeoutRef.current) {
@@ -750,7 +766,7 @@ export function ChatMessage({
           aria-label="Дії з повідомленням"
         >
           <div
-            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 0 }}
             onMouseLeave={hideUserTooltip}
             onBlurCapture={hideUserTooltip}
           >

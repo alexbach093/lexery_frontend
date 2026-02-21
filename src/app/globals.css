@@ -333,6 +333,11 @@ button.workspace-icon-btn--no-hover-scale:active {
   outline: none;
 }
 
+/* Фільтр файлів: обводка при наведенні на пункт меню */
+.workspace-filter-dropdown-option:hover {
+  border-color: #e0e0e0 !important;
+}
+
 /* Prevent scroll on boot screen pages */
 body:has([role='status'][aria-label='Loading application']) {
   overflow: hidden !important;
