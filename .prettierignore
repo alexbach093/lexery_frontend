@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Production
+*.log
+
+# Misc
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+*.min.js
+*.min.css
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Generated
+*.tsbuildinfo
+next-env.d.ts
+
+# Public assets
+public/

@@ -1,0 +1,37 @@
+{
+  "nodeInfo": {
+    "id": "28:190",
+    "name": "boot white 1",
+    "type": "RECTANGLE",
+    "bounds": {
+      "x": -6519,
+      "y": -6478,
+      "width": 1440,
+      "height": 1024
+    }
+  },
+  "shapes": [
+    {
+      "id": "28:190",
+      "name": "boot white 1",
+      "type": "RECTANGLE",
+      "bounds": {
+        "x": -6519,
+        "y": -6478,
+        "width": 1440,
+        "height": 1024
+      },
+      "fills": [
+        {
+          "blendMode": "NORMAL",
+          "type": "IMAGE",
+          "scaleMode": "FILL",
+          "imageRef": "6ffb9a0961c9d61a567393543b12b1366ea019db"
+        }
+      ],
+      "strokes": [],
+      "strokeWeight": 1
+    }
+  ],
+  "totalShapes": 1
+}

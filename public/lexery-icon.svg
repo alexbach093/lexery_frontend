@@ -1,0 +1,15 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g id="lexery-icon">
+    <!-- Stylized L + scales of justice icon -->
+    <rect x="8" y="8" width="6" height="32" rx="1" fill="currentColor"/>
+    <rect x="8" y="34" width="20" height="6" rx="1" fill="currentColor"/>
+    <!-- Balance scale accent -->
+    <circle cx="32" cy="18" r="6" stroke="currentColor" stroke-width="2" fill="none"/>
+    <path d="M32 24V32" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <path d="M26 32H38" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    <!-- AI circuit accent -->
+    <circle cx="32" cy="18" r="2" fill="currentColor"/>
+    <circle cx="38" cy="14" r="1.5" fill="currentColor" opacity="0.6"/>
+    <circle cx="26" cy="14" r="1.5" fill="currentColor" opacity="0.6"/>
+  </g>
+</svg>

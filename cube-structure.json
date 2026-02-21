@@ -1,0 +1,313 @@
+{
+  "nodeInfo": {
+    "id": "0:1296",
+    "name": "animation normal",
+    "type": "GROUP",
+    "bounds": {
+      "x": -5854.00048828125,
+      "y": -6018.9990234375,
+      "width": 110.05866241455078,
+      "height": 105.99910736083984
+    }
+  },
+  "paths": [
+    {
+      "id": "0:1297",
+      "name": "out cube",
+      "parentName": "animation normal",
+      "bounds": {
+        "x": -5817.328628172559,
+        "y": -5965.884483632773,
+        "width": 36.51710473505864,
+        "height": 42.29398999085788
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 1
+          }
+        }
+      ],
+      "fills": [],
+      "strokeWeight": 3.499283790588379,
+      "strokeCap": "ROUND",
+      "strokeJoin": "ROUND"
+    },
+    {
+      "id": "0:1298",
+      "name": "out cube",
+      "parentName": "animation normal",
+      "bounds": {
+        "x": -5854.000553706896,
+        "y": -5987.18249878833,
+        "width": 43.996159175646426,
+        "height": 46.61202467766543
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 1
+          }
+        }
+      ],
+      "fills": [],
+      "strokeWeight": 3.499283790588379,
+      "strokeCap": "ROUND",
+      "strokeJoin": "ROUND"
+    },
+    {
+      "id": "0:1299",
+      "name": "out cube",
+      "parentName": "animation normal",
+      "bounds": {
+        "x": -5835.664390629712,
+        "y": -5976.591531726791,
+        "width": 73.40608984846222,
+        "height": 63.5918583973762
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 1
+          }
+        }
+      ],
+      "fills": [],
+      "strokeWeight": 3.499283790588379,
+      "strokeCap": "ROUND",
+      "strokeJoin": "ROUND"
+    },
+    {
+      "id": "0:1300",
+      "name": "out cube",
+      "parentName": "animation normal",
+      "bounds": {
+        "x": -5780.65664763849,
+        "y": -5987.223202060682,
+        "width": 36.71475310723963,
+        "height": 42.40810895464074
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 1
+          }
+        }
+      ],
+      "fills": [],
+      "strokeWeight": 3.499283790588379,
+      "strokeCap": "ROUND",
+      "strokeJoin": "ROUND"
+    },
+    {
+      "id": "0:1301",
+      "name": "out cube",
+      "parentName": "animation normal",
+      "bounds": {
+        "x": -5835.66443929888,
+        "y": -6018.998783084826,
+        "width": 73.4061385176301,
+        "height": 63.59189310378497
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 1
+          }
+        }
+      ],
+      "fills": [],
+      "strokeWeight": 3.499283790588379,
+      "strokeCap": "ROUND",
+      "strokeJoin": "ROUND"
+    },
+    {
+      "id": "0:1302",
+      "name": "out cube",
+      "parentName": "animation normal",
+      "bounds": {
+        "x": -5835.66443929888,
+        "y": -6018.998783084826,
+        "width": 73.4061385176301,
+        "height": 63.59189310378497
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 1
+          }
+        }
+      ],
+      "fills": [],
+      "strokeWeight": 3.499283790588379,
+      "strokeCap": "ROUND",
+      "strokeJoin": "ROUND"
+    },
+    {
+      "id": "0:1303",
+      "name": "inside cube",
+      "parentName": "animation normal",
+      "bounds": {
+        "x": -5831.801866034287,
+        "y": -5978.660574314175,
+        "width": 43.82432697178683,
+        "height": 37.952981562330024
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 1
+          }
+        }
+      ],
+      "fills": [],
+      "strokeWeight": 3.499283790588379,
+      "strokeCap": "ROUND",
+      "strokeJoin": "ROUND"
+    },
+    {
+      "id": "0:1304",
+      "name": "inside cube",
+      "parentName": "animation normal",
+      "bounds": {
+        "x": -5798.992733759573,
+        "y": -5978.660444060026,
+        "width": 32.86822204082273,
+        "height": 44.27846168133601
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 1
+          }
+        }
+      ],
+      "fills": [],
+      "strokeWeight": 3.499283790588379,
+      "strokeCap": "ROUND",
+      "strokeJoin": "ROUND"
+    },
+    {
+      "id": "0:1305",
+      "name": "inside cube",
+      "parentName": "animation normal",
+      "bounds": {
+        "x": -5820.877549628037,
+        "y": -5997.636648532925,
+        "width": 43.82432697178683,
+        "height": 37.952981562330024
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 1
+          }
+        }
+      ],
+      "fills": [],
+      "strokeWeight": 3.499283790588379,
+      "strokeCap": "ROUND",
+      "strokeJoin": "ROUND"
+    },
+    {
+      "id": "0:1306",
+      "name": "inside cube",
+      "parentName": "animation normal",
+      "bounds": {
+        "x": -5820.877549628037,
+        "y": -5997.636648532925,
+        "width": 43.82432697178683,
+        "height": 37.952981562330024
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 1
+          }
+        }
+      ],
+      "fills": [],
+      "strokeWeight": 3.499283790588379,
+      "strokeCap": "ROUND",
+      "strokeJoin": "ROUND"
+    },
+    {
+      "id": "0:1307",
+      "name": "inside cube",
+      "parentName": "animation normal",
+      "bounds": {
+        "x": -5809.935220723041,
+        "y": -5965.941419393699,
+        "width": 21.79410744179131,
+        "height": 25.23382664185374
+      },
+      "strokes": [
+        {
+          "blendMode": "NORMAL",
+          "type": "SOLID",
+          "color": {
+            "r": 0,
+            "g": 0,
+            "b": 0,
+            "a": 1
+          }
+        }
+      ],
+      "fills": [],
+      "strokeWeight": 3.499283790588379,
+      "strokeCap": "ROUND",
+      "strokeJoin": "ROUND"
+    }
+  ],
+  "totalPaths": 11
+}

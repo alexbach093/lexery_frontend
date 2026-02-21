@@ -1,0 +1,18 @@
+<svg width="200" height="48" viewBox="0 0 200 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g id="lexery-logo">
+    <!-- L -->
+    <path d="M10 8H16V36H30V42H10V8Z" fill="currentColor"/>
+    <!-- E -->
+    <path d="M36 8H56V14H42V22H54V28H42V36H56V42H36V8Z" fill="currentColor"/>
+    <!-- X -->
+    <path d="M62 8H69L76 20L83 8H90L79.5 25L91 42H84L76 30L68 42H61L72.5 25L62 8Z" fill="currentColor"/>
+    <!-- E -->
+    <path d="M97 8H117V14H103V22H115V28H103V36H117V42H97V8Z" fill="currentColor"/>
+    <!-- R -->
+    <path d="M123 8H138C141.866 8 145 11.134 145 15V19C145 21.8 143.4 24.2 141 25.4L146 42H139L134.5 27H129V42H123V8ZM129 14V21H138C139.657 21 141 19.657 141 18V17C141 15.343 139.657 14 138 14H129Z" fill="currentColor"/>
+    <!-- Y -->
+    <path d="M151 8H158L164 22L170 8H177L168 28V42H162V28L151 8Z" fill="currentColor"/>
+    <!-- Accent dot -->
+    <circle cx="186" cy="38" r="4" fill="currentColor" opacity="0.6"/>
+  </g>
+</svg>

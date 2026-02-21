@@ -1,0 +1,1836 @@
+'use client';
+
+import Image from 'next/image';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { ChatMessageList } from '@/components/chat';
+import type { Message } from '@/types/chat';
+
+import { FilePreview } from './file-preview';
+
+interface WorkspaceMainProps {
+  className?: string;
+  /** Called when workspace has mounted and is ready (e.g. for hiding boot overlay). */
+  onReady?: () => void;
+}
+
+/** AI box on main workspace (greeting screen) — більший. */
+const HOME_TEXTAREA_MIN_HEIGHT = 82;
+const HOME_TEXTAREA_MAX_HEIGHT = 240;
+/** AI box in chat (sticky) — ширина узгоджена з контентом чату; поле росте вгору при багаторядковому вводі. */
+const CHAT_TEXTAREA_MIN_HEIGHT = 30;
+const CHAT_TEXTAREA_MAX_HEIGHT = 120;
+const CHAT_INPUT_MAX_WIDTH = 738;
+/** Ширина картки файлу в розгорнутому файл-менеджері — однаковий розмір, без пустих місць. */
+const EXPANDED_FILE_CARD_WIDTH = 232;
+/** Світло-синій для AI space і кнопки редактора (активний стан) — з палітри boot/#0070f3. */
+const AI_SPACE_EDITOR_ACTIVE_BG = '#E8F0FE';
+
+/** One attached file and its object URL for preview (revoked on remove). */
+interface AttachedFile {
+  file: File;
+  previewUrl: string | null;
+}
+
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
+/** Формати файлів для фільтра — кнопки-чіпи, множинний вибір */
+const FILE_FORMAT_OPTIONS: { id: string; label: string; exts: string[]; mime?: string }[] = [
+  { id: 'jpeg', label: 'JPEG', exts: ['jpg', 'jpeg'], mime: 'image/jpeg' },
+  { id: 'png', label: 'PNG', exts: ['png'], mime: 'image/png' },
+  { id: 'gif', label: 'GIF', exts: ['gif'], mime: 'image/gif' },
+  { id: 'webp', label: 'WebP', exts: ['webp'], mime: 'image/webp' },
+  { id: 'svg', label: 'SVG', exts: ['svg'], mime: 'image/svg' },
+  { id: 'pdf', label: 'PDF', exts: ['pdf'], mime: 'application/pdf' },
+  { id: 'doc', label: 'DOC', exts: ['doc'], mime: 'application/msword' },
+  {
+    id: 'docx',
+    label: 'DOCX',
+    exts: ['docx'],
+    mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  },
+  { id: 'txt', label: 'TXT', exts: ['txt'], mime: 'text/plain' },
+  { id: 'xls', label: 'XLS', exts: ['xls'], mime: 'application/vnd.ms-excel' },
+  {
+    id: 'xlsx',
+    label: 'XLSX',
+    exts: ['xlsx'],
+    mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  },
+  { id: 'ppt', label: 'PPT', exts: ['ppt'], mime: 'application/vnd.ms-powerpoint' },
+  {
+    id: 'pptx',
+    label: 'PPTX',
+    exts: ['pptx'],
+    mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  },
+];
+
+function getFileFormatId(file: File): string | null {
+  const name = file.name.toLowerCase();
+  const ext = name.includes('.') ? name.replace(/.*\./, '').replace(/\?.*$/, '') : '';
+  for (const opt of FILE_FORMAT_OPTIONS) {
+    if (opt.exts.some((e) => e === ext) || (opt.mime && file.type === opt.mime)) return opt.id;
+  }
+  return null;
+}
+
+const FILE_FORMAT_ROW1_COUNT = 7;
+
+/** Чіпи форматів (внутрішній контент для попапу) — два ряди. */
+function FileFormatFilterChips({
+  selectedFormats,
+  onChange,
+  compact,
+}: {
+  selectedFormats: Set<string>;
+  onChange: (set: Set<string>) => void;
+  compact?: boolean;
+}) {
+  const toggle = (id: string) => {
+    onChange(
+      (() => {
+        const next = new Set(selectedFormats);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      })()
+    );
+  };
+
+  const gap = compact ? 6 : 8;
+  const row1 = FILE_FORMAT_OPTIONS.slice(0, FILE_FORMAT_ROW1_COUNT);
+  const row2 = FILE_FORMAT_OPTIONS.slice(FILE_FORMAT_ROW1_COUNT);
+
+  const renderButton = (opt: (typeof FILE_FORMAT_OPTIONS)[0]) => {
+    const active = selectedFormats.has(opt.id);
+    return (
+      <button
+        key={opt.id}
+        type="button"
+        onClick={() => toggle(opt.id)}
+        aria-pressed={active}
+        style={{
+          padding: compact ? '6px 10px' : '8px 12px',
+          borderRadius: '6px',
+          border: `1px solid ${active ? '#2A2A2A' : '#E0E0E0'}`,
+          backgroundColor: active ? '#2A2A2A' : '#fff',
+          color: active ? '#fff' : '#2A2A2A',
+          fontSize: compact ? '12px' : '13px',
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: 'Inter, sans-serif',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {opt.label}
+      </button>
+    );
+  };
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap,
+      }}
+      role="group"
+      aria-label="Фільтр за форматом файлу"
+    >
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap }}>
+        {row1.map(renderButton)}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap }}>
+        {row2.map(renderButton)}
+      </div>
+    </div>
+  );
+}
+
+const FILTER_POPOVER_DURATION_MS = 200;
+
+/** Кнопка «Фільтр»: відкриває попап з чіпами форматів (зручно, не займає місце в рядку). */
+function FileFilterButton({
+  selectedFormats,
+  onChange,
+}: {
+  selectedFormats: Set<string>;
+  onChange: (set: Set<string>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setClosing(true);
+        if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = setTimeout(() => {
+          setClosing(false);
+          setVisible(false);
+          closeTimeoutRef.current = null;
+        }, FILTER_POPOVER_DURATION_MS);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+    };
+  }, [open, closing]);
+
+  useEffect(() => {
+    if (open && !closing) {
+      const id = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(id);
+    }
+    if (!open) {
+      const id = requestAnimationFrame(() => setVisible(false));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [open, closing]);
+
+  const handleToggle = () => {
+    if (open) {
+      setOpen(false);
+      setClosing(true);
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = setTimeout(() => {
+        setClosing(false);
+        setVisible(false);
+        closeTimeoutRef.current = null;
+      }, FILTER_POPOVER_DURATION_MS);
+    } else {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+      setClosing(false);
+      setOpen(true);
+    }
+  };
+
+  const count = selectedFormats.size;
+  const label = count > 0 ? `Фільтр (${count})` : 'Фільтр';
+  const popoverShown = open || closing;
+  const popoverVisible = open && visible && !closing;
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', flexShrink: 0 }}>
+      <button
+        type="button"
+        className="workspace-files-panel-field"
+        onClick={handleToggle}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-label="Відкрити фільтр за форматом файлу"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          padding: '10px 12px',
+          borderRadius: '8px',
+          border: '1px solid #E0E0E0',
+          backgroundColor: '#fff',
+          fontSize: '14px',
+          color: '#2A2A2A',
+          cursor: 'pointer',
+          minWidth: '100px',
+          boxSizing: 'border-box',
+          textAlign: 'left',
+        }}
+      >
+        <span>{label}</span>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            transformOrigin: 'center center',
+            transition: 'transform 0.25s ease-out',
+          }}
+          aria-hidden
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ display: 'block' }}
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </span>
+      </button>
+      {popoverShown && (
+        <div
+          role="dialog"
+          aria-label="Фільтр за форматом файлу"
+          style={{
+            position: 'absolute',
+            bottom: '100%',
+            right: 0,
+            left: 'auto',
+            marginBottom: '6px',
+            padding: '12px',
+            borderRadius: '12px',
+            backgroundColor: '#fff',
+            border: '1px solid #E8E8E8',
+            zIndex: 50,
+            opacity: popoverVisible ? 1 : 0,
+            transform: popoverVisible ? 'translateY(0)' : 'translateY(6px)',
+            transition: `opacity ${FILTER_POPOVER_DURATION_MS}ms ease, transform ${FILTER_POPOVER_DURATION_MS}ms ease`,
+            pointerEvents: popoverVisible ? 'auto' : 'none',
+            width: 'fit-content',
+            minWidth: '420px',
+          }}
+        >
+          <FileFormatFilterChips selectedFormats={selectedFormats} onChange={onChange} compact />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Workspace Main Content - AI Chat Interface
+ *
+ * Figma: node 0:1339 (AI box)
+ * Contains: Greeting or Chat list, Chat input, Action buttons
+ */
+export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
+  const [value, setValue] = useState('');
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isAssistantTyping, setIsAssistantTyping] = useState(false);
+  /** Id повідомлення асистента, яке зараз перегенеровується — показуємо typing на його місці. */
+  const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileListRef = useRef<HTMLDivElement>(null);
+  const isEmpty = value.trim().length === 0;
+  const isGenerationInProgress = isAssistantTyping || regeneratingMessageId != null;
+  const canSend = (!isEmpty || attachedFiles.length > 0) && !isGenerationInProgress;
+  const hasMessages = messages.length > 0;
+  /** У чаті: спочатку тільки іконка міняється, потім (після затримки) текст і розмір. */
+  const [tipsButtonCompact, setTipsButtonCompact] = useState(false);
+  /** Файли виходять за межі — показувати кнопку «розгорнути». */
+  const [filesOverflow, setFilesOverflow] = useState(false);
+  /** Поле з файлами розгорнуто вгору (всі файли видно). */
+  const [filesExpanded, setFilesExpanded] = useState(false);
+  /** Кнопка розгортання залишається в DOM під час анімації згортання (0.4s). */
+  const [expandButtonClosing, setExpandButtonClosing] = useState(false);
+  const expandCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Розгорнутий вид: множина обраних форматів (порожня = показувати всі файли). */
+  const [selectedFormats, setSelectedFormats] = useState<Set<string>>(new Set());
+  /** Розгорнутий вид: пошук за назвою файлу. */
+  const [fileSearchQuery, setFileSearchQuery] = useState('');
+  /** Висота області з файлами без фільтра — зберігаємо, щоб при фільтрі/пошуку розмір не змінювався. */
+  const [savedFileListHeight, setSavedFileListHeight] = useState<number | null>(null);
+  const fileListScrollRef = useRef<HTMLDivElement>(null);
+  /** Відкрито модалку «Редактор промпту» — AI space підсвічується світло-синім, кнопка-олівець активна. */
+  const [systemPromptEditorOpen, setSystemPromptEditorOpen] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState('');
+
+  const filteredAttachedFiles = useMemo(() => {
+    const q = fileSearchQuery.trim().toLowerCase();
+    return attachedFiles
+      .map((item, originalIndex) => ({ item, originalIndex }))
+      .filter(({ item }) => {
+        if (selectedFormats.size > 0) {
+          const formatId = getFileFormatId(item.file);
+          if (formatId === null || !selectedFormats.has(formatId)) return false;
+        }
+        if (q && !item.file.name.toLowerCase().includes(q)) return false;
+        return true;
+      });
+  }, [attachedFiles, selectedFormats, fileSearchQuery]);
+
+  useEffect(() => {
+    onReady?.();
+  }, [onReady]);
+
+  useEffect(() => {
+    if (!hasMessages) {
+      const t = setTimeout(() => setTipsButtonCompact(false), 0);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => setTipsButtonCompact(true), 0);
+    return () => clearTimeout(t);
+  }, [hasMessages]);
+
+  useEffect(() => {
+    if (attachedFiles.length === 0) {
+      queueMicrotask(() => {
+        setFilesOverflow(false);
+        setFilesExpanded(false);
+        setExpandButtonClosing(false);
+        setSelectedFormats(new Set());
+        setFileSearchQuery('');
+      });
+      return;
+    }
+    const el = fileListRef.current;
+    if (!el) return;
+    const checkOverflow = () => {
+      setFilesOverflow(el.scrollWidth > el.clientWidth);
+    };
+    checkOverflow();
+    const ro = new ResizeObserver(checkOverflow);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [attachedFiles.length, filesExpanded]);
+
+  /** Коли панель відкрита і немає фільтра/пошуку — зберігаємо висоту області з файлами. */
+  useEffect(() => {
+    if (!filesExpanded || selectedFormats.size > 0 || fileSearchQuery.trim()) return;
+    const el = fileListScrollRef.current;
+    if (!el) return;
+    const id = requestAnimationFrame(() => {
+      const h = el.clientHeight;
+      if (h > 0) setSavedFileListHeight(h);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [
+    filesExpanded,
+    selectedFormats.size,
+    fileSearchQuery,
+    attachedFiles.length,
+    filteredAttachedFiles.length,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (expandCloseTimeoutRef.current) clearTimeout(expandCloseTimeoutRef.current);
+    };
+  }, []);
+
+  const handleExpandToggle = useCallback(() => {
+    setFilesExpanded((prev) => {
+      if (prev) {
+        setExpandButtonClosing(true);
+        if (expandCloseTimeoutRef.current) clearTimeout(expandCloseTimeoutRef.current);
+        expandCloseTimeoutRef.current = setTimeout(() => {
+          setExpandButtonClosing(false);
+          expandCloseTimeoutRef.current = null;
+        }, 400);
+      } else {
+        if (expandCloseTimeoutRef.current) {
+          clearTimeout(expandCloseTimeoutRef.current);
+          expandCloseTimeoutRef.current = null;
+        }
+        setExpandButtonClosing(false);
+      }
+      return !prev;
+    });
+  }, []);
+
+  const handleRemoveAllFiles = useCallback(() => {
+    setAttachedFiles((prev) => {
+      prev.forEach((item) => {
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+      });
+      return [];
+    });
+  }, []);
+
+  const resizeTextarea = useCallback((el: HTMLTextAreaElement, isChat: boolean) => {
+    el.style.height = 'auto';
+    const minH = isChat ? CHAT_TEXTAREA_MIN_HEIGHT : HOME_TEXTAREA_MIN_HEIGHT;
+    const maxH = isChat ? CHAT_TEXTAREA_MAX_HEIGHT : HOME_TEXTAREA_MAX_HEIGHT;
+    const clamped = Math.min(Math.max(el.scrollHeight, minH), maxH);
+    el.style.height = `${clamped}px`;
+    el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+  }, []);
+
+  const resetInput = useCallback(() => {
+    setValue('');
+    setAttachedFiles([]);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = `${CHAT_TEXTAREA_MIN_HEIGHT}px`;
+      textareaRef.current.style.overflowY = 'hidden';
+    }
+  }, []);
+
+  const handleSend = useCallback(() => {
+    const text = value.trim();
+    if (!text && attachedFiles.length === 0) return;
+    const attachments =
+      attachedFiles.length > 0
+        ? attachedFiles.map((a) => ({
+            name: a.file.name,
+            size: a.file.size,
+            previewUrl: a.previewUrl,
+          }))
+        : undefined;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: generateId(),
+        role: 'user',
+        content: text || '',
+        attachments,
+      },
+    ]);
+    resetInput();
+    setIsAssistantTyping(true);
+    // TODO: replace mock response with real API call
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          role: 'assistant',
+          content:
+            '**Заголовок відповіді:**\n\nТекст відповіді. Тут буде відповідь від AI після інтеграції з бекендом.',
+          suggestions: ['Детальніше', 'Ще приклад'],
+        },
+      ]);
+      setIsAssistantTyping(false);
+    }, 1500);
+  }, [value, attachedFiles, resetInput]);
+
+  const handleSuggestionClick = useCallback((suggestionText: string) => {
+    setMessages((prev) => [...prev, { id: generateId(), role: 'user', content: suggestionText }]);
+    setIsAssistantTyping(true);
+    // TODO: replace mock response with real API call
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: generateId(),
+          role: 'assistant',
+          content: `**Відповідь на «${suggestionText}»:**\n\nТут буде контент після підключення API.`,
+          suggestions: ['Детальніше'],
+        },
+      ]);
+      setIsAssistantTyping(false);
+    }, 1200);
+  }, []);
+
+  const handleRegenerate = useCallback(
+    (assistantMessageId: string, _modifier?: string) => {
+      const msg = messages.find((m) => m.id === assistantMessageId);
+      if (!msg || msg.role !== 'assistant') return;
+      setRegeneratingMessageId(assistantMessageId);
+      // TODO: replace mock response with real API call (resend user message before this; use modifier if provided)
+      setTimeout(() => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessageId
+              ? {
+                  id: generateId(),
+                  role: 'assistant' as const,
+                  content:
+                    '**Заголовок відповіді:**\n\nТекст відповіді. Тут буде відповідь від AI після інтеграції з бекендом.',
+                  suggestions: ['Детальніше', 'Ще приклад'],
+                }
+              : m
+          )
+        );
+        setRegeneratingMessageId(null);
+      }, 1500);
+    },
+    [messages]
+  );
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setValue(e.target.value);
+      resizeTextarea(e.target, hasMessages);
+    },
+    [resizeTextarea, hasMessages]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (canSend) handleSend();
+      }
+    },
+    [canSend, handleSend]
+  );
+
+  return (
+    <main
+      className={className}
+      style={{
+        height: '100%',
+        backgroundColor: 'transparent',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        flex: 1,
+        overflow: 'visible',
+      }}
+    >
+      {/* Top Bar: привітання — Поради (лампочка + текст); у чаті — спочатку нова іконка, потім текст і розмір */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '29px',
+          right: '28px',
+        }}
+      >
+        {!hasMessages ? (
+          <button
+            style={{
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              minHeight: '33px',
+              padding: '10px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E7E8',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              minWidth: '90px',
+              boxSizing: 'border-box',
+            }}
+          >
+            <Image src="/images/workspace/tips.svg" alt="" width={13} height={13} />
+            <p
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 400,
+                fontSize: '14px',
+                lineHeight: '19.6px',
+                letterSpacing: '0.14px',
+                color: '#040404',
+              }}
+            >
+              Поради
+            </p>
+          </button>
+        ) : tipsButtonCompact ? (
+          <button
+            type="button"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '40px',
+              height: '40px',
+              padding: 0,
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E7E8',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              boxSizing: 'border-box',
+            }}
+            aria-label="Поради"
+          >
+            <Image src="/images/workspace/tips-chat.svg" alt="" width={32} height={32} />
+          </button>
+        ) : (
+          <button
+            style={{
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'center',
+              justifyContent: 'flex-start',
+              minHeight: '33px',
+              padding: '10px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E7E8',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              minWidth: '90px',
+              boxSizing: 'border-box',
+            }}
+          >
+            <Image src="/images/workspace/tips-chat.svg" alt="" width={32} height={32} />
+            <p
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 400,
+                fontSize: '14px',
+                lineHeight: '19.6px',
+                letterSpacing: '0.14px',
+                color: '#040404',
+              }}
+            >
+              Поради
+            </p>
+          </button>
+        )}
+      </div>
+
+      {/* Content: either greeting + centered input, or chat list + sticky input */}
+      {!hasMessages ? (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1,
+            padding: '0 20px 64px',
+          }}
+        >
+          <p
+            style={{
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '22.587px',
+              fontWeight: 700,
+              lineHeight: 'normal',
+              color: '#000000',
+              textAlign: 'center',
+              marginBottom: '38px',
+            }}
+          >
+            Доброго ранку, Олександре!
+          </p>
+          <div style={{ width: '693px', maxWidth: '100%', position: 'relative' }}>
+            {/* Від’єднана панель файлів — 10px вище за AI space */}
+            {attachedFiles.length > 0 && filesExpanded && (
+              <div
+                style={{
+                  backgroundColor: '#F5F6F6',
+                  borderRadius: '16px',
+                  padding: '12px 16px 16px',
+                  marginBottom: '10px',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '12px',
+                  }}
+                >
+                  <input
+                    type="search"
+                    className="workspace-files-panel-field"
+                    placeholder="Пошук за назвою..."
+                    value={fileSearchQuery}
+                    onChange={(e) => setFileSearchQuery(e.target.value)}
+                    style={{
+                      width: '220px',
+                      maxWidth: '100%',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #E0E0E0',
+                      backgroundColor: '#fff',
+                      fontSize: '14px',
+                      color: '#2A2A2A',
+                    }}
+                    aria-label="Пошук файлів"
+                  />
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginLeft: 'auto',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={handleRemoveAllFiles}
+                      className="workspace-files-panel-field workspace-action-btn workspace-remove-all-btn"
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #E0E0E0',
+                        backgroundColor: '#fff',
+                        fontSize: '14px',
+                        color: '#2A2A2A',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                      aria-label="Видалити всі файли"
+                    >
+                      Видалити все
+                    </button>
+                    <FileFilterButton
+                      selectedFormats={selectedFormats}
+                      onChange={setSelectedFormats}
+                    />
+                  </div>
+                </div>
+                <div
+                  ref={fileListScrollRef}
+                  className="scrollbar-hidden"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    alignContent: 'flex-start',
+                    alignItems: 'flex-start',
+                    gap: '8px',
+                    overflowY: 'auto',
+                    maxHeight: '420px',
+                    ...((selectedFormats.size > 0 || fileSearchQuery.trim()) &&
+                    savedFileListHeight != null
+                      ? { minHeight: savedFileListHeight }
+                      : {}),
+                  }}
+                >
+                  {filteredAttachedFiles.map(({ item, originalIndex }) => (
+                    <div
+                      key={`${item.file.name}-${item.file.size}-${originalIndex}`}
+                      style={{ flexShrink: 0, width: EXPANDED_FILE_CARD_WIDTH }}
+                    >
+                      <FilePreview
+                        file={item.file}
+                        previewUrl={item.previewUrl}
+                        onRemove={() => {
+                          if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+                          setAttachedFiles((prev) => prev.filter((_, i) => i !== originalIndex));
+                        }}
+                        uniformWidth
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: systemPromptEditorOpen ? AI_SPACE_EDITOR_ACTIVE_BG : '#F7F7F7',
+                borderRadius: '16px',
+                padding: '12px 16px 16px 16px',
+              }}
+            >
+              {/* Inline file row (collapsed) — ref for overflow detection */}
+              {attachedFiles.length > 0 && !filesExpanded && (
+                <div
+                  ref={fileListRef}
+                  className="scrollbar-hidden"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    flexWrap: 'nowrap',
+                    alignItems: 'flex-start',
+                    gap: '8px',
+                    marginBottom: '12px',
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                  }}
+                >
+                  {attachedFiles.map((item, index) => (
+                    <div
+                      key={`${item.file.name}-${item.file.size}-${index}`}
+                      style={{ flexShrink: 0 }}
+                    >
+                      <FilePreview
+                        file={item.file}
+                        previewUrl={item.previewUrl}
+                        onRemove={() => {
+                          if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+                          setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              <textarea
+                ref={textareaRef}
+                value={value}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Запитайте будь-що"
+                className="placeholder:text-[#8C8C8C]"
+                rows={1}
+                style={{
+                  width: '100%',
+                  height: `${HOME_TEXTAREA_MIN_HEIGHT}px`,
+                  minHeight: `${HOME_TEXTAREA_MIN_HEIGHT}px`,
+                  maxHeight: `${HOME_TEXTAREA_MAX_HEIGHT}px`,
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '16px',
+                  lineHeight: '24px',
+                  letterSpacing: '0.14px',
+                  color: '#000000',
+                  caretColor: '#000000',
+                  resize: 'none',
+                  overflowY: 'hidden',
+                }}
+              />
+
+              {/* Bottom Actions */}
+              <div
+                style={{
+                  marginTop: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                {/* Left Actions - 4 individual icons inside pill; equal spacing between icons */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                    backgroundColor: '#EDEDED',
+                    borderRadius: '9px',
+                    height: '40px',
+                    padding: '0 10px',
+                    flexShrink: 0,
+                  }}
+                >
+                  {/* Hidden file input — triggered by paperclip; upload/API handled elsewhere */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="*/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = e.target.files;
+                      if (files?.length) {
+                        const newItems: AttachedFile[] = Array.from(files).map((file) => {
+                          const isImage =
+                            file.type.startsWith('image/') ||
+                            /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/i.test(file.name);
+                          return {
+                            file,
+                            previewUrl: isImage ? URL.createObjectURL(file) : null,
+                          };
+                        });
+                        setAttachedFiles((prev) => [...prev, ...newItems]);
+                        // TODO: back-end upload / send will use attachedFiles when implemented
+                      }
+                      e.target.value = '';
+                    }}
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  />
+                  {/* Paperclip — opens file picker */}
+                  <button
+                    type="button"
+                    className="workspace-action-btn workspace-icon-btn"
+                    aria-label="Завантажити файл"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '30px',
+                      height: '30px',
+                      border: 'none',
+                      background: 'transparent',
+                      cursor: 'pointer',
+                      borderRadius: '6px',
+                      padding: 0,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 9.5 13.5"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M0.585589 8.75382L0.585589 4.67438C0.58559 2.42137 2.41202 0.594947 4.66503 0.594947C6.91804 0.594947 8.74446 2.42137 8.74446 4.67438V10.1136C8.74446 11.6156 7.52685 12.8333 6.02484 12.8333C4.52283 12.8333 3.30521 11.6156 3.30521 10.1136V4.67438C3.30521 3.92338 3.91402 3.31457 4.66503 3.31457C5.41603 3.31457 6.02484 3.92338 6.02484 4.67438L6.02484 10.1136"
+                        stroke="#575757"
+                        strokeWidth="1.16071"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+
+                  {/* Pencil — редактор чату (system prompt); активний стан — світло-синій */}
+                  <button
+                    type="button"
+                    className="workspace-action-btn workspace-icon-btn"
+                    aria-label="Редактор чату (system prompt)"
+                    aria-pressed={systemPromptEditorOpen}
+                    onClick={() => setSystemPromptEditorOpen(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '30px',
+                      height: '30px',
+                      border: systemPromptEditorOpen ? `1px solid #0070f3` : 'none',
+                      background: systemPromptEditorOpen
+                        ? AI_SPACE_EDITOR_ACTIVE_BG
+                        : 'transparent',
+                      cursor: 'pointer',
+                      borderRadius: '6px',
+                      padding: 0,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="28.3 0 13.5 13.5"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M35.0366 4.26644L37.4843 6.7141M28.9175 12.8333V9.77368L38.0962 0.594947L41.1558 3.65452L31.9771 12.8333H28.9175Z"
+                        stroke={systemPromptEditorOpen ? '#0070f3' : '#575757'}
+                        strokeWidth="1.16071"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+
+                  {/* Camera/settings — decorative, non-interactive */}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '30px',
+                      height: '30px',
+                      flexShrink: 0,
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                    }}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="60.7 0 12.6 13.5"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M68.0212 12.4455L71.5826 10.4548C71.9627 10.2423 72.1525 10.136 72.2907 9.98734C72.413 9.85581 72.5055 9.70089 72.562 9.53256C72.6257 9.34277 72.6257 9.13067 72.6257 8.70765V4.72043C72.6257 4.2974 72.6257 4.08533 72.562 3.89554C72.5055 3.72721 72.413 3.57216 72.2907 3.44063C72.1531 3.29262 71.9638 3.18681 71.5869 2.97614L68.0206 0.982682C67.6404 0.770173 67.4507 0.664134 67.2486 0.622545C67.0698 0.585748 66.8849 0.585748 66.7061 0.622545C66.504 0.664134 66.3137 0.770173 65.9335 0.982682L62.3715 2.97376C61.9917 3.18602 61.802 3.29207 61.6638 3.44063C61.5415 3.57216 61.4491 3.72721 61.3926 3.89554C61.3288 4.08578 61.3288 4.2984 61.3288 4.72342V8.70483C61.3288 9.12985 61.3288 9.34232 61.3926 9.53256C61.4491 9.70089 61.5415 9.85581 61.6638 9.98734C61.8021 10.136 61.9919 10.2423 62.3721 10.4548L65.9335 12.4455C66.3137 12.658 66.504 12.7641 66.7061 12.8057C66.8849 12.8425 67.0698 12.8425 67.2486 12.8057C67.4507 12.7641 67.641 12.658 68.0212 12.4455Z"
+                        stroke="#D0D0D0"
+                        strokeWidth="1.16071"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M65.0205 6.71404C65.0205 7.7603 65.8966 8.60846 66.9773 8.60846C68.0579 8.60846 68.934 7.7603 68.934 6.71404C68.934 5.66778 68.0579 4.81962 66.9773 4.81962C65.8966 4.81962 65.0205 5.66778 65.0205 6.71404Z"
+                        stroke="#D0D0D0"
+                        strokeWidth="1.16071"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+
+                  {/* Hexagon — decorative, non-interactive */}
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '30px',
+                      height: '30px',
+                      flexShrink: 0,
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                    }}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="92.2 0 11.9 13.3"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M98.1067 0.585343L103.414 3.64978V8.69714C103.414 9.36638 103.057 9.98478 102.478 10.3194L99.0433 12.3023C98.4637 12.6369 97.7497 12.6369 97.1701 12.3023L93.7355 10.3194C93.156 9.98478 92.7989 9.36638 92.7989 8.69714V3.64978L98.1067 0.585343Z"
+                        stroke="#D0D0D0"
+                        strokeWidth="1.16071"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M98.1068 3.30915V6.71407L95.158 8.41654"
+                        stroke="#D0D0D0"
+                        strokeWidth="1.16071"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M98.107 6.71433L101.056 8.4168"
+                        stroke="#D0D0D0"
+                        strokeWidth="1.16071"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </div>
+
+                {/* Right: expand files (when overflow) + Send */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                  {(filesOverflow || filesExpanded || expandButtonClosing) && (
+                    <button
+                      type="button"
+                      onClick={handleExpandToggle}
+                      className="workspace-action-btn workspace-icon-btn workspace-icon-btn--no-hover-scale"
+                      style={{
+                        width: '37px',
+                        height: '37px',
+                        padding: 0,
+                        border: 'none',
+                        borderRadius: '8px',
+                        backgroundColor: '#EDEDED',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      aria-label={filesExpanded ? 'Згорнути файли' : 'Розгорнути файли'}
+                      title={filesExpanded ? 'Згорнути файли' : 'Розгорнути файли'}
+                    >
+                      <span
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transform: filesExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)',
+                        }}
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#6B6B6B"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                        >
+                          <path d="M18 15l-6-6-6 6" />
+                        </svg>
+                      </span>
+                    </button>
+                  )}
+                  <button
+                    disabled={!canSend}
+                    onClick={handleSend}
+                    className="workspace-action-btn workspace-send-btn"
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      padding: '3px',
+                      border: 'none',
+                      cursor: canSend ? 'pointer' : 'not-allowed',
+                      backgroundColor: 'transparent',
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '8px',
+                      transition: 'opacity 0.15s ease',
+                    }}
+                    aria-label="Надіслати повідомлення"
+                  >
+                    <svg
+                      width="38"
+                      height="38"
+                      viewBox="0 0 37 37"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden="true"
+                    >
+                      <rect
+                        x="0.37"
+                        y="0.37"
+                        width="36.26"
+                        height="36.26"
+                        rx="8.63"
+                        fill={canSend ? '#2A2A2A' : '#EDEDED'}
+                        style={{ transition: 'fill 0.15s ease' }}
+                      />
+                      {canSend && (
+                        <rect
+                          x="0.37"
+                          y="0.37"
+                          width="36.26"
+                          height="36.26"
+                          rx="8.63"
+                          stroke="#9A9A9A"
+                          strokeWidth="0.74"
+                        />
+                      )}
+                      <path
+                        d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
+                        fill={canSend ? 'white' : '#ABABAB'}
+                        style={{ transition: 'fill 0.15s ease' }}
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              overflowX: 'visible',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              position: 'relative',
+              zIndex: 0,
+              backgroundColor: 'transparent',
+            }}
+          >
+            <ChatMessageList
+              messages={messages}
+              isAssistantTyping={isAssistantTyping}
+              regeneratingMessageId={regeneratingMessageId}
+              onSuggestionClick={handleSuggestionClick}
+              onRegenerate={handleRegenerate}
+            />
+          </div>
+          <div
+            style={{
+              position: 'sticky',
+              bottom: 0,
+              padding: '13px 20px 24px',
+              backgroundColor: 'rgba(0, 0, 0, 0)',
+              borderTopLeftRadius: '20px',
+              borderTopRightRadius: '20px',
+              zIndex: 10,
+              isolation: 'isolate',
+            }}
+          >
+            <div style={{ width: `${CHAT_INPUT_MAX_WIDTH}px`, margin: '-12px auto 0' }}>
+              {/* Від’єднана панель файлів — 10px вище за AI space */}
+              {attachedFiles.length > 0 && filesExpanded && (
+                <div
+                  style={{
+                    backgroundColor: systemPromptEditorOpen ? AI_SPACE_EDITOR_ACTIVE_BG : '#F5F6F6',
+                    borderRadius: '16px',
+                    padding: '12px 13px 16px',
+                    marginBottom: '10px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '12px',
+                    }}
+                  >
+                    <input
+                      type="search"
+                      className="workspace-files-panel-field"
+                      placeholder="Пошук за назвою..."
+                      value={fileSearchQuery}
+                      onChange={(e) => setFileSearchQuery(e.target.value)}
+                      style={{
+                        width: '220px',
+                        maxWidth: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #E0E0E0',
+                        backgroundColor: '#fff',
+                        fontSize: '14px',
+                        color: '#2A2A2A',
+                      }}
+                      aria-label="Пошук файлів"
+                    />
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginLeft: 'auto',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={handleRemoveAllFiles}
+                        className="workspace-files-panel-field workspace-action-btn workspace-remove-all-btn"
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #E0E0E0',
+                          backgroundColor: '#fff',
+                          fontSize: '14px',
+                          color: '#2A2A2A',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                        aria-label="Видалити всі файли"
+                      >
+                        Видалити все
+                      </button>
+                      <FileFilterButton
+                        selectedFormats={selectedFormats}
+                        onChange={setSelectedFormats}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    ref={fileListScrollRef}
+                    className="scrollbar-hidden"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      alignContent: 'flex-start',
+                      alignItems: 'flex-start',
+                      gap: '8px',
+                      overflowY: 'auto',
+                      maxHeight: '420px',
+                      ...((selectedFormats.size > 0 || fileSearchQuery.trim()) &&
+                      savedFileListHeight != null
+                        ? { minHeight: savedFileListHeight }
+                        : {}),
+                    }}
+                  >
+                    {filteredAttachedFiles.map(({ item, originalIndex }) => (
+                      <div
+                        key={`${item.file.name}-${item.file.size}-${originalIndex}`}
+                        style={{ flexShrink: 0, width: EXPANDED_FILE_CARD_WIDTH }}
+                      >
+                        <FilePreview
+                          file={item.file}
+                          previewUrl={item.previewUrl}
+                          onRemove={() => {
+                            if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+                            setAttachedFiles((prev) => prev.filter((_, i) => i !== originalIndex));
+                          }}
+                          uniformWidth
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div
+                style={{
+                  minHeight: '103px',
+                  backgroundColor: systemPromptEditorOpen
+                    ? AI_SPACE_EDITOR_ACTIVE_BG
+                    : 'rgba(245, 246, 246, 1)',
+                  borderRadius: '16px',
+                  padding: '13px 13px 8px 13px',
+                  boxSizing: 'border-box',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+              >
+                {attachedFiles.length > 0 && !filesExpanded && (
+                  <div
+                    ref={fileListRef}
+                    className="scrollbar-hidden"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      flexWrap: 'nowrap',
+                      alignItems: 'flex-start',
+                      gap: '8px',
+                      marginBottom: '12px',
+                      overflowX: 'auto',
+                      overflowY: 'hidden',
+                    }}
+                  >
+                    {attachedFiles.map((item, index) => (
+                      <div
+                        key={`${item.file.name}-${item.file.size}-${index}`}
+                        style={{ flexShrink: 0 }}
+                      >
+                        <FilePreview
+                          file={item.file}
+                          previewUrl={item.previewUrl}
+                          onRemove={() => {
+                            if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+                            setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <textarea
+                  ref={textareaRef}
+                  value={value}
+                  onChange={handleChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Запитайте будь-що"
+                  className="placeholder:text-[#8C8C8C]"
+                  rows={1}
+                  style={{
+                    width: '100%',
+                    height: `${CHAT_TEXTAREA_MIN_HEIGHT}px`,
+                    minHeight: `${CHAT_TEXTAREA_MIN_HEIGHT}px`,
+                    maxHeight: `${CHAT_TEXTAREA_MAX_HEIGHT}px`,
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    outline: 'none',
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 400,
+                    fontSize: '16px',
+                    lineHeight: '24px',
+                    letterSpacing: '0.14px',
+                    color: '#000000',
+                    caretColor: '#000000',
+                    resize: 'none',
+                    overflowY: 'auto',
+                  }}
+                />
+                <div
+                  style={{
+                    marginTop: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexShrink: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '2px',
+                      backgroundColor: '#EDEDED',
+                      borderRadius: '9px',
+                      height: '40px',
+                      padding: '0 10px',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="*/*"
+                      multiple
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (files?.length) {
+                          const newItems: AttachedFile[] = Array.from(files).map((file) => {
+                            const isImage =
+                              file.type.startsWith('image/') ||
+                              /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/i.test(file.name);
+                            return {
+                              file,
+                              previewUrl: isImage ? URL.createObjectURL(file) : null,
+                            };
+                          });
+                          setAttachedFiles((prev) => [...prev, ...newItems]);
+                        }
+                        e.target.value = '';
+                      }}
+                      aria-hidden="true"
+                      tabIndex={-1}
+                    />
+                    <button
+                      type="button"
+                      className="workspace-action-btn workspace-icon-btn"
+                      aria-label="Завантажити файл"
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '30px',
+                        height: '30px',
+                        border: 'none',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        borderRadius: '6px',
+                        padding: 0,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 9.5 13.5"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M0.585589 8.75382L0.585589 4.67438C0.58559 2.42137 2.41202 0.594947 4.66503 0.594947C6.91804 0.594947 8.74446 2.42137 8.74446 4.67438V10.1136C8.74446 11.6156 7.52685 12.8333 6.02484 12.8333C4.52283 12.8333 3.30521 11.6156 3.30521 10.1136V4.67438C3.30521 3.92338 3.91402 3.31457 4.66503 3.31457C5.41603 3.31457 6.02484 3.92338 6.02484 4.67438L6.02484 10.1136"
+                          stroke="#575757"
+                          strokeWidth="1.16071"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      className="workspace-action-btn workspace-icon-btn"
+                      aria-label="Редактор чату (system prompt)"
+                      aria-pressed={systemPromptEditorOpen}
+                      onClick={() => setSystemPromptEditorOpen(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 30,
+                        height: 30,
+                        border: systemPromptEditorOpen ? '1px solid #0070f3' : 'none',
+                        background: systemPromptEditorOpen
+                          ? AI_SPACE_EDITOR_ACTIVE_BG
+                          : 'transparent',
+                        cursor: 'pointer',
+                        borderRadius: 6,
+                        padding: 0,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="28.3 0 13.5 13.5"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M35.0366 4.26644L37.4843 6.7141M28.9175 12.8333V9.77368L38.0962 0.594947L41.1558 3.65452L31.9771 12.8333H28.9175Z"
+                          stroke={systemPromptEditorOpen ? '#0070f3' : '#575757'}
+                          strokeWidth="1.16071"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 30,
+                        height: 30,
+                        flexShrink: 0,
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="60.7 0 12.6 13.5"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M68.0212 12.4455L71.5826 10.4548C71.9627 10.2423 72.1525 10.136 72.2907 9.98734C72.413 9.85581 72.5055 9.70089 72.562 9.53256C72.6257 9.34277 72.6257 9.13067 72.6257 8.70765V4.72043C72.6257 4.2974 72.6257 4.08533 72.562 3.89554C72.5055 3.72721 72.413 3.57216 72.2907 3.44063C72.1531 3.29262 71.9638 3.18681 71.5869 2.97614L68.0206 0.982682C67.6404 0.770173 67.4507 0.664134 67.2486 0.622545C67.0698 0.585748 66.8849 0.585748 66.7061 0.622545C66.504 0.664134 66.3137 0.770173 65.9335 0.982682L62.3715 2.97376C61.9917 3.18602 61.802 3.29207 61.6638 3.44063C61.5415 3.57216 61.4491 3.72721 61.3926 3.89554C61.3288 4.08578 61.3288 4.2984 61.3288 4.72342V8.70483C61.3288 9.12985 61.3288 9.34232 61.3926 9.53256C61.4491 9.70089 61.5415 9.85581 61.6638 9.98734C61.8021 10.136 61.9919 10.2423 62.3721 10.4548L65.9335 12.4455C66.3137 12.658 66.504 12.7641 66.7061 12.8057C66.8849 12.8425 67.0698 12.8425 67.2486 12.8057C67.4507 12.7641 67.641 12.658 68.0212 12.4455Z"
+                          stroke="#D0D0D0"
+                          strokeWidth="1.16071"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M65.0205 6.71404C65.0205 7.7603 65.8966 8.60846 66.9773 8.60846C68.0579 8.60846 68.934 7.7603 68.934 6.71404C68.934 5.66778 68.0579 4.81962 66.9773 4.81962C65.8966 4.81962 65.0205 5.66778 65.0205 6.71404Z"
+                          stroke="#D0D0D0"
+                          strokeWidth="1.16071"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 30,
+                        height: 30,
+                        flexShrink: 0,
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="92.2 0 11.9 13.3"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M98.1067 0.585343L103.414 3.64978V8.69714C103.414 9.36638 103.057 9.98478 102.478 10.3194L99.0433 12.3023C98.4637 12.6369 97.7497 12.6369 97.1701 12.3023L93.7355 10.3194C93.156 9.98478 92.7989 9.36638 92.7989 8.69714V3.64978L98.1067 0.585343Z"
+                          stroke="#D0D0D0"
+                          strokeWidth="1.16071"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M98.1068 3.30915V6.71407L95.158 8.41654"
+                          stroke="#D0D0D0"
+                          strokeWidth="1.16071"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M98.107 6.71433L101.056 8.4168"
+                          stroke="#D0D0D0"
+                          strokeWidth="1.16071"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                    {(filesOverflow || filesExpanded || expandButtonClosing) && (
+                      <button
+                        type="button"
+                        onClick={handleExpandToggle}
+                        className="workspace-action-btn workspace-icon-btn workspace-icon-btn--no-hover-scale"
+                        style={{
+                          width: '37px',
+                          height: '37px',
+                          padding: 0,
+                          border: 'none',
+                          borderRadius: '8px',
+                          backgroundColor: '#EDEDED',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        aria-label={filesExpanded ? 'Згорнути файли' : 'Розгорнути файли'}
+                        title={filesExpanded ? 'Згорнути файли' : 'Розгорнути файли'}
+                      >
+                        <span
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transform: filesExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)',
+                          }}
+                        >
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#6B6B6B"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden
+                          >
+                            <path d="M18 15l-6-6-6 6" />
+                          </svg>
+                        </span>
+                      </button>
+                    )}
+                    <button
+                      disabled={!canSend}
+                      onClick={handleSend}
+                      className="workspace-action-btn workspace-send-btn"
+                      style={{
+                        width: '44px',
+                        height: '44px',
+                        padding: '3px',
+                        border: 'none',
+                        cursor: canSend ? 'pointer' : 'not-allowed',
+                        backgroundColor: 'transparent',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '8px',
+                        transition: 'opacity 0.15s ease',
+                      }}
+                      aria-label="Надіслати повідомлення"
+                    >
+                      <svg
+                        width="38"
+                        height="38"
+                        viewBox="0 0 37 37"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden="true"
+                      >
+                        <rect
+                          x="0.37"
+                          y="0.37"
+                          width="36.26"
+                          height="36.26"
+                          rx="8.63"
+                          fill={canSend ? '#2A2A2A' : '#EDEDED'}
+                          style={{ transition: 'fill 0.15s ease' }}
+                        />
+                        {canSend && (
+                          <rect
+                            x="0.37"
+                            y="0.37"
+                            width="36.26"
+                            height="36.26"
+                            rx="8.63"
+                            stroke="#9A9A9A"
+                            strokeWidth="0.74"
+                          />
+                        )}
+                        <path
+                          d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
+                          fill={canSend ? 'white' : '#ABABAB'}
+                          style={{ transition: 'fill 0.15s ease' }}
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Редактор промпту (system prompt) — модалка; при відкритті AI space світло-синій, кнопка-олівець активна */}
+      {systemPromptEditorOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="system-prompt-editor-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            boxSizing: 'border-box',
+          }}
+          onClick={() => setSystemPromptEditorOpen(false)}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(4px)',
+            }}
+            aria-hidden="true"
+          />
+          <div
+            id="system-prompt-editor-dialog"
+            style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: '520px',
+              backgroundColor: '#fff',
+              border: '1px solid #F4F4F6',
+              borderRadius: '26px',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              id="system-prompt-editor-title"
+              style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 600, color: '#2A2A2A' }}
+            >
+              Редактор промпту
+            </h2>
+            <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#575757' }}>
+              Системний промпт для чату (опційно).
+            </p>
+            <textarea
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+              placeholder="Твоя задача давати мені повні відповіді..."
+              rows={4}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '12px',
+                borderRadius: '12px',
+                border: '1px solid #E0E0E0',
+                fontSize: '14px',
+                color: '#2A2A2A',
+                resize: 'vertical',
+                minHeight: '88px',
+              }}
+              aria-label="Системний промпт"
+            />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px',
+                marginTop: '16px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setSystemPromptEditorOpen(false)}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #E0E0E0',
+                  backgroundColor: '#fff',
+                  fontSize: '14px',
+                  color: '#2A2A2A',
+                  cursor: 'pointer',
+                }}
+              >
+                Скасувати
+              </button>
+              <button
+                type="button"
+                onClick={() => setSystemPromptEditorOpen(false)}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#0070f3',
+                  fontSize: '14px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Застосувати
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
+
+export default WorkspaceMain;

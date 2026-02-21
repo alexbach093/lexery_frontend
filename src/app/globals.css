@@ -1,0 +1,491 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans:
+    var(--font-inter), 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+}
+
+/* Boot Screen Animations */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@layer utilities {
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  /* Boot screen animations */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes spin-slow {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes spin-reverse {
+    to {
+      transform: rotate(-360deg);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out forwards;
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 3s linear infinite;
+  }
+
+  .animate-spin-reverse {
+    animation: spin-reverse 2s linear infinite;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+
+  .animation-delay-700 {
+    animation-delay: 700ms;
+  }
+
+  .animation-delay-1000 {
+    animation-delay: 1000ms;
+  }
+}
+
+/* High-quality Lottie rendering */
+.lottie-animation {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
+}
+
+.lottie-animation svg {
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+  image-rendering: -webkit-optimize-contrast;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.lottie-animation path,
+.lottie-animation line,
+.lottie-animation polyline,
+.lottie-animation polygon {
+  shape-rendering: geometricPrecision;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Retina display optimization */
+@media only screen and (-webkit-min-device-pixel-ratio: 2),
+  only screen and (min-resolution: 192dpi),
+  only screen and (min-resolution: 2dppx) {
+  .lottie-animation {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* Boot screen background layer – extends past edges so blur never shows white line */
+.boot-background-layer {
+  position: absolute;
+  left: -3%;
+  top: -3%;
+  width: 106%;
+  height: 106%;
+  background-image: url(/images/boot-background-clean.png);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+/* Blur on laptop/smaller screens to reduce grain; large screens unchanged */
+@media (max-width: 1680px) {
+  .boot-background-layer {
+    filter: blur(2px);
+    -webkit-filter: blur(2px);
+  }
+}
+
+/* Content must sit above the background layer */
+.boot-screen-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Workspace input action buttons — focus, hover, click effect */
+.workspace-action-btn:focus-visible {
+  outline: 2px solid #0070f3;
+  outline-offset: 2px;
+}
+
+.workspace-icon-btn {
+  transform-origin: center;
+  transition: transform 0.12s ease;
+}
+.workspace-icon-btn svg {
+  transform-origin: center;
+  transition:
+    filter 0.12s ease,
+    transform 0.12s ease;
+}
+
+.workspace-icon-btn:hover {
+  transform: scale(1.15);
+}
+.workspace-icon-btn:hover svg {
+  filter: brightness(0) saturate(100%) invert(0.4);
+}
+
+.workspace-icon-btn:active svg {
+  transform: scale(0.92);
+}
+
+/* Кнопка розгортання файлів — без scale при hover/active */
+button.workspace-icon-btn--no-hover-scale:hover,
+button.workspace-icon-btn--no-hover-scale:active {
+  transform: none !important;
+}
+
+.workspace-send-btn:not(:disabled) {
+  transition:
+    transform 0.12s ease,
+    opacity 0.12s ease;
+}
+
+.workspace-send-btn:not(:disabled):active {
+  transform: scale(0.94);
+  opacity: 0.9;
+}
+
+/* Send button: suppress focus ring and hover when disabled */
+.workspace-send-btn:disabled {
+  pointer-events: none;
+}
+
+.workspace-send-btn:disabled:focus-visible {
+  outline: none;
+}
+
+/* Панель файлів: без обводки при фокусі */
+.workspace-files-panel-field:focus {
+  outline: none;
+}
+
+/* Кнопка «Видалити все»: плавний перехід, світло-червоний при наведенні */
+.workspace-remove-all-btn {
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+.workspace-remove-all-btn:hover {
+  border-color: #e57373 !important;
+  color: #c62828 !important;
+}
+
+/* Фільтр файлів: обводка при наведенні на пункт меню */
+.workspace-filter-dropdown-option:hover {
+  border-color: #e0e0e0 !important;
+}
+
+/* Prevent scroll on boot screen pages */
+body:has([role='status'][aria-label='Loading application']) {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Chat typing indicator */
+@keyframes chat-typing {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Кнопки чату: квадратна клікабельна область, круг через border-radius на контейнері */
+.chat-action-btn {
+  box-sizing: border-box;
+  border: none;
+  background-color: transparent;
+  border-radius: 6px;
+  transition: background-color 150ms ease;
+}
+.chat-action-btn.chat-action-btn--circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  transition: transform 0.15s ease;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+.chat-action-btn.chat-action-btn--circle:hover,
+.chat-action-btn.chat-action-btn--circle:active {
+  background-color: transparent;
+}
+.chat-action-btn.chat-action-btn--circle:active {
+  transform: scale(0.92);
+}
+.chat-action-btn.chat-action-btn--circle:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px #0070f3;
+}
+.chat-action-icon,
+.chat-action-btn.chat-action-btn--circle img {
+  display: block;
+  flex-shrink: 0;
+  transition: filter 150ms ease;
+}
+.chat-action-btn.chat-action-btn--circle:hover img,
+.chat-action-btn.chat-action-btn--circle:hover .chat-action-icon {
+  filter: brightness(0) saturate(100%) invert(0.45);
+}
+/* Обрана кнопка лайк/дизлайк: колір не змінюється при hover/active, без зменшення при натисканні */
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked img,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:hover .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:hover img,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active img {
+  filter: brightness(0) saturate(100%) invert(58%) sepia(69%) saturate(457%) hue-rotate(91deg);
+}
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active {
+  transform: none;
+}
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked img,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:hover .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:hover img,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active img {
+  filter: brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg);
+}
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active {
+  transform: none;
+}
+.chat-action-btn:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+.chat-action-btn.chat-action-btn--no-highlight,
+.chat-action-btn.chat-action-btn--no-highlight:hover,
+.chat-action-btn.chat-action-btn--no-highlight:focus,
+.chat-action-btn.chat-action-btn--no-highlight:active {
+  background-color: transparent;
+}
+
+/* Підказка над іконкою (як на скріні): темний скруглений прямокутник, текст по центру, невеликий зазор */
+.chat-action-tooltip-anchor {
+  position: relative;
+  display: inline-flex;
+}
+.chat-action-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 8px;
+  padding: 6px 12px;
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+  font-family: Inter, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: none;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease,
+    visibility 150ms ease;
+}
+
+/* Попап «Згенерувати знову»: підсвітка кнопок «Спробувати знову», «Додати деталі», «Коротше» при наведенні */
+.chat-regenerate-option-btn {
+  background-color: transparent;
+  transition: background-color 0.15s ease;
+}
+.chat-regenerate-option-btn:hover {
+  background-color: #f7f7f7;
+}
+
+/* Horizontal scroll without visible scrollbar (гортання вправо/вліво без смуги скролу) */
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}

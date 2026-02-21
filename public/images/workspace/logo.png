@@ -1,0 +1,15 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 42 40.4511" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="logo">
+<path id="out cube" d="M20.9201 36.4091L21.0044 20.2691" stroke="var(--stroke-0, black)" stroke-width="1.67" stroke-miterlimit="5.01585" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="out cube_2" d="M7.00095 28.3251L12.6861 24.8953L7.0099 12.1415" stroke="var(--stroke-0, black)" stroke-width="1.67" stroke-miterlimit="5.01585" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="out cube_3" d="M6.99733 28.3251L20.9993 36.4091L35.0102 28.3096" stroke="var(--stroke-0, black)" stroke-width="1.67" stroke-miterlimit="5.01585" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="out cube_4" d="M34.999 12.126L29.3545 24.8953L34.99 28.3096" stroke="var(--stroke-0, black)" stroke-width="1.67" stroke-miterlimit="5.01585" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="out cube_5" d="M6.99731 12.1415L21.0082 4.04202L35.0102 12.126" stroke="var(--stroke-0, black)" stroke-width="1.67" stroke-miterlimit="5.01585" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="out cube_6" d="M6.99731 12.1415L21.0747 20.2691L35.0102 12.126" stroke="var(--stroke-0, black)" stroke-width="1.67" stroke-miterlimit="5.01585" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="inside cube" d="M21.0143 29.8772L12.6523 25.0494L12.6523 15.3937" stroke="var(--stroke-0, black)" stroke-width="1.67" stroke-miterlimit="5.01585" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="inside cube_2" d="M20.9918 29.8772L29.3538 25.0494L29.3538 15.3937" stroke="var(--stroke-0, black)" stroke-width="1.67" stroke-miterlimit="5.01585" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="inside cube_3" d="M12.6402 15.3937L21.0022 10.5659L29.3642 15.3937" stroke="var(--stroke-0, black)" stroke-width="1.67" stroke-miterlimit="5.01585" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="inside cube_4" d="M12.6402 15.3937L21.0473 20.2476L29.3642 15.3937" stroke="var(--stroke-0, black)" stroke-width="1.67" stroke-miterlimit="5.01585" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="inside cube_5" d="M20.9519 29.8772L20.997 20.2476" stroke="var(--stroke-0, black)" stroke-width="1.67" stroke-miterlimit="5.01585" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>
