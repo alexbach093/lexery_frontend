@@ -9,6 +9,8 @@ export interface FilePreviewProps {
   previewUrl: string | null;
   /** Called when the user clicks the remove (X) button. */
   onRemove: () => void;
+  /** У розгорнутому файл-менеджері — однакова ширина картки, без пустих місць справа. */
+  uniformWidth?: boolean;
 }
 
 const THUMBNAIL_SIZE = 28;
@@ -61,7 +63,7 @@ function PlaceholderIcon() {
  * Matches design: #EBEBEB card, thumbnail with landscape placeholder, dark grey text, X without background.
  * Revokes previewUrl on unmount to avoid memory leaks.
  */
-export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
+export function FilePreview({ file, previewUrl, onRemove, uniformWidth }: FilePreviewProps) {
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
@@ -80,6 +82,12 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
 
   const showImageThumbnail = isImageOrSvg(file) && previewUrl && !imageError;
 
+  const name = file.name;
+  const lastDot = name.lastIndexOf('.');
+  const hasExtension = lastDot > 0 && lastDot < name.length - 1;
+  const baseName = hasExtension ? name.slice(0, lastDot) : name;
+  const extension = hasExtension ? name.slice(lastDot) : ''; // e.g. ".pdf"
+
   return (
     <div
       style={{
@@ -90,8 +98,8 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
         minHeight: '38px',
         backgroundColor: '#EBEBEB',
         borderRadius: CARD_RADIUS,
-        width: 'fit-content',
-        maxWidth: CARD_MAX_WIDTH,
+        width: uniformWidth ? '100%' : 'fit-content',
+        maxWidth: uniformWidth ? '100%' : CARD_MAX_WIDTH,
         minWidth: 0,
         boxSizing: 'border-box',
       }}
@@ -128,7 +136,7 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
         )}
       </div>
 
-      {/* Middle: file name + size */}
+      {/* Middle: file name (base + extension) + size */}
       <div
         style={{
           flex: 1,
@@ -139,21 +147,47 @@ export function FilePreview({ file, previewUrl, onRemove }: FilePreviewProps) {
           justifyContent: 'center',
         }}
       >
-        <span
+        <div
           style={{
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: 600,
-            fontSize: '12px',
-            lineHeight: '16px',
-            letterSpacing: '0.12px',
-            color: '#333333',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'baseline',
+            minWidth: 0,
+            gap: '2px',
           }}
         >
-          {file.name}
-        </span>
+          <span
+            style={{
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 600,
+              fontSize: '12px',
+              lineHeight: '16px',
+              letterSpacing: '0.12px',
+              color: '#333333',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              minWidth: 0,
+              flex: hasExtension ? 1 : undefined,
+            }}
+          >
+            {baseName}
+          </span>
+          {hasExtension && (
+            <span
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 600,
+                fontSize: '12px',
+                lineHeight: '16px',
+                letterSpacing: '0.12px',
+                color: '#888888',
+                flexShrink: 0,
+              }}
+            >
+              {extension}
+            </span>
+          )}
+        </div>
         <span
           style={{
             fontFamily: 'Inter, sans-serif',

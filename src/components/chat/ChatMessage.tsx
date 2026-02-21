@@ -17,6 +17,8 @@ export interface ChatMessageProps {
   onSuggestionClick?: (text: string) => void;
   /** When true, show typing indicator instead of content. */
   isTyping?: boolean;
+  /** Regenerate last assistant response (only for last assistant message). modifier = custom instruction for change. */
+  onRegenerate?: (modifier?: string) => void;
 }
 
 /** Parse **bold** and newlines into React nodes. */
@@ -73,16 +75,60 @@ type TooltipId = 'copy' | 'thumbs-up' | 'thumbs-down' | 'refresh' | null;
 type UserMessageTooltipId = 'copy' | 'edit' | null;
 
 /** Action icons row below AI response — copy, like, dislike, regenerate, "Переглянути процес". Icons from public/images/chat/*.svg */
-function ActionIconsRow() {
+function ActionIconsRow({
+  content,
+  onRegenerate,
+}: {
+  content: string;
+  onRegenerate?: (modifier?: string) => void;
+}) {
   const iconSize = 14;
   const size = 32; // square clickable area (circle = border-radius on container)
   const [tooltipVisibleId, setTooltipVisibleId] = useState<TooltipId>(null);
+  const [copyFeedback, setCopyFeedback] = useState(false);
+  const [feedbackLike, setFeedbackLike] = useState<'like' | 'dislike' | null>(null);
+  const [showThankYouTooltip, setShowThankYouTooltip] = useState(false);
+  const [regeneratePopoverOpen, setRegeneratePopoverOpen] = useState(false);
+  const [regeneratePrompt, setRegeneratePrompt] = useState('');
+  const [regeneratePopoverBelow, setRegeneratePopoverBelow] = useState(false);
+  const regenerateAnchorRef = useRef<HTMLDivElement>(null);
+  const regeneratePopoverRef = useRef<HTMLDivElement>(null);
+
+  const POPOVER_APPROX_HEIGHT = 200;
+
+  const toggleRegeneratePopover = () => {
+    setRegeneratePopoverOpen((open) => {
+      if (!open && regenerateAnchorRef.current) {
+        const rect = regenerateAnchorRef.current.getBoundingClientRect();
+        setRegeneratePopoverBelow(rect.top < POPOVER_APPROX_HEIGHT + 12);
+      }
+      return !open;
+    });
+  };
+
+  const handleLike = (value: 'like' | 'dislike') => {
+    if (feedbackLike === value) return;
+    setFeedbackLike(value);
+    setShowThankYouTooltip(true);
+    setTimeout(() => setShowThankYouTooltip(false), 1500);
+  };
+
+  const handleCopy = () => {
+    if (!content.trim()) return;
+    navigator.clipboard.writeText(content).then(
+      () => {
+        setCopyFeedback(true);
+        setTimeout(() => setCopyFeedback(false), 1500);
+      },
+      () => {}
+    );
+  };
   const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const halfSecondTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoveredIdRef = useRef<TooltipId>(null);
   const hasWaitedEnoughRef = useRef(false);
 
-  const TOOLTIP_DELAY_MS = 1000;
+  const TOOLTIP_DELAY_MS = 1250;
 
   const showTooltipAfterDelay = (id: TooltipId) => {
     hoveredIdRef.current = id;
@@ -130,6 +176,27 @@ function ActionIconsRow() {
     []
   );
 
+  useEffect(() => {
+    if (!regeneratePopoverOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        regenerateAnchorRef.current?.contains(target) ||
+        regeneratePopoverRef.current?.contains(target)
+      )
+        return;
+      setRegeneratePopoverOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [regeneratePopoverOpen]);
+
+  const runRegenerate = (modifier?: string) => {
+    onRegenerate?.(modifier);
+    setRegeneratePopoverOpen(false);
+    setRegeneratePrompt('');
+  };
+
   const btnStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
@@ -170,6 +237,7 @@ function ActionIconsRow() {
             className="chat-action-btn chat-action-btn--circle"
             aria-label="Копіювати"
             aria-describedby="chat-action-tooltip-copy"
+            onClick={handleCopy}
           >
             <Image
               src="/images/chat/copy.svg"
@@ -185,15 +253,15 @@ function ActionIconsRow() {
             className="chat-action-tooltip"
             role="tooltip"
             style={{
-              opacity: tooltipVisibleId === 'copy' ? 1 : 0,
-              visibility: tooltipVisibleId === 'copy' ? 'visible' : 'hidden',
+              opacity: tooltipVisibleId === 'copy' || copyFeedback ? 1 : 0,
+              visibility: tooltipVisibleId === 'copy' || copyFeedback ? 'visible' : 'hidden',
               transform:
-                tooltipVisibleId === 'copy'
+                tooltipVisibleId === 'copy' || copyFeedback
                   ? 'translateX(-50%) translateY(0)'
                   : 'translateX(-50%) translateY(4px)',
             }}
           >
-            Копіювати
+            {copyFeedback ? 'Скопійовано' : 'Копіювати'}
           </span>
         </div>
         <div
@@ -204,9 +272,10 @@ function ActionIconsRow() {
           <button
             type="button"
             style={btnStyle}
-            className="chat-action-btn chat-action-btn--circle"
+            className={`chat-action-btn chat-action-btn--circle${feedbackLike === 'like' ? 'chat-action-btn--liked' : ''}`}
             aria-label="Подобається"
             aria-describedby="chat-action-tooltip-thumbs-up"
+            onClick={() => handleLike('like')}
           >
             <Image
               src="/images/chat/thumbs-up.svg"
@@ -222,15 +291,21 @@ function ActionIconsRow() {
             className="chat-action-tooltip"
             role="tooltip"
             style={{
-              opacity: tooltipVisibleId === 'thumbs-up' ? 1 : 0,
-              visibility: tooltipVisibleId === 'thumbs-up' ? 'visible' : 'hidden',
+              opacity:
+                tooltipVisibleId === 'thumbs-up' || (feedbackLike === 'like' && showThankYouTooltip)
+                  ? 1
+                  : 0,
+              visibility:
+                tooltipVisibleId === 'thumbs-up' || (feedbackLike === 'like' && showThankYouTooltip)
+                  ? 'visible'
+                  : 'hidden',
               transform:
-                tooltipVisibleId === 'thumbs-up'
+                tooltipVisibleId === 'thumbs-up' || (feedbackLike === 'like' && showThankYouTooltip)
                   ? 'translateX(-50%) translateY(0)'
                   : 'translateX(-50%) translateY(4px)',
             }}
           >
-            Подобається
+            {feedbackLike === 'like' && showThankYouTooltip ? 'Дякуємо за відгук!' : 'Подобається'}
           </span>
         </div>
         <div
@@ -241,9 +316,10 @@ function ActionIconsRow() {
           <button
             type="button"
             style={btnStyle}
-            className="chat-action-btn chat-action-btn--circle"
+            className={`chat-action-btn chat-action-btn--circle${feedbackLike === 'dislike' ? 'chat-action-btn--disliked' : ''}`}
             aria-label="Не подобається"
             aria-describedby="chat-action-tooltip-thumbs-down"
+            onClick={() => handleLike('dislike')}
           >
             <Image
               src="/images/chat/thumbs-down.svg"
@@ -259,19 +335,32 @@ function ActionIconsRow() {
             className="chat-action-tooltip"
             role="tooltip"
             style={{
-              opacity: tooltipVisibleId === 'thumbs-down' ? 1 : 0,
-              visibility: tooltipVisibleId === 'thumbs-down' ? 'visible' : 'hidden',
+              opacity:
+                tooltipVisibleId === 'thumbs-down' ||
+                (feedbackLike === 'dislike' && showThankYouTooltip)
+                  ? 1
+                  : 0,
+              visibility:
+                tooltipVisibleId === 'thumbs-down' ||
+                (feedbackLike === 'dislike' && showThankYouTooltip)
+                  ? 'visible'
+                  : 'hidden',
               transform:
-                tooltipVisibleId === 'thumbs-down'
+                tooltipVisibleId === 'thumbs-down' ||
+                (feedbackLike === 'dislike' && showThankYouTooltip)
                   ? 'translateX(-50%) translateY(0)'
                   : 'translateX(-50%) translateY(4px)',
             }}
           >
-            Не подобається
+            {feedbackLike === 'dislike' && showThankYouTooltip
+              ? 'Дякуємо за відгук!'
+              : 'Не подобається'}
           </span>
         </div>
         <div
+          ref={regenerateAnchorRef}
           className="chat-action-tooltip-anchor"
+          style={{ position: 'relative' }}
           onMouseEnter={() => showTooltipAfterDelay('refresh')}
           onFocusCapture={() => showTooltipAfterDelay('refresh')}
         >
@@ -280,7 +369,10 @@ function ActionIconsRow() {
             style={btnStyle}
             className="chat-action-btn chat-action-btn--circle"
             aria-label="Згенерувати знову"
+            aria-expanded={regeneratePopoverOpen}
+            aria-haspopup="dialog"
             aria-describedby="chat-action-tooltip-refresh"
+            onClick={toggleRegeneratePopover}
           >
             <Image
               src="/images/chat/refresh.svg"
@@ -296,16 +388,190 @@ function ActionIconsRow() {
             className="chat-action-tooltip"
             role="tooltip"
             style={{
-              opacity: tooltipVisibleId === 'refresh' ? 1 : 0,
-              visibility: tooltipVisibleId === 'refresh' ? 'visible' : 'hidden',
+              opacity: tooltipVisibleId === 'refresh' && !regeneratePopoverOpen ? 1 : 0,
+              visibility:
+                tooltipVisibleId === 'refresh' && !regeneratePopoverOpen ? 'visible' : 'hidden',
               transform:
-                tooltipVisibleId === 'refresh'
+                tooltipVisibleId === 'refresh' && !regeneratePopoverOpen
                   ? 'translateX(-50%) translateY(0)'
                   : 'translateX(-50%) translateY(4px)',
             }}
           >
             Згенерувати знову
           </span>
+          {regeneratePopoverOpen && (
+            <div
+              ref={regeneratePopoverRef}
+              role="dialog"
+              aria-label="Змінити відповідь"
+              style={{
+                position: 'absolute',
+                ...(regeneratePopoverBelow
+                  ? { top: '100%', marginTop: '6px' }
+                  : { bottom: '100%', marginBottom: '6px' }),
+                right: 0,
+                width: '220px',
+                padding: '8px',
+                borderRadius: '10px',
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E0E0E0',
+                boxShadow: 'none',
+                zIndex: 50,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+              }}
+            >
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  value={regeneratePrompt}
+                  onChange={(e) => setRegeneratePrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (regeneratePrompt.trim()) runRegenerate(regeneratePrompt.trim());
+                    }
+                  }}
+                  placeholder="Уточнення"
+                  autoFocus
+                  style={{
+                    flex: 1,
+                    padding: '6px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid #E0E0E0',
+                    backgroundColor: '#F7F7F7',
+                    color: '#2A2A2A',
+                    fontSize: '13px',
+                    outline: 'none',
+                  }}
+                  aria-label="Текст зміни відповіді"
+                />
+                <button
+                  type="button"
+                  disabled={!regeneratePrompt.trim()}
+                  onClick={() => regeneratePrompt.trim() && runRegenerate(regeneratePrompt.trim())}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '30px',
+                    height: '30px',
+                    padding: 0,
+                    border: 'none',
+                    borderRadius: '6px',
+                    backgroundColor: regeneratePrompt.trim() ? '#2A2A2A' : '#EDEDED',
+                    color: regeneratePrompt.trim() ? '#FFFFFF' : '#ABABAB',
+                    cursor: regeneratePrompt.trim() ? 'pointer' : 'not-allowed',
+                    transition: 'background-color 0.15s ease, color 0.15s ease',
+                  }}
+                  aria-label="Надіслати"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 37 37"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ transition: 'fill 0.15s ease' }}
+                  >
+                    <path
+                      d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div style={{ height: 1, backgroundColor: '#E0E0E0', margin: '2px 0' }} />
+              <button
+                type="button"
+                onClick={() => runRegenerate()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  padding: '6px 10px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#2A2A2A',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+                className="chat-regenerate-option-btn"
+              >
+                <Image
+                  src="/images/chat/refresh.svg"
+                  alt=""
+                  width={14}
+                  height={14}
+                  style={{ opacity: 0.9 }}
+                />
+                Спробувати знову
+              </button>
+              <button
+                type="button"
+                onClick={() => runRegenerate('Додай більше деталей')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  padding: '6px 10px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#2A2A2A',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+                className="chat-regenerate-option-btn"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Додати деталі
+              </button>
+              <button
+                type="button"
+                onClick={() => runRegenerate('Зроби відповідь коротшою')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  padding: '6px 10px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: '#2A2A2A',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+                className="chat-regenerate-option-btn"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M5 12h14" />
+                </svg>
+                Коротше
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <button
@@ -385,6 +651,7 @@ function UserAttachmentsMultiple({ attachments }: { attachments: MessageAttachme
           transition:
             'opacity 0.2s cubic-bezier(0.33, 0.8, 0.5, 1), transform 0.2s cubic-bezier(0.33, 0.8, 0.5, 1), visibility 0.2s',
           pointerEvents: expanded ? 'auto' : 'none',
+          ...(n > 4 ? { maxHeight: '170px', overflowY: 'auto' as const } : {}),
         }}
       >
         {attachments.map((att, i) => (
@@ -626,9 +893,11 @@ export function ChatMessage({
   attachments = [],
   onSuggestionClick: _onSuggestionClick,
   isTyping = false,
+  onRegenerate,
 }: ChatMessageProps) {
   const attachmentsRef = useRef(attachments);
   const [userTooltipVisibleId, setUserTooltipVisibleId] = useState<UserMessageTooltipId>(null);
+  const [userCopyFeedback, setUserCopyFeedback] = useState(false);
   const userTooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userHalfSecondTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userHoveredIdRef = useRef<UserMessageTooltipId>(null);
@@ -668,7 +937,7 @@ export function ChatMessage({
       background: 'transparent',
       transition: 'background-color 150ms ease',
     };
-    const USER_TOOLTIP_DELAY_MS = 1000;
+    const USER_TOOLTIP_DELAY_MS = 1250;
 
     const showUserTooltipAfterDelay = (id: UserMessageTooltipId) => {
       userHoveredIdRef.current = id;
@@ -706,6 +975,16 @@ export function ChatMessage({
       userHasWaitedEnoughRef.current = false;
       userHoveredIdRef.current = null;
       setUserTooltipVisibleId(null);
+    };
+    const handleUserCopy = () => {
+      if (!content.trim()) return;
+      navigator.clipboard.writeText(content).then(
+        () => {
+          setUserCopyFeedback(true);
+          setTimeout(() => setUserCopyFeedback(false), 1500);
+        },
+        () => {}
+      );
     };
     return (
       <div
@@ -781,6 +1060,7 @@ export function ChatMessage({
                 className="chat-action-btn chat-action-btn--circle focus-visible:outline-none"
                 aria-label="Копіювати"
                 aria-describedby="user-msg-tooltip-copy"
+                onClick={handleUserCopy}
               >
                 <Image
                   src="/images/chat/copy.svg"
@@ -796,15 +1076,16 @@ export function ChatMessage({
                 className="chat-action-tooltip"
                 role="tooltip"
                 style={{
-                  opacity: userTooltipVisibleId === 'copy' ? 1 : 0,
-                  visibility: userTooltipVisibleId === 'copy' ? 'visible' : 'hidden',
+                  opacity: userTooltipVisibleId === 'copy' || userCopyFeedback ? 1 : 0,
+                  visibility:
+                    userTooltipVisibleId === 'copy' || userCopyFeedback ? 'visible' : 'hidden',
                   transform:
-                    userTooltipVisibleId === 'copy'
+                    userTooltipVisibleId === 'copy' || userCopyFeedback
                       ? 'translateX(-50%) translateY(0)'
                       : 'translateX(-50%) translateY(4px)',
                 }}
               >
-                Копіювати
+                {userCopyFeedback ? 'Скопійовано' : 'Копіювати'}
               </span>
             </div>
             <div
@@ -866,7 +1147,7 @@ export function ChatMessage({
       ) : (
         <div style={{ width: '100%' }}>
           <AssistantContent content={content} />
-          <ActionIconsRow />
+          <ActionIconsRow content={content} onRegenerate={onRegenerate} />
         </div>
       )}
     </div>

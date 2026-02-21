@@ -10,13 +10,19 @@ export interface ChatMessageListProps {
   messages: Message[];
   /** When true, show typing indicator as last item. */
   isAssistantTyping?: boolean;
+  /** Id повідомлення асистента, яке зараз перегенеровується — показуємо typing на його місці. */
+  regeneratingMessageId?: string | null;
   onSuggestionClick?: (text: string) => void;
+  /** Regenerate assistant response by message id. modifier = custom instruction for change. */
+  onRegenerate?: (assistantMessageId: string, modifier?: string) => void;
 }
 
 export function ChatMessageList({
   messages,
   isAssistantTyping = false,
+  regeneratingMessageId = null,
   onSuggestionClick,
+  onRegenerate,
 }: ChatMessageListProps) {
   const listEndRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +52,12 @@ export function ChatMessageList({
           suggestions={msg.suggestions}
           attachments={msg.attachments}
           onSuggestionClick={onSuggestionClick}
+          onRegenerate={
+            msg.role === 'assistant'
+              ? (modifier?: string) => onRegenerate?.(msg.id, modifier)
+              : undefined
+          }
+          isTyping={msg.role === 'assistant' && msg.id === regeneratingMessageId}
         />
       ))}
       {isAssistantTyping && <ChatMessage role="assistant" content="" isTyping />}

@@ -333,6 +333,17 @@ button.workspace-icon-btn--no-hover-scale:active {
   outline: none;
 }
 
+/* Кнопка «Видалити все»: плавний перехід, світло-червоний при наведенні */
+.workspace-remove-all-btn {
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+.workspace-remove-all-btn:hover {
+  border-color: #e57373 !important;
+  color: #c62828 !important;
+}
+
 /* Фільтр файлів: обводка при наведенні на пункт меню */
 .workspace-filter-dropdown-option:hover {
   border-color: #e0e0e0 !important;
@@ -373,12 +384,16 @@ body:has([role='status'][aria-label='Loading application']) {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
+  transition: transform 0.15s ease;
   cursor: pointer;
   transition: background-color 150ms ease;
 }
 .chat-action-btn.chat-action-btn--circle:hover,
 .chat-action-btn.chat-action-btn--circle:active {
   background-color: transparent;
+}
+.chat-action-btn.chat-action-btn--circle:active {
+  transform: scale(0.92);
 }
 .chat-action-btn.chat-action-btn--circle:focus-visible {
   outline: none;
@@ -395,6 +410,29 @@ body:has([role='status'][aria-label='Loading application']) {
 .chat-action-btn.chat-action-btn--circle:hover img,
 .chat-action-btn.chat-action-btn--circle:hover .chat-action-icon {
   filter: brightness(0) saturate(100%) invert(0.45);
+}
+/* Обрана кнопка лайк/дизлайк: колір не змінюється при hover/active, без зменшення при натисканні */
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked img,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:hover .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:hover img,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active img {
+  filter: brightness(0) saturate(100%) invert(58%) sepia(69%) saturate(457%) hue-rotate(91deg);
+}
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active {
+  transform: none;
+}
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked img,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:hover .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:hover img,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active img {
+  filter: brightness(0) saturate(100%) invert(27%) sepia(51%) saturate(2878%) hue-rotate(346deg);
+}
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active {
+  transform: none;
 }
 .chat-action-btn:hover {
   background-color: rgba(0, 0, 0, 0.08);
@@ -432,6 +470,15 @@ body:has([role='status'][aria-label='Loading application']) {
     opacity 150ms ease,
     transform 150ms ease,
     visibility 150ms ease;
+}
+
+/* Попап «Згенерувати знову»: підсвітка кнопок «Спробувати знову», «Додати деталі», «Коротше» при наведенні */
+.chat-regenerate-option-btn {
+  background-color: transparent;
+  transition: background-color 0.15s ease;
+}
+.chat-regenerate-option-btn:hover {
+  background-color: #f7f7f7;
 }
 
 /* Horizontal scroll without visible scrollbar (гортання вправо/вліво без смуги скролу) */

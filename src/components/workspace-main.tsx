@@ -21,6 +21,10 @@ const HOME_TEXTAREA_MAX_HEIGHT = 240;
 const CHAT_TEXTAREA_MIN_HEIGHT = 30;
 const CHAT_TEXTAREA_MAX_HEIGHT = 120;
 const CHAT_INPUT_MAX_WIDTH = 738;
+/** Ширина картки файлу в розгорнутому файл-менеджері — однаковий розмір, без пустих місць. */
+const EXPANDED_FILE_CARD_WIDTH = 232;
+/** Світло-синій для AI space і кнопки редактора (активний стан) — з палітри boot/#0070f3. */
+const AI_SPACE_EDITOR_ACTIVE_BG = '#E8F0FE';
 
 /** One attached file and its object URL for preview (revoked on remove). */
 interface AttachedFile {
@@ -73,7 +77,9 @@ function getFileFormatId(file: File): string | null {
   return null;
 }
 
-/** Чіпи форматів (внутрішній контент для попапу). */
+const FILE_FORMAT_ROW1_COUNT = 7;
+
+/** Чіпи форматів (внутрішній контент для попапу) — два ряди. */
 function FileFormatFilterChips({
   selectedFormats,
   onChange,
@@ -94,45 +100,57 @@ function FileFormatFilterChips({
     );
   };
 
+  const gap = compact ? 6 : 8;
+  const row1 = FILE_FORMAT_OPTIONS.slice(0, FILE_FORMAT_ROW1_COUNT);
+  const row2 = FILE_FORMAT_OPTIONS.slice(FILE_FORMAT_ROW1_COUNT);
+
+  const renderButton = (opt: (typeof FILE_FORMAT_OPTIONS)[0]) => {
+    const active = selectedFormats.has(opt.id);
+    return (
+      <button
+        key={opt.id}
+        type="button"
+        onClick={() => toggle(opt.id)}
+        aria-pressed={active}
+        style={{
+          padding: compact ? '6px 10px' : '8px 12px',
+          borderRadius: '6px',
+          border: `1px solid ${active ? '#2A2A2A' : '#E0E0E0'}`,
+          backgroundColor: active ? '#2A2A2A' : '#fff',
+          color: active ? '#fff' : '#2A2A2A',
+          fontSize: compact ? '12px' : '13px',
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: 'Inter, sans-serif',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {opt.label}
+      </button>
+    );
+  };
+
   return (
     <div
       style={{
         display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        gap: compact ? '6px' : '8px',
+        flexDirection: 'column',
+        gap,
       }}
       role="group"
       aria-label="Фільтр за форматом файлу"
     >
-      {FILE_FORMAT_OPTIONS.map((opt) => {
-        const active = selectedFormats.has(opt.id);
-        return (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => toggle(opt.id)}
-            aria-pressed={active}
-            style={{
-              padding: compact ? '6px 10px' : '8px 12px',
-              borderRadius: '6px',
-              border: `1px solid ${active ? '#2A2A2A' : '#E0E0E0'}`,
-              backgroundColor: active ? '#2A2A2A' : '#fff',
-              color: active ? '#fff' : '#2A2A2A',
-              fontSize: compact ? '12px' : '13px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap }}>
+        {row1.map(renderButton)}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap }}>
+        {row2.map(renderButton)}
+      </div>
     </div>
   );
 }
+
+const FILTER_POPOVER_DURATION_MS = 200;
 
 /** Кнопка «Фільтр»: відкриває попап з чіпами форматів (зручно, не займає місце в рядку). */
 function FileFilterButton({
@@ -143,28 +161,77 @@ function FileFilterButton({
   onChange: (set: Set<string>) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [visible, setVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
+        setClosing(true);
+        if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = setTimeout(() => {
+          setClosing(false);
+          setVisible(false);
+          closeTimeoutRef.current = null;
+        }, FILTER_POPOVER_DURATION_MS);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [open]);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+    };
+  }, [open, closing]);
+
+  useEffect(() => {
+    if (open && !closing) {
+      const id = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(id);
+    }
+    if (!open) {
+      const id = requestAnimationFrame(() => setVisible(false));
+      return () => cancelAnimationFrame(id);
+    }
+  }, [open, closing]);
+
+  const handleToggle = () => {
+    if (open) {
+      setOpen(false);
+      setClosing(true);
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = setTimeout(() => {
+        setClosing(false);
+        setVisible(false);
+        closeTimeoutRef.current = null;
+      }, FILTER_POPOVER_DURATION_MS);
+    } else {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+      setClosing(false);
+      setOpen(true);
+    }
+  };
 
   const count = selectedFormats.size;
   const label = count > 0 ? `Фільтр (${count})` : 'Фільтр';
+  const popoverShown = open || closing;
+  const popoverVisible = open && visible && !closing;
 
   return (
     <div ref={containerRef} style={{ position: 'relative', flexShrink: 0 }}>
       <button
         type="button"
         className="workspace-files-panel-field"
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleToggle}
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label="Відкрити фільтр за форматом файлу"
@@ -186,42 +253,54 @@ function FileFilterButton({
         }}
       >
         <span>{label}</span>
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <span
           style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             flexShrink: 0,
-            transform: open ? 'rotate(180deg)' : 'none',
-            transition: 'transform 0.2s ease',
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            transformOrigin: 'center center',
+            transition: 'transform 0.25s ease-out',
           }}
           aria-hidden
         >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ display: 'block' }}
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </span>
       </button>
-      {open && (
+      {popoverShown && (
         <div
           role="dialog"
           aria-label="Фільтр за форматом файлу"
           style={{
             position: 'absolute',
-            top: '100%',
+            bottom: '100%',
             right: 0,
             left: 'auto',
-            marginTop: '6px',
-            padding: '10px 12px',
+            marginBottom: '6px',
+            padding: '12px',
             borderRadius: '12px',
             backgroundColor: '#fff',
             border: '1px solid #E8E8E8',
             zIndex: 50,
-            minWidth: '280px',
-            maxWidth: '360px',
+            opacity: popoverVisible ? 1 : 0,
+            transform: popoverVisible ? 'translateY(0)' : 'translateY(6px)',
+            transition: `opacity ${FILTER_POPOVER_DURATION_MS}ms ease, transform ${FILTER_POPOVER_DURATION_MS}ms ease`,
+            pointerEvents: popoverVisible ? 'auto' : 'none',
+            width: 'fit-content',
+            minWidth: '420px',
           }}
         >
           <FileFormatFilterChips selectedFormats={selectedFormats} onChange={onChange} compact />
@@ -242,10 +321,14 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isAssistantTyping, setIsAssistantTyping] = useState(false);
+  /** Id повідомлення асистента, яке зараз перегенеровується — показуємо typing на його місці. */
+  const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileListRef = useRef<HTMLDivElement>(null);
   const isEmpty = value.trim().length === 0;
+  const isGenerationInProgress = isAssistantTyping || regeneratingMessageId != null;
+  const canSend = (!isEmpty || attachedFiles.length > 0) && !isGenerationInProgress;
   const hasMessages = messages.length > 0;
   /** У чаті: спочатку тільки іконка міняється, потім (після затримки) текст і розмір. */
   const [tipsButtonCompact, setTipsButtonCompact] = useState(false);
@@ -263,6 +346,9 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   /** Висота області з файлами без фільтра — зберігаємо, щоб при фільтрі/пошуку розмір не змінювався. */
   const [savedFileListHeight, setSavedFileListHeight] = useState<number | null>(null);
   const fileListScrollRef = useRef<HTMLDivElement>(null);
+  /** Відкрито модалку «Редактор промпту» — AI space підсвічується світло-синім, кнопка-олівець активна. */
+  const [systemPromptEditorOpen, setSystemPromptEditorOpen] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState('');
 
   const filteredAttachedFiles = useMemo(() => {
     const q = fileSearchQuery.trim().toLowerCase();
@@ -357,6 +443,15 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     });
   }, []);
 
+  const handleRemoveAllFiles = useCallback(() => {
+    setAttachedFiles((prev) => {
+      prev.forEach((item) => {
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+      });
+      return [];
+    });
+  }, []);
+
   const resizeTextarea = useCallback((el: HTMLTextAreaElement, isChat: boolean) => {
     el.style.height = 'auto';
     const minH = isChat ? CHAT_TEXTAREA_MIN_HEIGHT : HOME_TEXTAREA_MIN_HEIGHT;
@@ -431,6 +526,32 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     }, 1200);
   }, []);
 
+  const handleRegenerate = useCallback(
+    (assistantMessageId: string, _modifier?: string) => {
+      const msg = messages.find((m) => m.id === assistantMessageId);
+      if (!msg || msg.role !== 'assistant') return;
+      setRegeneratingMessageId(assistantMessageId);
+      // TODO: replace mock response with real API call (resend user message before this; use modifier if provided)
+      setTimeout(() => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMessageId
+              ? {
+                  id: generateId(),
+                  role: 'assistant' as const,
+                  content:
+                    '**Заголовок відповіді:**\n\nТекст відповіді. Тут буде відповідь від AI після інтеграції з бекендом.',
+                  suggestions: ['Детальніше', 'Ще приклад'],
+                }
+              : m
+          )
+        );
+        setRegeneratingMessageId(null);
+      }, 1500);
+    },
+    [messages]
+  );
+
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setValue(e.target.value);
@@ -443,10 +564,10 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        if (value.trim() || attachedFiles.length > 0) handleSend();
+        if (canSend) handleSend();
       }
     },
-    [value, attachedFiles.length, handleSend]
+    [canSend, handleSend]
   );
 
   return (
@@ -617,7 +738,32 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     }}
                     aria-label="Пошук файлів"
                   />
-                  <div style={{ marginLeft: 'auto' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginLeft: 'auto',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={handleRemoveAllFiles}
+                      className="workspace-files-panel-field workspace-action-btn workspace-remove-all-btn"
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #E0E0E0',
+                        backgroundColor: '#fff',
+                        fontSize: '14px',
+                        color: '#2A2A2A',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                      aria-label="Видалити всі файли"
+                    >
+                      Видалити все
+                    </button>
                     <FileFilterButton
                       selectedFormats={selectedFormats}
                       onChange={setSelectedFormats}
@@ -631,6 +777,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     display: 'flex',
                     flexDirection: 'row',
                     flexWrap: 'wrap',
+                    alignContent: 'flex-start',
                     alignItems: 'flex-start',
                     gap: '8px',
                     overflowY: 'auto',
@@ -644,7 +791,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                   {filteredAttachedFiles.map(({ item, originalIndex }) => (
                     <div
                       key={`${item.file.name}-${item.file.size}-${originalIndex}`}
-                      style={{ flexShrink: 0 }}
+                      style={{ flexShrink: 0, width: EXPANDED_FILE_CARD_WIDTH }}
                     >
                       <FilePreview
                         file={item.file}
@@ -653,6 +800,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                           if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
                           setAttachedFiles((prev) => prev.filter((_, i) => i !== originalIndex));
                         }}
+                        uniformWidth
                       />
                     </div>
                   ))}
@@ -663,7 +811,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                backgroundColor: '#F7F7F7',
+                backgroundColor: systemPromptEditorOpen ? AI_SPACE_EDITOR_ACTIVE_BG : '#F7F7F7',
                 borderRadius: '16px',
                 padding: '12px 16px 16px 16px',
               }}
@@ -757,6 +905,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     type="file"
                     className="hidden"
                     accept="*/*"
+                    multiple
                     onChange={(e) => {
                       const files = e.target.files;
                       if (files?.length) {
@@ -815,18 +964,23 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     </svg>
                   </button>
 
-                  {/* Pencil — clickable */}
+                  {/* Pencil — редактор чату (system prompt); активний стан — світло-синій */}
                   <button
+                    type="button"
                     className="workspace-action-btn workspace-icon-btn"
-                    aria-label="Редагувати"
+                    aria-label="Редактор чату (system prompt)"
+                    aria-pressed={systemPromptEditorOpen}
+                    onClick={() => setSystemPromptEditorOpen(true)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       width: '30px',
                       height: '30px',
-                      border: 'none',
-                      background: 'transparent',
+                      border: systemPromptEditorOpen ? `1px solid #0070f3` : 'none',
+                      background: systemPromptEditorOpen
+                        ? AI_SPACE_EDITOR_ACTIVE_BG
+                        : 'transparent',
                       cursor: 'pointer',
                       borderRadius: '6px',
                       padding: 0,
@@ -843,7 +997,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     >
                       <path
                         d="M35.0366 4.26644L37.4843 6.7141M28.9175 12.8333V9.77368L38.0962 0.594947L41.1558 3.65452L31.9771 12.8333H28.9175Z"
-                        stroke="#575757"
+                        stroke={systemPromptEditorOpen ? '#0070f3' : '#575757'}
                         strokeWidth="1.16071"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -983,7 +1137,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     </button>
                   )}
                   <button
-                    disabled={isEmpty}
+                    disabled={!canSend}
                     onClick={handleSend}
                     className="workspace-action-btn workspace-send-btn"
                     style={{
@@ -991,7 +1145,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       height: '44px',
                       padding: '3px',
                       border: 'none',
-                      cursor: isEmpty ? 'not-allowed' : 'pointer',
+                      cursor: canSend ? 'pointer' : 'not-allowed',
                       backgroundColor: 'transparent',
                       flexShrink: 0,
                       display: 'flex',
@@ -1016,10 +1170,10 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                         width="36.26"
                         height="36.26"
                         rx="8.63"
-                        fill={isEmpty ? '#EDEDED' : '#2A2A2A'}
+                        fill={canSend ? '#2A2A2A' : '#EDEDED'}
                         style={{ transition: 'fill 0.15s ease' }}
                       />
-                      {!isEmpty && (
+                      {canSend && (
                         <rect
                           x="0.37"
                           y="0.37"
@@ -1032,7 +1186,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       )}
                       <path
                         d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
-                        fill={isEmpty ? '#ABABAB' : 'white'}
+                        fill={canSend ? 'white' : '#ABABAB'}
                         style={{ transition: 'fill 0.15s ease' }}
                       />
                     </svg>
@@ -1061,7 +1215,9 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
             <ChatMessageList
               messages={messages}
               isAssistantTyping={isAssistantTyping}
+              regeneratingMessageId={regeneratingMessageId}
               onSuggestionClick={handleSuggestionClick}
+              onRegenerate={handleRegenerate}
             />
           </div>
           <div
@@ -1081,7 +1237,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               {attachedFiles.length > 0 && filesExpanded && (
                 <div
                   style={{
-                    backgroundColor: '#F5F6F6',
+                    backgroundColor: systemPromptEditorOpen ? AI_SPACE_EDITOR_ACTIVE_BG : '#F5F6F6',
                     borderRadius: '16px',
                     padding: '12px 13px 16px',
                     marginBottom: '10px',
@@ -1113,7 +1269,32 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       }}
                       aria-label="Пошук файлів"
                     />
-                    <div style={{ marginLeft: 'auto' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        marginLeft: 'auto',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={handleRemoveAllFiles}
+                        className="workspace-files-panel-field workspace-action-btn workspace-remove-all-btn"
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #E0E0E0',
+                          backgroundColor: '#fff',
+                          fontSize: '14px',
+                          color: '#2A2A2A',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                        aria-label="Видалити всі файли"
+                      >
+                        Видалити все
+                      </button>
                       <FileFilterButton
                         selectedFormats={selectedFormats}
                         onChange={setSelectedFormats}
@@ -1127,6 +1308,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       display: 'flex',
                       flexDirection: 'row',
                       flexWrap: 'wrap',
+                      alignContent: 'flex-start',
                       alignItems: 'flex-start',
                       gap: '8px',
                       overflowY: 'auto',
@@ -1140,7 +1322,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     {filteredAttachedFiles.map(({ item, originalIndex }) => (
                       <div
                         key={`${item.file.name}-${item.file.size}-${originalIndex}`}
-                        style={{ flexShrink: 0 }}
+                        style={{ flexShrink: 0, width: EXPANDED_FILE_CARD_WIDTH }}
                       >
                         <FilePreview
                           file={item.file}
@@ -1149,6 +1331,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                             if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
                             setAttachedFiles((prev) => prev.filter((_, i) => i !== originalIndex));
                           }}
+                          uniformWidth
                         />
                       </div>
                     ))}
@@ -1158,7 +1341,9 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               <div
                 style={{
                   minHeight: '103px',
-                  backgroundColor: 'rgba(245, 246, 246, 1)',
+                  backgroundColor: systemPromptEditorOpen
+                    ? AI_SPACE_EDITOR_ACTIVE_BG
+                    : 'rgba(245, 246, 246, 1)',
                   borderRadius: '16px',
                   padding: '13px 13px 8px 13px',
                   boxSizing: 'border-box',
@@ -1252,6 +1437,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       type="file"
                       className="hidden"
                       accept="*/*"
+                      multiple
                       onChange={(e) => {
                         const files = e.target.files;
                         if (files?.length) {
@@ -1310,15 +1496,19 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     <button
                       type="button"
                       className="workspace-action-btn workspace-icon-btn"
-                      aria-label="Редагувати"
+                      aria-label="Редактор чату (system prompt)"
+                      aria-pressed={systemPromptEditorOpen}
+                      onClick={() => setSystemPromptEditorOpen(true)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         width: 30,
                         height: 30,
-                        border: 'none',
-                        background: 'transparent',
+                        border: systemPromptEditorOpen ? '1px solid #0070f3' : 'none',
+                        background: systemPromptEditorOpen
+                          ? AI_SPACE_EDITOR_ACTIVE_BG
+                          : 'transparent',
                         cursor: 'pointer',
                         borderRadius: 6,
                         padding: 0,
@@ -1335,7 +1525,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       >
                         <path
                           d="M35.0366 4.26644L37.4843 6.7141M28.9175 12.8333V9.77368L38.0962 0.594947L41.1558 3.65452L31.9771 12.8333H28.9175Z"
-                          stroke="#575757"
+                          stroke={systemPromptEditorOpen ? '#0070f3' : '#575757'}
                           strokeWidth="1.16071"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -1467,7 +1657,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       </button>
                     )}
                     <button
-                      disabled={isEmpty}
+                      disabled={!canSend}
                       onClick={handleSend}
                       className="workspace-action-btn workspace-send-btn"
                       style={{
@@ -1475,7 +1665,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                         height: '44px',
                         padding: '3px',
                         border: 'none',
-                        cursor: isEmpty ? 'not-allowed' : 'pointer',
+                        cursor: canSend ? 'pointer' : 'not-allowed',
                         backgroundColor: 'transparent',
                         flexShrink: 0,
                         display: 'flex',
@@ -1500,10 +1690,10 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                           width="36.26"
                           height="36.26"
                           rx="8.63"
-                          fill={isEmpty ? '#EDEDED' : '#2A2A2A'}
+                          fill={canSend ? '#2A2A2A' : '#EDEDED'}
                           style={{ transition: 'fill 0.15s ease' }}
                         />
-                        {!isEmpty && (
+                        {canSend && (
                           <rect
                             x="0.37"
                             y="0.37"
@@ -1516,7 +1706,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                         )}
                         <path
                           d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
-                          fill={isEmpty ? '#ABABAB' : 'white'}
+                          fill={canSend ? 'white' : '#ABABAB'}
                           style={{ transition: 'fill 0.15s ease' }}
                         />
                       </svg>
@@ -1527,6 +1717,117 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
             </div>
           </div>
         </>
+      )}
+
+      {/* Редактор промпту (system prompt) — модалка; при відкритті AI space світло-синій, кнопка-олівець активна */}
+      {systemPromptEditorOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="system-prompt-editor-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            boxSizing: 'border-box',
+          }}
+          onClick={() => setSystemPromptEditorOpen(false)}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
+              backdropFilter: 'blur(4px)',
+            }}
+            aria-hidden="true"
+          />
+          <div
+            id="system-prompt-editor-dialog"
+            style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: '520px',
+              backgroundColor: '#fff',
+              border: '1px solid #F4F4F6',
+              borderRadius: '26px',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2
+              id="system-prompt-editor-title"
+              style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 600, color: '#2A2A2A' }}
+            >
+              Редактор промпту
+            </h2>
+            <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#575757' }}>
+              Системний промпт для чату (опційно).
+            </p>
+            <textarea
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+              placeholder="Твоя задача давати мені повні відповіді..."
+              rows={4}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '12px',
+                borderRadius: '12px',
+                border: '1px solid #E0E0E0',
+                fontSize: '14px',
+                color: '#2A2A2A',
+                resize: 'vertical',
+                minHeight: '88px',
+              }}
+              aria-label="Системний промпт"
+            />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px',
+                marginTop: '16px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setSystemPromptEditorOpen(false)}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  border: '1px solid #E0E0E0',
+                  backgroundColor: '#fff',
+                  fontSize: '14px',
+                  color: '#2A2A2A',
+                  cursor: 'pointer',
+                }}
+              >
+                Скасувати
+              </button>
+              <button
+                type="button"
+                onClick={() => setSystemPromptEditorOpen(false)}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#0070f3',
+                  fontSize: '14px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Застосувати
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );
