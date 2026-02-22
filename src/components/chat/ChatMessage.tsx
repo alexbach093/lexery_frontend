@@ -6,6 +6,9 @@ import { useEffect, useRef, useState } from 'react';
 import { formatFileSize } from '@/components/file-preview';
 import type { MessageAttachment, MessageVersion } from '@/types/chat';
 
+/** History icon from Figma (node 174:222, frame 122:303), exported via scripts/export-chat-action-icons.mjs. */
+const HISTORY_ICON_SRC = '/images/chat/history.svg';
+
 export interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
@@ -89,11 +92,14 @@ function ActionIconsRow({
   content,
   onRegenerate,
   leading,
+  trailing,
 }: {
   content: string;
   onRegenerate?: (modifier?: string) => void;
-  /** Елемент зліва в рядку (наприклад кнопка Історія). */
+  /** Елемент зліва в рядку. */
   leading?: React.ReactNode;
+  /** Елемент справа в рядку (наприклад кнопка Історія). */
+  trailing?: React.ReactNode;
 }) {
   const iconSize = 14;
   const size = 32; // square clickable area (circle = border-radius on container)
@@ -236,6 +242,7 @@ function ActionIconsRow({
     >
       {leading}
       <div
+        className="chat-action-icons-stagger"
         style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
         onMouseLeave={hideTooltip}
         onBlurCapture={hideTooltip}
@@ -588,27 +595,40 @@ function ActionIconsRow({
           )}
         </div>
       </div>
-      <button
-        type="button"
-        style={{
-          ...btnStyle,
-          width: 'auto',
-          height: 'auto',
-          padding: '4px 12px',
-          marginLeft: '6px',
-          borderRadius: 6,
-          fontFamily: 'Inter, sans-serif',
-          fontSize: '13px',
-          fontWeight: 400,
-          color: '#9A9A9A',
-          backgroundColor: 'transparent',
-        }}
-        className="chat-action-btn chat-action-btn--no-highlight hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
-        aria-label="Переглянути процес"
-        title="Переглянути процес"
+      <div
+        className="chat-action-item-animate"
+        style={{ display: 'inline-block', animationDelay: '280ms' }}
       >
-        Переглянути процес
-      </button>
+        <button
+          type="button"
+          style={{
+            ...btnStyle,
+            width: 'auto',
+            height: 'auto',
+            padding: '4px 12px',
+            marginLeft: '6px',
+            borderRadius: 6,
+            fontFamily: 'Inter, sans-serif',
+            fontSize: '13px',
+            fontWeight: 400,
+            color: '#9A9A9A',
+            backgroundColor: 'transparent',
+          }}
+          className="chat-action-btn chat-action-btn--no-highlight hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+          aria-label="Переглянути процес"
+          title="Переглянути процес"
+        >
+          Переглянути процес
+        </button>
+      </div>
+      {trailing ? (
+        <div
+          className="chat-action-item-animate"
+          style={{ marginLeft: 'auto', animationDelay: '350ms' }}
+        >
+          {trailing}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -926,6 +946,8 @@ export function ChatMessage({
   const [historyDropdownOpen, setHistoryDropdownOpen] = useState(false);
   const historyDropdownRef = useRef<HTMLDivElement>(null);
   const historyAnchorRef = useRef<HTMLDivElement>(null);
+  /** Плавна поява рядка іконок: спочатку opacity 0, потім transition до 1. */
+  const [actionRowVisible, setActionRowVisible] = useState(false);
   const userTooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userHalfSecondTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userHoveredIdRef = useRef<UserMessageTooltipId>(null);
@@ -956,6 +978,14 @@ export function ChatMessage({
     });
     return () => cancelAnimationFrame(rafId);
   }, [isEditing, content]);
+
+  useEffect(() => {
+    const hasVersions = (versions?.length ?? 0) > 0;
+    const rafId = requestAnimationFrame(() => {
+      setActionRowVisible(!!hasVersions);
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [versions?.length]);
 
   useEffect(() => {
     if (!historyDropdownOpen) return;
@@ -1314,140 +1344,127 @@ export function ChatMessage({
       ) : (
         <div style={{ width: '100%', position: 'relative' }}>
           <AssistantContent content={content} />
-          <ActionIconsRow
-            content={content}
-            onRegenerate={onRegenerate}
-            leading={
-              showHistoryButton ? (
-                <div ref={historyAnchorRef} style={{ position: 'relative' }}>
-                  <button
-                    type="button"
-                    onClick={() => setHistoryDropdownOpen((open) => !open)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 32,
-                      height: 32,
-                      padding: 0,
-                      border: 'none',
-                      borderRadius: 9999,
-                      background: 'transparent',
-                      color: '#9A9A9A',
-                      cursor: 'pointer',
-                    }}
-                    className="chat-action-btn chat-action-btn--circle chat-action-btn--no-highlight hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
-                    aria-expanded={historyDropdownOpen}
-                    aria-haspopup="listbox"
-                    aria-label={`Історія версій, ${versions.length} версій`}
-                  >
-                    <svg
-                      width={14}
-                      height={14}
-                      viewBox="0 0 15 15"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden
-                      style={{ display: 'block', flexShrink: 0 }}
-                    >
-                      <path
-                        d="M3.75 11.25C5.82107 13.3211 9.17893 13.3211 11.25 11.25C13.3211 9.17893 13.3211 5.82107 11.25 3.75C9.17893 1.67893 5.82107 1.67893 3.75 3.75C2.7138 4.7862 2.19603 6.14451 2.1967 7.50262L2.19669 8.67851"
-                        stroke="currentColor"
-                        strokeWidth="0.9"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M1.01807 7.5L2.19658 8.67851L3.37509 7.5"
-                        stroke="currentColor"
-                        strokeWidth="0.9"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M6.91086 5.14297L6.91086 8.08925L9.85714 8.08925"
-                        stroke="currentColor"
-                        strokeWidth="0.9"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </button>
-                  {historyDropdownOpen && (
-                    <div
-                      ref={historyDropdownRef}
-                      role="listbox"
-                      aria-label="Версії відповіді"
-                      style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        marginTop: '4px',
-                        minWidth: '200px',
-                        maxWidth: '320px',
-                        padding: '6px',
-                        borderRadius: '10px',
-                        backgroundColor: '#FFFFFF',
-                        border: '1px solid #E0E0E0',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                        zIndex: 50,
-                        maxHeight: '280px',
-                        overflowY: 'auto',
-                      }}
-                    >
-                      {versions!.map((v, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          role="option"
-                          aria-selected={i === activeVersionIndex}
-                          onClick={() => {
-                            onSetActiveVersion?.(i);
-                            setHistoryDropdownOpen(false);
-                          }}
+          {versions && versions.length > 0 && (
+            <div
+              style={{
+                opacity: actionRowVisible ? 1 : 0,
+                transform: actionRowVisible ? 'translateY(0)' : 'translateY(6px)',
+                transition: 'opacity 0.4s ease-out, transform 0.4s ease-out',
+              }}
+            >
+              <ActionIconsRow
+                content={content}
+                onRegenerate={onRegenerate}
+                trailing={
+                  showHistoryButton ? (
+                    <div ref={historyAnchorRef} style={{ position: 'relative' }}>
+                      <button
+                        type="button"
+                        onClick={() => setHistoryDropdownOpen((open) => !open)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: 32,
+                          height: 32,
+                          padding: 0,
+                          border: 'none',
+                          borderRadius: 9999,
+                          background: 'transparent',
+                          color: '#000000',
+                          cursor: 'pointer',
+                        }}
+                        className="chat-action-btn chat-action-btn--circle chat-action-btn--no-highlight hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+                        aria-expanded={historyDropdownOpen}
+                        aria-haspopup="listbox"
+                        aria-label={`Історія версій, ${versions.length} версій`}
+                      >
+                        <Image
+                          src={HISTORY_ICON_SRC}
+                          alt=""
+                          width={15}
+                          height={15}
+                          aria-hidden
+                          style={{ display: 'block', flexShrink: 0, objectFit: 'contain' }}
+                        />
+                      </button>
+                      {historyDropdownOpen && (
+                        <div
+                          ref={historyDropdownRef}
+                          role="listbox"
+                          aria-label="Версії відповіді"
                           style={{
-                            display: 'block',
-                            width: '100%',
-                            padding: '8px 10px',
-                            borderRadius: '6px',
-                            border: 'none',
-                            background: i === activeVersionIndex ? '#E8F0FE' : 'transparent',
-                            color: '#2A2A2A',
-                            fontSize: '13px',
-                            textAlign: 'left',
-                            cursor: 'pointer',
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            marginTop: '4px',
+                            minWidth: '200px',
+                            maxWidth: '320px',
+                            padding: '6px',
+                            borderRadius: '10px',
+                            backgroundColor: '#FFFFFF',
+                            border: '1px solid #E0E0E0',
+                            boxShadow: 'none',
+                            zIndex: 50,
+                            maxHeight: '280px',
+                            overflowY: 'auto',
                           }}
-                          className="chat-regenerate-option-btn"
                         >
-                          <span style={{ fontWeight: i === activeVersionIndex ? 600 : 400 }}>
-                            Версія {i + 1}
-                          </span>
-                          {v.createdAt && (
-                            <span
+                          {versions!.map((v, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              role="option"
+                              aria-selected={i === activeVersionIndex}
+                              onClick={() => {
+                                onSetActiveVersion?.(i);
+                                setHistoryDropdownOpen(false);
+                              }}
                               style={{
                                 display: 'block',
-                                fontSize: '11px',
-                                color: '#575757',
-                                marginTop: '2px',
+                                width: '100%',
+                                padding: '8px 10px',
+                                borderRadius: '6px',
+                                border: 'none',
+                                background: i === activeVersionIndex ? '#F0F0F0' : 'transparent',
+                                color: '#2A2A2A',
+                                fontSize: '13px',
+                                textAlign: 'left',
+                                cursor: 'pointer',
                               }}
+                              className="chat-regenerate-option-btn"
                             >
-                              {new Date(v.createdAt).toLocaleString('uk-UA', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                          )}
-                        </button>
-                      ))}
+                              <span style={{ fontWeight: i === activeVersionIndex ? 600 : 400 }}>
+                                Версія {i + 1}
+                              </span>
+                              {v.createdAt && (
+                                <span
+                                  style={{
+                                    display: 'block',
+                                    fontSize: '11px',
+                                    color: '#575757',
+                                    marginTop: '2px',
+                                  }}
+                                >
+                                  {new Date(v.createdAt).toLocaleString('uk-UA', {
+                                    day: '2-digit',
+                                    month: '2-digit',
+                                    year: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ) : null
-            }
-          />
+                  ) : null
+                }
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -33,7 +33,7 @@ const FIGMA_FILE_ID = 'IO0sKndZpfYlW5OVXoIpuC';
 const CHAT_ACTIONS_NODE_ID = '122:303'; // node-id=122-303 — Frame 36733, bolder stroke (0.9)
 const FIGMA_TOKEN = process.env.FIGMA_TOKEN;
 
-const ICON_NAMES = ['copy', 'thumbs-up', 'thumbs-down', 'refresh'];
+const ICON_NAMES = ['history', 'copy', 'thumbs-up', 'thumbs-down', 'refresh'];
 
 async function getNodeStructure() {
   const url = `https://api.figma.com/v1/files/${FIGMA_FILE_ID}/nodes?ids=${encodeURIComponent(CHAT_ACTIONS_NODE_ID)}&depth=10`;
@@ -81,16 +81,16 @@ async function main() {
     process.exit(1);
   }
 
-  // Node 122:303 is Frame 36733 itself with 4 GROUP children (copy, thumbs-up, thumbs-down, refresh)
+  // Node 122:303 is Frame 36733 with 5 GROUP children (history, copy, thumbs-up, thumbs-down, refresh)
   const iconNodes = getIconGroupNodes(root);
-  const toExport = iconNodes.slice(0, 4);
+  const toExport = iconNodes.slice(0, 5);
   if (toExport.length === 0) {
     console.error('❌ No GROUP/FRAME children found.');
     process.exit(1);
   }
   console.log('📋 Using frame:', root.name, `(${root.type}), ${toExport.length} icons\n`);
-  if (toExport.length < 4) {
-    console.warn('⚠️ Expected 4 icons. Exporting', toExport.length, 'groups.');
+  if (toExport.length < 5) {
+    console.warn('⚠️ Expected 5 icons. Exporting', toExport.length, 'groups.');
   }
 
   const names = ICON_NAMES.slice(0, toExport.length);

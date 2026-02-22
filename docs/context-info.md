@@ -108,4 +108,83 @@
 
 ---
 
-_Останнє оновлення контексту: зібрано після сесії, де були зміни boot→onReady, плавні переходи, розміри 688/570, редірект /boot→/, коміт і пуш на GitHub._
+## Session: 2026-02-22
+
+Knowledge transfer з сесії: чат UI (версії відповідей, редагування повідомлень), панель файлів, іконки, лінт і коміти.
+
+---
+
+### 🐛 Errors & Bugs Encountered
+
+| Симптом / помилка                                               | Причина                                                                       | Виправлення                                                                                     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Like/Dislike завжди зелені/червоні замість тільки після кліку   | Стилі для `--like-icon`/`--dislike-icon` застосовували колір за замовчуванням | Прибрано ці селектори; колір тільки для `--liked`/`--disliked` після кліку                      |
+| При пошуку файлів — «більша відстань» між картками              | При активному пошуку/фільтрі встановлювався `minHeight: savedFileListHeight`  | Видалено `savedFileListHeight` і `minHeight`; висота сітки лише за контентом                    |
+| Редактор повідомлення зміщував чат вниз                         | Редактор був у потоці документа                                               | Редактор як шар: фіксована висота слоту + `position: absolute` для форми; контент не зміщується |
+| ESLint: `Cannot access refs during render`                      | У рендері використовувалось `editBlockHeightRef.current`                      | Висоту слоту зберігаємо в стейті `editSlotHeight`; оновлюємо в `handleStartEdit`                |
+| ESLint: `Calling setState synchronously within an effect`       | `setEditDraft` / `setSelectedFormats` викликались синхронно в `useEffect`     | Відкладений виклик через `requestAnimationFrame` (і `cancelAnimationFrame` у cleanup)           |
+| Невикористана константа `AI_SPACE_EDITOR_GLOW`                  | Після прибирання синього фону редактора константа лишилась                    | Перейменовано на `_AI_SPACE_EDITOR_GLOW`                                                        |
+| Commitlint: `subject may not be empty`, `type may not be empty` | Повідомлення без префіксу типу                                                | Формат conventional commit: `feat(chat): ...`                                                   |
+| Кнопка «Видалити все» не ставала червоною при hover             | Загальний `.workspace-icon-btn:hover svg { filter: ... }` перебивав stroke    | `.workspace-remove-all-btn:hover svg { filter: none !important }` + окремий stroke для path     |
+
+---
+
+### ✅ Decisions & Patterns Established
+
+- **Історія версій повідомлень (як у Perplexity):**
+  - У `Message` (асистент): `versions?: MessageVersion[]`, `activeVersionIndex?: number`; відображається `content` (= `versions[activeVersionIndex].content`).
+  - Regenerate не замінює повідомлення — додає нову версію в `versions` і ставить `activeVersionIndex` на останню.
+  - Кнопка «Історія» (іконка з Figma) тільки при `versions.length > 1`; розташування — **trailing** у рядку дій з `marginLeft: 'auto'` (край справа чату).
+  - Dropdown версій: клік по версії викликає `onSetActiveVersion(index)`.
+
+- **Редагування повідомлення користувача:**
+  - При «Редагувати» — на місці повідомлення шар: слот фіксованої висоти + форма з `position: absolute` (textarea + Скасувати / Готово).
+  - Enter — зберегти, Esc — скасувати; без `resize` у textarea.
+  - Висота слоту зберігається в стейті (`editSlotHeight`), не в ref під час рендеру.
+
+- **Панель файлів (AI space):**
+  - Сітка: `display: grid`, `gridTemplateColumns: 'repeat(3, 1fr)'`, без `minHeight` при фільтрі/пошуку.
+  - Кнопка «Видалити все» — без фону (`backgroundColor: 'transparent'`).
+  - Поле пошуку: приховування нативного cancel через `.workspace-search-input` у `globals.css`.
+
+- **Редактор промпту (модалка):** без синього фону AI space; кнопка «Застосувати» чорна (`#2A2A2A`).
+
+- **ActionIconsRow:** опційні слоти `leading` і `trailing`; `trailing` обгортається в `<div style={{ marginLeft: 'auto' }}>` для притискання до правого краю.
+
+- **Чат:** Enter у головному полі — надіслати; у редакторі повідомлення — зберегти. Іконки копіювати/лайк/дизлайк/регенерація — 14×14 px, клікабельна зона 32×32.
+
+---
+
+### 🔁 Recurring Issues / Watch-outs
+
+- **Іконка історії:** при однаковому розмірі 14×14 виглядає меншою через тонший stroke у SVG (viewBox 15×15, strokeWidth 0.9). Якщо потрібно візуально «як інші» — збільшити до 16–18 px або stroke.
+- **Лінт:** не читати ref у рендері; не викликати setState синхронно в effect — використовувати rAF або перемістити логіку.
+- **Commit:** завжди тип + subject (наприклад `feat(chat):`), інакше commitlint не пройде.
+- **Локальний запуск:** у середовищі може бути лише `npm` (без `pnpm`); для dev використовувати `npm run dev`.
+
+---
+
+### 🎨 Working Style & Preferences
+
+- **Мова:** українська в UI і в відповідях, коли пишуть українською.
+- **Ітерації:** багато дрібних кроків («зменши кнопки», «забери фон», «постав зліва/справа»); не об’єднувати в один великий рефакторинг без запиту.
+- **Розташування:** чіткі вказівки типу «з самого права чату», «над першим словом промпту», «на рівні з іншими кнопками» — дотримуватись буквально.
+- **Дизайн:** іконки з Figma (MCP get_design_context, експорт ассету); кольори/стилі не вигадувати.
+- **Відкат:** якщо «нічого не змінилося» або «скасуй» — повертати до попереднього стану, перевіряти специфічність CSS або те, чи застосовується правильний компонент.
+
+---
+
+### 📁 Project Context Summary (після сесії 2026-02-22)
+
+- **Стек:** Next.js 16, React, TypeScript, Turbopack; стилі в `globals.css` + inline; Figma MCP для дизайну.
+- **Ключові файли:**
+  - `src/components/workspace-main.tsx` — основний контент, панель файлів (grid 3 колонки), модалка редактора промпту, `handleRegenerate` (append version), `handleSetActiveVersion`, `handleEditMessage`.
+  - `src/components/chat/ChatMessage.tsx` — user/assistant бульбашки, inline edit (overlay), ActionIconsRow (leading/trailing), історія версій (dropdown), іконка історія (Figma SVG inline).
+  - `src/components/chat/ChatMessageList.tsx` — список повідомлень, передача `onEditMessage`, `onSetActiveVersion`, `versions`, `activeVersionIndex`.
+  - `src/types/chat.ts` — `Message`, `MessageVersion`, `versions`, `activeVersionIndex`.
+  - `src/app/globals.css` — стилі для workspace (пошук, remove-all hover), chat action buttons (liked/disliked).
+- **Стан:** чат з версіями відповідей, редагування user-повідомлень, панель файлів з сіткою і фільтром, іконка історія справа в рядку дій; коміт і пуш на `chore/bootstrap-frontend` виконані.
+
+---
+
+_Останнє оновлення контексту: зібрано після сесії, де були зміни boot→onReady, плавні переходи, розміри 688/570, редірект /boot→/, коміт і пуш на GitHub. Доповнено 2026-02-22: чат (версії, edit overlay), панель файлів, іконки, лінт-фікси, session knowledge transfer._

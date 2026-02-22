@@ -36,6 +36,11 @@ export function ChatMessageList({
     listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, isAssistantTyping]);
 
+  const lastMsg = messages[messages.length - 1];
+  const lastIsEmptyAssistant = lastMsg?.role === 'assistant' && !(lastMsg.content ?? '').trim();
+  const showTypingInsideLast = isAssistantTyping && lastIsEmptyAssistant;
+  const showTypingAsSeparate = isAssistantTyping && !showTypingInsideLast;
+
   return (
     <div
       style={{
@@ -63,7 +68,10 @@ export function ChatMessageList({
               ? (modifier?: string) => onRegenerate?.(msg.id, modifier)
               : undefined
           }
-          isTyping={msg.role === 'assistant' && msg.id === regeneratingMessageId}
+          isTyping={
+            (msg.role === 'assistant' && msg.id === regeneratingMessageId) ||
+            (showTypingInsideLast && lastMsg?.id === msg.id)
+          }
           messageId={msg.id}
           onEditMessage={msg.role === 'user' ? onEditMessage : undefined}
           versions={msg.role === 'assistant' ? msg.versions : undefined}
@@ -75,7 +83,7 @@ export function ChatMessageList({
           }
         />
       ))}
-      {isAssistantTyping && <ChatMessage role="assistant" content="" isTyping />}
+      {showTypingAsSeparate && <ChatMessage role="assistant" content="" isTyping />}
       <div ref={listEndRef} aria-hidden="true" />
     </div>
   );

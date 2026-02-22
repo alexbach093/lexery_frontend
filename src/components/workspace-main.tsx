@@ -339,8 +339,14 @@ function FileFilterButton({
  * Figma: node 0:1339 (AI box)
  * Contains: Greeting or Chat list, Chat input, Action buttons
  */
+/** Інтервал (ms) між появою букв у полі вводу (ефект «по одній букві»). Мінімальний для плавності. */
+const INPUT_TYPEWRITER_MS = 1;
+
 export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
+  /** Відображуваний текст — з’являється по одній букві. */
   const [value, setValue] = useState('');
+  /** Повний намір користувача (що набрано/вставлено). */
+  const [targetValue, setTargetValue] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isAssistantTyping, setIsAssistantTyping] = useState(false);
@@ -349,7 +355,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileListRef = useRef<HTMLDivElement>(null);
-  const isEmpty = value.trim().length === 0;
+  const isEmpty = targetValue.trim().length === 0;
   const isGenerationInProgress = isAssistantTyping || regeneratingMessageId != null;
   const canSend = (!isEmpty || attachedFiles.length > 0) && !isGenerationInProgress;
   const hasMessages = messages.length > 0;
@@ -493,6 +499,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
 
   const resetInput = useCallback(() => {
     setValue('');
+    setTargetValue('');
     setAttachedFiles([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = `${CHAT_TEXTAREA_MIN_HEIGHT}px`;
@@ -500,8 +507,150 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     }
   }, []);
 
+  /** Ефект «по одній букві»: value доганяє targetValue. */
+  const typewriterIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (value.length >= targetValue.length) {
+      if (typewriterIntervalRef.current) {
+        clearInterval(typewriterIntervalRef.current);
+        typewriterIntervalRef.current = null;
+      }
+      return;
+    }
+    typewriterIntervalRef.current = setInterval(() => {
+      setValue((prev) => {
+        const next = targetValue.slice(0, prev.length + 1);
+        if (next.length >= targetValue.length && typewriterIntervalRef.current) {
+          clearInterval(typewriterIntervalRef.current);
+          typewriterIntervalRef.current = null;
+        }
+        return next;
+      });
+    }, INPUT_TYPEWRITER_MS);
+    return () => {
+      if (typewriterIntervalRef.current) {
+        clearInterval(typewriterIntervalRef.current);
+        typewriterIntervalRef.current = null;
+      }
+    };
+  }, [targetValue, value.length]);
+
+  useEffect(() => {
+    if (textareaRef.current) resizeTextarea(textareaRef.current, hasMessages);
+  }, [value, hasMessages, resizeTextarea]);
+
+  const fetchChatResponse = useCallback(
+    async (messagesForApi: { role: 'user' | 'assistant'; content: string }[]) => {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: messagesForApi }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? 'Помилка запиту');
+      return (data?.content ?? '') as string;
+    },
+    []
+  );
+
+  const streamChatResponse = useCallback(
+    (
+      messagesForApi: { role: 'user' | 'assistant'; content: string }[],
+      assistantMessageId: string,
+      onError: (message: string) => void
+    ) => {
+      fetch('/api/chat/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: messagesForApi }),
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data?.error ?? 'Помилка запиту');
+          }
+          const reader = res.body?.getReader();
+          if (!reader) throw new Error('Немає потоку відповіді');
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let streamDone = false;
+          let pendingContent = '';
+          const FLUSH_MS = 70;
+          const flushInterval = setInterval(() => {
+            if (pendingContent.length === 0) return;
+            const toFlush = pendingContent;
+            pendingContent = '';
+            setIsAssistantTyping(false);
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMessageId ? { ...m, content: (m.content ?? '') + toFlush } : m
+              )
+            );
+          }, FLUSH_MS);
+          try {
+            while (!streamDone) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
+              const parts = buffer.split('\n\n');
+              buffer = parts.pop() ?? '';
+              for (const line of parts) {
+                if (!line.startsWith('data: ')) continue;
+                const data = line.slice(6);
+                if (data === '[DONE]') {
+                  streamDone = true;
+                  clearInterval(flushInterval);
+                  if (pendingContent.length > 0) {
+                    setMessages((prev) =>
+                      prev.map((m) =>
+                        m.id === assistantMessageId
+                          ? { ...m, content: (m.content ?? '') + pendingContent }
+                          : m
+                      )
+                    );
+                  }
+                  setMessages((prev) =>
+                    prev.map((m) => {
+                      if (m.id !== assistantMessageId || m.role !== 'assistant') return m;
+                      const content = (m.content ?? '').trim() || 'Немає відповіді.';
+                      return {
+                        ...m,
+                        content,
+                        suggestions: ['Детальніше', 'Ще приклад'],
+                        versions: [{ content, createdAt: new Date().toISOString() }],
+                        activeVersionIndex: 0,
+                      };
+                    })
+                  );
+                  break;
+                }
+                try {
+                  const parsed = JSON.parse(data) as { content?: string; error?: string };
+                  if (parsed.error) throw new Error(parsed.error);
+                  if (typeof parsed.content === 'string' && parsed.content.length > 0) {
+                    if (pendingContent.length === 0) setIsAssistantTyping(false);
+                    pendingContent += parsed.content;
+                  }
+                } catch {
+                  // skip invalid JSON lines
+                }
+              }
+            }
+          } finally {
+            clearInterval(flushInterval);
+          }
+          setIsAssistantTyping(false);
+        })
+        .catch((err) => {
+          onError(err instanceof Error ? err.message : 'Помилка отримання відповіді');
+          setIsAssistantTyping(false);
+        });
+    },
+    []
+  );
+
   const handleSend = useCallback(() => {
-    const text = value.trim();
+    const text = targetValue.trim();
     if (!text && attachedFiles.length === 0) return;
     const attachments =
       attachedFiles.length > 0
@@ -511,6 +660,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
             previewUrl: a.previewUrl,
           }))
         : undefined;
+    const assistantId = generateId();
     setMessages((prev) => [
       ...prev,
       {
@@ -519,83 +669,146 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
         content: text || '',
         attachments,
       },
+      {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        versions: [],
+        activeVersionIndex: 0,
+      },
     ]);
     resetInput();
     setIsAssistantTyping(true);
-    // TODO: replace mock response with real API call
-    setTimeout(() => {
-      const assistantContent =
-        '**Заголовок відповіді:**\n\nТекст відповіді. Тут буде відповідь від AI після інтеграції з бекендом.';
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: generateId(),
-          role: 'assistant',
-          content: assistantContent,
-          suggestions: ['Детальніше', 'Ще приклад'],
-          versions: [{ content: assistantContent, createdAt: new Date().toISOString() }],
-          activeVersionIndex: 0,
-        },
-      ]);
-      setIsAssistantTyping(false);
-    }, 1500);
-  }, [value, attachedFiles, resetInput]);
+    const messagesForApi: { role: 'user' | 'assistant'; content: string }[] = [
+      ...messages.map((m) => ({ role: m.role, content: m.content })),
+      { role: 'user', content: text || '' },
+    ];
+    streamChatResponse(messagesForApi, assistantId, (errorMessage) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content: `**Помилка:** ${errorMessage}`,
+                versions: [
+                  {
+                    content: `**Помилка:** ${errorMessage}`,
+                    createdAt: new Date().toISOString(),
+                  },
+                ],
+                activeVersionIndex: 0,
+              }
+            : m
+        )
+      );
+    });
+  }, [targetValue, attachedFiles, resetInput, messages, streamChatResponse]);
 
-  const handleSuggestionClick = useCallback((suggestionText: string) => {
-    setMessages((prev) => [...prev, { id: generateId(), role: 'user', content: suggestionText }]);
-    setIsAssistantTyping(true);
-    // TODO: replace mock response with real API call
-    setTimeout(() => {
-      const assistantContent = `**Відповідь на «${suggestionText}»:**\n\nТут буде контент після підключення API.`;
+  const handleSuggestionClick = useCallback(
+    (suggestionText: string) => {
+      const assistantId = generateId();
       setMessages((prev) => [
         ...prev,
+        { id: generateId(), role: 'user', content: suggestionText },
         {
-          id: generateId(),
+          id: assistantId,
           role: 'assistant',
-          content: assistantContent,
-          suggestions: ['Детальніше'],
-          versions: [{ content: assistantContent, createdAt: new Date().toISOString() }],
+          content: '',
+          versions: [],
           activeVersionIndex: 0,
         },
       ]);
-      setIsAssistantTyping(false);
-    }, 1200);
-  }, []);
+      setIsAssistantTyping(true);
+      const messagesForApi: { role: 'user' | 'assistant'; content: string }[] = [
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        { role: 'user', content: suggestionText },
+      ];
+      streamChatResponse(messagesForApi, assistantId, (errorMessage) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? {
+                  ...m,
+                  content: `**Помилка:** ${errorMessage}`,
+                  versions: [
+                    {
+                      content: `**Помилка:** ${errorMessage}`,
+                      createdAt: new Date().toISOString(),
+                    },
+                  ],
+                  activeVersionIndex: 0,
+                }
+              : m
+          )
+        );
+      });
+    },
+    [messages, streamChatResponse]
+  );
 
   const handleRegenerate = useCallback(
     (assistantMessageId: string, _modifier?: string) => {
       const msg = messages.find((m) => m.id === assistantMessageId);
       if (!msg || msg.role !== 'assistant') return;
+      const assistantIndex = messages.findIndex((m) => m.id === assistantMessageId);
+      const messagesBeforeAssistant = messages.slice(0, assistantIndex);
+      const messagesForApi = messagesBeforeAssistant.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })) as { role: 'user' | 'assistant'; content: string }[];
+      if (messagesForApi.length === 0) return;
       setRegeneratingMessageId(assistantMessageId);
-      // TODO: replace mock response with real API call (resend user message before this; use modifier if provided)
-      const newContent =
-        '**Заголовок відповіді:**\n\nТекст відповіді. Тут буде відповідь від AI після інтеграції з бекендом.';
-      const newVersion: MessageVersion = {
-        content: newContent,
-        createdAt: new Date().toISOString(),
-      };
-      setTimeout(() => {
-        setMessages((prev) =>
-          prev.map((m) => {
-            if (m.id !== assistantMessageId) return m;
-            const versions: MessageVersion[] = m.versions ?? [
-              { content: m.content, createdAt: new Date().toISOString() },
-            ];
-            const nextVersions = [...versions, newVersion];
-            const activeVersionIndex = nextVersions.length - 1;
-            return {
-              ...m,
-              content: newContent,
-              versions: nextVersions,
-              activeVersionIndex,
-              suggestions: ['Детальніше', 'Ще приклад'],
-            };
-          })
-        );
-        setRegeneratingMessageId(null);
-      }, 1500);
+      fetchChatResponse(messagesForApi)
+        .then((newContent) => {
+          const content = newContent?.trim() || 'Немає відповіді.';
+          const newVersion: MessageVersion = {
+            content,
+            createdAt: new Date().toISOString(),
+          };
+          setMessages((prev) =>
+            prev.map((m) => {
+              if (m.id !== assistantMessageId) return m;
+              const versions: MessageVersion[] = m.versions ?? [
+                { content: m.content, createdAt: new Date().toISOString() },
+              ];
+              const nextVersions = [...versions, newVersion];
+              const activeVersionIndex = nextVersions.length - 1;
+              return {
+                ...m,
+                content,
+                versions: nextVersions,
+                activeVersionIndex,
+                suggestions: ['Детальніше', 'Ще приклад'],
+              };
+            })
+          );
+        })
+        .catch((err) => {
+          const message = err instanceof Error ? err.message : 'Помилка регенерації';
+          const newVersion: MessageVersion = {
+            content: `**Помилка:** ${message}`,
+            createdAt: new Date().toISOString(),
+          };
+          setMessages((prev) =>
+            prev.map((m) => {
+              if (m.id !== assistantMessageId) return m;
+              const versions: MessageVersion[] = m.versions ?? [
+                { content: m.content, createdAt: new Date().toISOString() },
+              ];
+              const nextVersions = [...versions, newVersion];
+              const activeVersionIndex = nextVersions.length - 1;
+              return {
+                ...m,
+                content: newVersion.content,
+                versions: nextVersions,
+                activeVersionIndex,
+              };
+            })
+          );
+        })
+        .finally(() => setRegeneratingMessageId(null));
     },
-    [messages]
+    [messages, fetchChatResponse]
   );
 
   const handleSetActiveVersion = useCallback((assistantMessageId: string, index: number) => {
@@ -617,10 +830,12 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setValue(e.target.value);
+      const next = e.target.value;
+      setTargetValue(next);
+      if (next.length <= value.length) setValue(next);
       resizeTextarea(e.target, hasMessages);
     },
-    [resizeTextarea, hasMessages]
+    [resizeTextarea, hasMessages, value.length]
   );
 
   const handleKeyDown = useCallback(
