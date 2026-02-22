@@ -15,6 +15,10 @@ export interface ChatMessageListProps {
   onSuggestionClick?: (text: string) => void;
   /** Regenerate assistant response by message id. modifier = custom instruction for change. */
   onRegenerate?: (assistantMessageId: string, modifier?: string) => void;
+  /** Після збереження редагування користувацького повідомлення. */
+  onEditMessage?: (messageId: string, newContent: string) => void;
+  /** Вибір активної версії відповіді асистента (історія версій). */
+  onSetActiveVersion?: (assistantMessageId: string, index: number) => void;
 }
 
 export function ChatMessageList({
@@ -23,6 +27,8 @@ export function ChatMessageList({
   regeneratingMessageId = null,
   onSuggestionClick,
   onRegenerate,
+  onEditMessage,
+  onSetActiveVersion,
 }: ChatMessageListProps) {
   const listEndRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +64,15 @@ export function ChatMessageList({
               : undefined
           }
           isTyping={msg.role === 'assistant' && msg.id === regeneratingMessageId}
+          messageId={msg.id}
+          onEditMessage={msg.role === 'user' ? onEditMessage : undefined}
+          versions={msg.role === 'assistant' ? msg.versions : undefined}
+          activeVersionIndex={msg.role === 'assistant' ? msg.activeVersionIndex : undefined}
+          onSetActiveVersion={
+            msg.role === 'assistant'
+              ? (index: number) => onSetActiveVersion?.(msg.id, index)
+              : undefined
+          }
         />
       ))}
       {isAssistantTyping && <ChatMessage role="assistant" content="" isTyping />}

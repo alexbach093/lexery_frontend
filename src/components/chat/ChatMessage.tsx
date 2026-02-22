@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 import { formatFileSize } from '@/components/file-preview';
-import type { MessageAttachment } from '@/types/chat';
+import type { MessageAttachment, MessageVersion } from '@/types/chat';
 
 export interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -19,6 +19,16 @@ export interface ChatMessageProps {
   isTyping?: boolean;
   /** Regenerate last assistant response (only for last assistant message). modifier = custom instruction for change. */
   onRegenerate?: (modifier?: string) => void;
+  /** Id повідомлення (для редагування). */
+  messageId?: string;
+  /** Після збереження редагування користувацького повідомлення. */
+  onEditMessage?: (messageId: string, newContent: string) => void;
+  /** Assistant only: version history. */
+  versions?: MessageVersion[];
+  /** Assistant only: index of displayed version. */
+  activeVersionIndex?: number;
+  /** Assistant only: set active version by index. */
+  onSetActiveVersion?: (index: number) => void;
 }
 
 /** Parse **bold** and newlines into React nodes. */
@@ -78,9 +88,12 @@ type UserMessageTooltipId = 'copy' | 'edit' | null;
 function ActionIconsRow({
   content,
   onRegenerate,
+  leading,
 }: {
   content: string;
   onRegenerate?: (modifier?: string) => void;
+  /** Елемент зліва в рядку (наприклад кнопка Історія). */
+  leading?: React.ReactNode;
 }) {
   const iconSize = 14;
   const size = 32; // square clickable area (circle = border-radius on container)
@@ -221,6 +234,7 @@ function ActionIconsRow({
       role="group"
       aria-label="Дії з відповіддю"
     >
+      {leading}
       <div
         style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
         onMouseLeave={hideTooltip}
@@ -894,10 +908,24 @@ export function ChatMessage({
   onSuggestionClick: _onSuggestionClick,
   isTyping = false,
   onRegenerate,
+  messageId,
+  onEditMessage,
+  versions,
+  activeVersionIndex = 0,
+  onSetActiveVersion,
 }: ChatMessageProps) {
   const attachmentsRef = useRef(attachments);
   const [userTooltipVisibleId, setUserTooltipVisibleId] = useState<UserMessageTooltipId>(null);
   const [userCopyFeedback, setUserCopyFeedback] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editDraft, setEditDraft] = useState(content);
+  const [editSlotHeight, setEditSlotHeight] = useState(60);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const userMessageWrapperRef = useRef<HTMLDivElement>(null);
+  const editBlockHeightRef = useRef<number>(0);
+  const [historyDropdownOpen, setHistoryDropdownOpen] = useState(false);
+  const historyDropdownRef = useRef<HTMLDivElement>(null);
+  const historyAnchorRef = useRef<HTMLDivElement>(null);
   const userTooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userHalfSecondTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userHoveredIdRef = useRef<UserMessageTooltipId>(null);
@@ -920,6 +948,29 @@ export function ChatMessage({
     },
     []
   );
+  useEffect(() => {
+    if (!isEditing) return;
+    const rafId = requestAnimationFrame(() => {
+      setEditDraft(content);
+      editTextareaRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [isEditing, content]);
+
+  useEffect(() => {
+    if (!historyDropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        historyAnchorRef.current?.contains(target) ||
+        historyDropdownRef.current?.contains(target)
+      )
+        return;
+      setHistoryDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [historyDropdownOpen]);
 
   if (role === 'user') {
     const iconSize = 14;
@@ -986,8 +1037,122 @@ export function ChatMessage({
         () => {}
       );
     };
+    const handleStartEdit = () => {
+      const wrapper = userMessageWrapperRef.current;
+      const h = wrapper ? wrapper.offsetHeight : 60;
+      editBlockHeightRef.current = h;
+      setEditSlotHeight(h);
+      setEditDraft(content);
+      setIsEditing(true);
+    };
+    const handleCancelEdit = () => setIsEditing(false);
+    const handleDoneEdit = () => {
+      if (!messageId || !onEditMessage) return;
+      const trimmed = editDraft.trim();
+      if (trimmed === '') return;
+      onEditMessage(messageId, trimmed);
+      setIsEditing(false);
+    };
+
+    if (isEditing) {
+      return (
+        <div
+          style={{
+            position: 'relative',
+            alignSelf: 'flex-end',
+            width: '100%',
+            maxWidth: '400px',
+            height: editSlotHeight,
+            minHeight: editSlotHeight,
+            overflow: 'visible',
+          }}
+        >
+          {/* Редактор поверх чату — не зміщує інший контент */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '100%',
+              maxWidth: '400px',
+              zIndex: 20,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              gap: '10px',
+            }}
+          >
+            <textarea
+              ref={editTextareaRef}
+              value={editDraft}
+              onChange={(e) => setEditDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleDoneEdit();
+                }
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  handleCancelEdit();
+                }
+              }}
+              rows={3}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: '12px 14px',
+                borderRadius: '18px',
+                border: '1px solid #E0E0E0',
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '14px',
+                lineHeight: '20px',
+                color: '#2A2A2A',
+                resize: 'none',
+                minHeight: '80px',
+                outline: 'none',
+              }}
+              aria-label="Редагувати повідомлення"
+            />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #E0E0E0',
+                  background: '#fff',
+                  fontSize: '13px',
+                  color: '#2A2A2A',
+                  cursor: 'pointer',
+                }}
+              >
+                Скасувати
+              </button>
+              <button
+                type="button"
+                onClick={handleDoneEdit}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: '#2A2A2A',
+                  fontSize: '13px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                Готово
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
+        ref={userMessageWrapperRef}
         className="group"
         style={{
           alignSelf: 'flex-end',
@@ -1099,6 +1264,7 @@ export function ChatMessage({
                 className="chat-action-btn chat-action-btn--circle focus-visible:outline-none"
                 aria-label="Редагувати"
                 aria-describedby="user-msg-tooltip-edit"
+                onClick={handleStartEdit}
               >
                 <Image
                   src="/images/chat/edit.svg"
@@ -1132,6 +1298,7 @@ export function ChatMessage({
   }
 
   // Assistant
+  const showHistoryButton = versions && versions.length > 1;
   return (
     <div
       style={{
@@ -1145,9 +1312,142 @@ export function ChatMessage({
       {isTyping ? (
         <TypingIndicator />
       ) : (
-        <div style={{ width: '100%' }}>
+        <div style={{ width: '100%', position: 'relative' }}>
           <AssistantContent content={content} />
-          <ActionIconsRow content={content} onRegenerate={onRegenerate} />
+          <ActionIconsRow
+            content={content}
+            onRegenerate={onRegenerate}
+            leading={
+              showHistoryButton ? (
+                <div ref={historyAnchorRef} style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    onClick={() => setHistoryDropdownOpen((open) => !open)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 32,
+                      height: 32,
+                      padding: 0,
+                      border: 'none',
+                      borderRadius: 9999,
+                      background: 'transparent',
+                      color: '#9A9A9A',
+                      cursor: 'pointer',
+                    }}
+                    className="chat-action-btn chat-action-btn--circle chat-action-btn--no-highlight hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+                    aria-expanded={historyDropdownOpen}
+                    aria-haspopup="listbox"
+                    aria-label={`Історія версій, ${versions.length} версій`}
+                  >
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 15 15"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-hidden
+                      style={{ display: 'block', flexShrink: 0 }}
+                    >
+                      <path
+                        d="M3.75 11.25C5.82107 13.3211 9.17893 13.3211 11.25 11.25C13.3211 9.17893 13.3211 5.82107 11.25 3.75C9.17893 1.67893 5.82107 1.67893 3.75 3.75C2.7138 4.7862 2.19603 6.14451 2.1967 7.50262L2.19669 8.67851"
+                        stroke="currentColor"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M1.01807 7.5L2.19658 8.67851L3.37509 7.5"
+                        stroke="currentColor"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M6.91086 5.14297L6.91086 8.08925L9.85714 8.08925"
+                        stroke="currentColor"
+                        strokeWidth="0.9"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                  {historyDropdownOpen && (
+                    <div
+                      ref={historyDropdownRef}
+                      role="listbox"
+                      aria-label="Версії відповіді"
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        marginTop: '4px',
+                        minWidth: '200px',
+                        maxWidth: '320px',
+                        padding: '6px',
+                        borderRadius: '10px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #E0E0E0',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        zIndex: 50,
+                        maxHeight: '280px',
+                        overflowY: 'auto',
+                      }}
+                    >
+                      {versions!.map((v, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          role="option"
+                          aria-selected={i === activeVersionIndex}
+                          onClick={() => {
+                            onSetActiveVersion?.(i);
+                            setHistoryDropdownOpen(false);
+                          }}
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: '8px 10px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            background: i === activeVersionIndex ? '#E8F0FE' : 'transparent',
+                            color: '#2A2A2A',
+                            fontSize: '13px',
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                          }}
+                          className="chat-regenerate-option-btn"
+                        >
+                          <span style={{ fontWeight: i === activeVersionIndex ? 600 : 400 }}>
+                            Версія {i + 1}
+                          </span>
+                          {v.createdAt && (
+                            <span
+                              style={{
+                                display: 'block',
+                                fontSize: '11px',
+                                color: '#575757',
+                                marginTop: '2px',
+                              }}
+                            >
+                              {new Date(v.createdAt).toLocaleString('uk-UA', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null
+            }
+          />
         </div>
       )}
     </div>

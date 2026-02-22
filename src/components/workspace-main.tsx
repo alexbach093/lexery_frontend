@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ChatMessageList } from '@/components/chat';
-import type { Message } from '@/types/chat';
+import type { Message, MessageVersion } from '@/types/chat';
 
 import { FilePreview } from './file-preview';
 
@@ -21,10 +21,10 @@ const HOME_TEXTAREA_MAX_HEIGHT = 240;
 const CHAT_TEXTAREA_MIN_HEIGHT = 30;
 const CHAT_TEXTAREA_MAX_HEIGHT = 120;
 const CHAT_INPUT_MAX_WIDTH = 738;
-/** Ширина картки файлу в розгорнутому файл-менеджері — однаковий розмір, без пустих місць. */
-const EXPANDED_FILE_CARD_WIDTH = 232;
-/** Світло-синій для AI space і кнопки редактора (активний стан) — з палітри boot/#0070f3. */
+/** Блакитний фон AI space і кнопки редактора (активний стан); палітра boot #0070f3. */
 const AI_SPACE_EDITOR_ACTIVE_BG = '#E8F0FE';
+/** Голубе сяйво навколо AI space при активному редакторі (не використовується). */
+const _AI_SPACE_EDITOR_GLOW = '0 0 48px rgba(0, 112, 243, 0.22), 0 0 96px rgba(0, 112, 243, 0.1)';
 
 /** One attached file and its object URL for preview (revoked on remove). */
 interface AttachedFile {
@@ -77,14 +77,36 @@ function getFileFormatId(file: File): string | null {
   return null;
 }
 
-const FILE_FORMAT_ROW1_COUNT = 7;
+/** Повертає id формату для файлу; для невідомого — розширення (lowercase). */
+function getFileFormatIdOrExt(file: File): string {
+  const id = getFileFormatId(file);
+  if (id != null) return id;
+  const name = file.name.toLowerCase();
+  const ext = name.includes('.') ? name.replace(/.*\./, '').replace(/\?.*$/, '') : '';
+  return ext || 'other';
+}
 
-/** Чіпи форматів (внутрішній контент для попапу) — два ряди. */
+/** Опція формату для чіпа фільтра (id + підпис). */
+function getFormatOptionForFile(file: File): { id: string; label: string } {
+  const id = getFileFormatId(file);
+  if (id != null) {
+    const opt = FILE_FORMAT_OPTIONS.find((o) => o.id === id);
+    return { id, label: opt?.label ?? id.toUpperCase() };
+  }
+  const name = file.name.toLowerCase();
+  const ext = name.includes('.') ? name.replace(/.*\./, '').replace(/\?.*$/, '') : '';
+  const label = ext ? ext.toUpperCase() : 'Інше';
+  return { id: ext || 'other', label };
+}
+
+/** Чіпи форматів (внутрішній контент для попапу) — опції з прикріплених файлів. */
 function FileFormatFilterChips({
+  options,
   selectedFormats,
   onChange,
   compact,
 }: {
+  options: { id: string; label: string }[];
   selectedFormats: Set<string>;
   onChange: (set: Set<string>) => void;
   compact?: boolean;
@@ -101,64 +123,70 @@ function FileFormatFilterChips({
   };
 
   const gap = compact ? 6 : 8;
-  const row1 = FILE_FORMAT_OPTIONS.slice(0, FILE_FORMAT_ROW1_COUNT);
-  const row2 = FILE_FORMAT_OPTIONS.slice(FILE_FORMAT_ROW1_COUNT);
 
-  const renderButton = (opt: (typeof FILE_FORMAT_OPTIONS)[0]) => {
-    const active = selectedFormats.has(opt.id);
+  if (options.length === 0) {
     return (
-      <button
-        key={opt.id}
-        type="button"
-        onClick={() => toggle(opt.id)}
-        aria-pressed={active}
-        style={{
-          padding: compact ? '6px 10px' : '8px 12px',
-          borderRadius: '6px',
-          border: `1px solid ${active ? '#2A2A2A' : '#E0E0E0'}`,
-          backgroundColor: active ? '#2A2A2A' : '#fff',
-          color: active ? '#fff' : '#2A2A2A',
-          fontSize: compact ? '12px' : '13px',
-          fontWeight: 500,
-          cursor: 'pointer',
-          fontFamily: 'Inter, sans-serif',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {opt.label}
-      </button>
+      <p style={{ margin: 0, fontSize: '13px', color: '#575757' }}>
+        Додайте файли, щоб фільтрувати за форматом.
+      </p>
     );
-  };
+  }
 
+  const columns = Math.min(5, options.length) || 1;
   return (
     <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
+        display: 'grid',
+        gridTemplateColumns: `repeat(${columns}, auto)`,
+        alignItems: 'center',
+        justifyContent: 'start',
         gap,
       }}
       role="group"
       aria-label="Фільтр за форматом файлу"
     >
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap }}>
-        {row1.map(renderButton)}
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap }}>
-        {row2.map(renderButton)}
-      </div>
+      {options.map((opt) => {
+        const active = selectedFormats.has(opt.id);
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => toggle(opt.id)}
+            aria-pressed={active}
+            style={{
+              padding: compact ? '6px 10px' : '8px 12px',
+              borderRadius: '6px',
+              border: `1px solid ${active ? '#2A2A2A' : '#E0E0E0'}`,
+              backgroundColor: active ? '#2A2A2A' : '#fff',
+              color: active ? '#fff' : '#2A2A2A',
+              fontSize: compact ? '12px' : '13px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 const FILTER_POPOVER_DURATION_MS = 200;
 
-/** Кнопка «Фільтр»: відкриває попап з чіпами форматів (зручно, не займає місце в рядку). */
+/** Кнопка «Фільтр»: відкриває попап з чіпами форматів (тільки формати з прикріплених файлів). */
 function FileFilterButton({
+  formatOptions,
   selectedFormats,
   onChange,
+  inPill,
 }: {
+  formatOptions: { id: string; label: string }[];
   selectedFormats: Set<string>;
   onChange: (set: Set<string>) => void;
+  inPill?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -221,8 +249,6 @@ function FileFilterButton({
     }
   };
 
-  const count = selectedFormats.size;
-  const label = count > 0 ? `Фільтр (${count})` : 'Фільтр';
   const popoverShown = open || closing;
   const popoverVisible = open && visible && !closing;
 
@@ -230,55 +256,48 @@ function FileFilterButton({
     <div ref={containerRef} style={{ position: 'relative', flexShrink: 0 }}>
       <button
         type="button"
-        className="workspace-files-panel-field"
+        className="workspace-files-panel-field workspace-icon-btn"
         onClick={handleToggle}
         aria-expanded={open}
         aria-haspopup="dialog"
-        aria-label="Відкрити фільтр за форматом файлу"
+        aria-label={
+          selectedFormats.size > 0
+            ? `Фільтр (${selectedFormats.size})`
+            : 'Відкрити фільтр за форматом файлу'
+        }
         style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '8px',
-          padding: '10px 12px',
-          borderRadius: '8px',
-          border: '1px solid #E0E0E0',
-          backgroundColor: '#fff',
-          fontSize: '14px',
-          color: '#2A2A2A',
+          justifyContent: 'center',
+          width: '30px',
+          height: '30px',
+          padding: 0,
+          borderRadius: '6px',
+          border: 'none',
+          backgroundColor: inPill ? 'transparent' : '#F0F0F0',
           cursor: 'pointer',
-          minWidth: '100px',
+          flexShrink: 0,
           boxSizing: 'border-box',
-          textAlign: 'left',
         }}
       >
-        <span>{label}</span>
-        <span
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
-            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-            transformOrigin: 'center center',
-            transition: 'transform 0.25s ease-out',
-          }}
-          aria-hidden
+        {/* Іконка з 3 полосами з Figma 165:197 */}
+        <svg
+          width="14"
+          height="11"
+          viewBox="0 0 17.5 13.5"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+          style={{ display: 'block' }}
         >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
+          <path
+            d="M0.75 0.75H16.75M3.75 6.75H13.75M7.75 12.75H9.75"
+            stroke="#575757"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            style={{ display: 'block' }}
-          >
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </span>
+          />
+        </svg>
       </button>
       {popoverShown && (
         <div
@@ -300,10 +319,14 @@ function FileFilterButton({
             transition: `opacity ${FILTER_POPOVER_DURATION_MS}ms ease, transform ${FILTER_POPOVER_DURATION_MS}ms ease`,
             pointerEvents: popoverVisible ? 'auto' : 'none',
             width: 'fit-content',
-            minWidth: '420px',
           }}
         >
-          <FileFormatFilterChips selectedFormats={selectedFormats} onChange={onChange} compact />
+          <FileFormatFilterChips
+            options={formatOptions}
+            selectedFormats={selectedFormats}
+            onChange={onChange}
+            compact
+          />
         </div>
       )}
     </div>
@@ -344,11 +367,23 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   /** Розгорнутий вид: пошук за назвою файлу. */
   const [fileSearchQuery, setFileSearchQuery] = useState('');
   /** Висота області з файлами без фільтра — зберігаємо, щоб при фільтрі/пошуку розмір не змінювався. */
-  const [savedFileListHeight, setSavedFileListHeight] = useState<number | null>(null);
   const fileListScrollRef = useRef<HTMLDivElement>(null);
-  /** Відкрито модалку «Редактор промпту» — AI space підсвічується світло-синім, кнопка-олівець активна. */
   const [systemPromptEditorOpen, setSystemPromptEditorOpen] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState('');
+
+  /** Формати, присутні в прикріплених файлах — саме вони показуються у фільтрі. */
+  const availableFormatOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const list: { id: string; label: string }[] = [];
+    for (const { file } of attachedFiles) {
+      const opt = getFormatOptionForFile(file);
+      if (!seen.has(opt.id)) {
+        seen.add(opt.id);
+        list.push(opt);
+      }
+    }
+    return list;
+  }, [attachedFiles]);
 
   const filteredAttachedFiles = useMemo(() => {
     const q = fileSearchQuery.trim().toLowerCase();
@@ -356,13 +391,26 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
       .map((item, originalIndex) => ({ item, originalIndex }))
       .filter(({ item }) => {
         if (selectedFormats.size > 0) {
-          const formatId = getFileFormatId(item.file);
-          if (formatId === null || !selectedFormats.has(formatId)) return false;
+          const formatId = getFileFormatIdOrExt(item.file);
+          if (!selectedFormats.has(formatId)) return false;
         }
         if (q && !item.file.name.toLowerCase().includes(q)) return false;
         return true;
       });
   }, [attachedFiles, selectedFormats, fileSearchQuery]);
+
+  /** Прибрати з вибраних форматів ті, яких вже немає серед прикріплених файлів. */
+  useEffect(() => {
+    if (availableFormatOptions.length === 0) return;
+    const ids = new Set(availableFormatOptions.map((o) => o.id));
+    const rafId = requestAnimationFrame(() => {
+      setSelectedFormats((prev) => {
+        const next = new Set([...prev].filter((formatId) => ids.has(formatId)));
+        return next.size === prev.size ? prev : next;
+      });
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [availableFormatOptions]);
 
   useEffect(() => {
     onReady?.();
@@ -398,24 +446,6 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     ro.observe(el);
     return () => ro.disconnect();
   }, [attachedFiles.length, filesExpanded]);
-
-  /** Коли панель відкрита і немає фільтра/пошуку — зберігаємо висоту області з файлами. */
-  useEffect(() => {
-    if (!filesExpanded || selectedFormats.size > 0 || fileSearchQuery.trim()) return;
-    const el = fileListScrollRef.current;
-    if (!el) return;
-    const id = requestAnimationFrame(() => {
-      const h = el.clientHeight;
-      if (h > 0) setSavedFileListHeight(h);
-    });
-    return () => cancelAnimationFrame(id);
-  }, [
-    filesExpanded,
-    selectedFormats.size,
-    fileSearchQuery,
-    attachedFiles.length,
-    filteredAttachedFiles.length,
-  ]);
 
   useEffect(() => {
     return () => {
@@ -494,14 +524,17 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     setIsAssistantTyping(true);
     // TODO: replace mock response with real API call
     setTimeout(() => {
+      const assistantContent =
+        '**Заголовок відповіді:**\n\nТекст відповіді. Тут буде відповідь від AI після інтеграції з бекендом.';
       setMessages((prev) => [
         ...prev,
         {
           id: generateId(),
           role: 'assistant',
-          content:
-            '**Заголовок відповіді:**\n\nТекст відповіді. Тут буде відповідь від AI після інтеграції з бекендом.',
+          content: assistantContent,
           suggestions: ['Детальніше', 'Ще приклад'],
+          versions: [{ content: assistantContent, createdAt: new Date().toISOString() }],
+          activeVersionIndex: 0,
         },
       ]);
       setIsAssistantTyping(false);
@@ -513,13 +546,16 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     setIsAssistantTyping(true);
     // TODO: replace mock response with real API call
     setTimeout(() => {
+      const assistantContent = `**Відповідь на «${suggestionText}»:**\n\nТут буде контент після підключення API.`;
       setMessages((prev) => [
         ...prev,
         {
           id: generateId(),
           role: 'assistant',
-          content: `**Відповідь на «${suggestionText}»:**\n\nТут буде контент після підключення API.`,
+          content: assistantContent,
           suggestions: ['Детальніше'],
+          versions: [{ content: assistantContent, createdAt: new Date().toISOString() }],
+          activeVersionIndex: 0,
         },
       ]);
       setIsAssistantTyping(false);
@@ -532,25 +568,52 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
       if (!msg || msg.role !== 'assistant') return;
       setRegeneratingMessageId(assistantMessageId);
       // TODO: replace mock response with real API call (resend user message before this; use modifier if provided)
+      const newContent =
+        '**Заголовок відповіді:**\n\nТекст відповіді. Тут буде відповідь від AI після інтеграції з бекендом.';
+      const newVersion: MessageVersion = {
+        content: newContent,
+        createdAt: new Date().toISOString(),
+      };
       setTimeout(() => {
         setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMessageId
-              ? {
-                  id: generateId(),
-                  role: 'assistant' as const,
-                  content:
-                    '**Заголовок відповіді:**\n\nТекст відповіді. Тут буде відповідь від AI після інтеграції з бекендом.',
-                  suggestions: ['Детальніше', 'Ще приклад'],
-                }
-              : m
-          )
+          prev.map((m) => {
+            if (m.id !== assistantMessageId) return m;
+            const versions: MessageVersion[] = m.versions ?? [
+              { content: m.content, createdAt: new Date().toISOString() },
+            ];
+            const nextVersions = [...versions, newVersion];
+            const activeVersionIndex = nextVersions.length - 1;
+            return {
+              ...m,
+              content: newContent,
+              versions: nextVersions,
+              activeVersionIndex,
+              suggestions: ['Детальніше', 'Ще приклад'],
+            };
+          })
         );
         setRegeneratingMessageId(null);
       }, 1500);
     },
     [messages]
   );
+
+  const handleSetActiveVersion = useCallback((assistantMessageId: string, index: number) => {
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== assistantMessageId || m.role !== 'assistant' || !m.versions) return m;
+        const versions = m.versions;
+        const i = Math.max(0, Math.min(index, versions.length - 1));
+        return { ...m, content: versions[i].content, activeVersionIndex: i };
+      })
+    );
+  }, []);
+
+  const handleEditMessage = useCallback((messageId: string, newContent: string) => {
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, content: newContent } : m))
+    );
+  }, []);
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -720,53 +783,134 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     marginBottom: '12px',
                   }}
                 >
-                  <input
-                    type="search"
-                    className="workspace-files-panel-field"
-                    placeholder="Пошук за назвою..."
-                    value={fileSearchQuery}
-                    onChange={(e) => setFileSearchQuery(e.target.value)}
+                  <div
                     style={{
-                      width: '220px',
+                      position: 'relative',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      width: '200px',
                       maxWidth: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #E0E0E0',
-                      backgroundColor: '#fff',
-                      fontSize: '14px',
-                      color: '#2A2A2A',
                     }}
-                    aria-label="Пошук файлів"
-                  />
+                  >
+                    <input
+                      type="search"
+                      className="workspace-files-panel-field workspace-search-input"
+                      placeholder="Пошук за назвою..."
+                      value={fileSearchQuery}
+                      onChange={(e) => setFileSearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px 10px',
+                        paddingRight: fileSearchQuery.trim() ? '28px' : '10px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        backgroundColor: '#F0F0F0',
+                        fontSize: '13px',
+                        color: '#2A2A2A',
+                        boxSizing: 'border-box',
+                      }}
+                      aria-label="Пошук файлів"
+                    />
+                    {fileSearchQuery.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setFileSearchQuery('')}
+                        aria-label="Очистити пошук"
+                        style={{
+                          position: 'absolute',
+                          right: '6px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: '18px',
+                          height: '18px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: 'none',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          padding: 0,
+                          borderRadius: '4px',
+                        }}
+                        className="workspace-action-btn hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+                      >
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M18 6L6 18M6 6l12 12"
+                            stroke="#575757"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px',
+                      gap: '6px',
                       marginLeft: 'auto',
                     }}
                   >
                     <button
                       type="button"
                       onClick={handleRemoveAllFiles}
-                      className="workspace-files-panel-field workspace-action-btn workspace-remove-all-btn"
+                      className="workspace-files-panel-field workspace-action-btn workspace-remove-all-btn workspace-icon-btn"
                       style={{
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid #E0E0E0',
-                        backgroundColor: '#fff',
-                        fontSize: '14px',
-                        color: '#2A2A2A',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
                         cursor: 'pointer',
-                        whiteSpace: 'nowrap',
+                        padding: 0,
+                        flexShrink: 0,
                       }}
                       aria-label="Видалити всі файли"
                     >
-                      Видалити все
+                      <svg
+                        width="16"
+                        height="17"
+                        viewBox="0 0 19.5 20.75"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M5.75001 4.8924L5.75001 3.22091C5.75001 2.05611 5.75001 1.47372 6.09942 1.11186C6.44884 0.750006 7.01122 0.750006 8.13597 0.750006L11.364 0.750006C12.4888 0.750006 13.0512 0.750006 13.4006 1.11186C13.75 1.47372 13.75 2.05611 13.75 3.22091V4.8924"
+                          stroke="#575757"
+                          strokeWidth="1.5"
+                        />
+                        <path
+                          d="M9.75 20C8.39924 20 7.44238 19.9986 6.69727 19.9229C5.96606 19.8485 5.51545 19.7083 5.1582 19.4766C4.87615 19.2936 4.62398 19.0679 4.41113 18.8076C4.14158 18.478 3.95301 18.0458 3.79883 17.3272C3.64172 16.5948 3.53502 15.6435 3.38672 14.3008L2.35156 4.93068L17.1484 4.93068L16.1133 14.3008C15.965 15.6435 15.8583 16.5948 15.7012 17.3272C15.547 18.0458 15.3584 18.478 15.0889 18.8076C14.876 19.0679 14.6239 19.2936 14.3418 19.4766C13.9845 19.7083 13.5339 19.8485 12.8027 19.9229C12.0576 19.9986 11.1007 20 9.75 20Z"
+                          stroke="#575757"
+                          strokeWidth="1.5"
+                        />
+                        <path
+                          d="M0.75 4.87201H18.75"
+                          stroke="#575757"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                        />
+                      </svg>
                     </button>
                     <FileFilterButton
+                      formatOptions={availableFormatOptions}
                       selectedFormats={selectedFormats}
                       onChange={setSelectedFormats}
+                      inPill
                     />
                   </div>
                 </div>
@@ -774,24 +918,17 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                   ref={fileListScrollRef}
                   className="scrollbar-hidden"
                   style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    alignContent: 'flex-start',
-                    alignItems: 'flex-start',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
                     gap: '8px',
                     overflowY: 'auto',
                     maxHeight: '420px',
-                    ...((selectedFormats.size > 0 || fileSearchQuery.trim()) &&
-                    savedFileListHeight != null
-                      ? { minHeight: savedFileListHeight }
-                      : {}),
                   }}
                 >
                   {filteredAttachedFiles.map(({ item, originalIndex }) => (
                     <div
                       key={`${item.file.name}-${item.file.size}-${originalIndex}`}
-                      style={{ flexShrink: 0, width: EXPANDED_FILE_CARD_WIDTH }}
+                      style={{ minWidth: 0 }}
                     >
                       <FilePreview
                         file={item.file}
@@ -811,7 +948,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                backgroundColor: systemPromptEditorOpen ? AI_SPACE_EDITOR_ACTIVE_BG : '#F7F7F7',
+                backgroundColor: '#F7F7F7',
                 borderRadius: '16px',
                 padding: '12px 16px 16px 16px',
               }}
@@ -964,11 +1101,11 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     </svg>
                   </button>
 
-                  {/* Pencil — редактор чату (system prompt); активний стан — світло-синій */}
+                  {/* Pencil — редактор промпту; при відкритті AI space блакитний з голубим сяйвом */}
                   <button
                     type="button"
                     className="workspace-action-btn workspace-icon-btn"
-                    aria-label="Редактор чату (system prompt)"
+                    aria-label="Редактор промпту"
                     aria-pressed={systemPromptEditorOpen}
                     onClick={() => setSystemPromptEditorOpen(true)}
                     style={{
@@ -977,7 +1114,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       justifyContent: 'center',
                       width: '30px',
                       height: '30px',
-                      border: systemPromptEditorOpen ? `1px solid #0070f3` : 'none',
+                      border: systemPromptEditorOpen ? '1px solid #0070f3' : 'none',
                       background: systemPromptEditorOpen
                         ? AI_SPACE_EDITOR_ACTIVE_BG
                         : 'transparent',
@@ -1197,7 +1334,14 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
           </div>
         </div>
       ) : (
-        <>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           <div
             style={{
               flex: 1,
@@ -1218,6 +1362,8 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               regeneratingMessageId={regeneratingMessageId}
               onSuggestionClick={handleSuggestionClick}
               onRegenerate={handleRegenerate}
+              onEditMessage={handleEditMessage}
+              onSetActiveVersion={handleSetActiveVersion}
             />
           </div>
           <div
@@ -1237,7 +1383,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               {attachedFiles.length > 0 && filesExpanded && (
                 <div
                   style={{
-                    backgroundColor: systemPromptEditorOpen ? AI_SPACE_EDITOR_ACTIVE_BG : '#F5F6F6',
+                    backgroundColor: '#F5F6F6',
                     borderRadius: '16px',
                     padding: '12px 13px 16px',
                     marginBottom: '10px',
@@ -1251,53 +1397,134 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       marginBottom: '12px',
                     }}
                   >
-                    <input
-                      type="search"
-                      className="workspace-files-panel-field"
-                      placeholder="Пошук за назвою..."
-                      value={fileSearchQuery}
-                      onChange={(e) => setFileSearchQuery(e.target.value)}
+                    <div
                       style={{
-                        width: '220px',
+                        position: 'relative',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        width: '200px',
                         maxWidth: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid #E0E0E0',
-                        backgroundColor: '#fff',
-                        fontSize: '14px',
-                        color: '#2A2A2A',
                       }}
-                      aria-label="Пошук файлів"
-                    />
+                    >
+                      <input
+                        type="search"
+                        className="workspace-files-panel-field workspace-search-input"
+                        placeholder="Пошук за назвою..."
+                        value={fileSearchQuery}
+                        onChange={(e) => setFileSearchQuery(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '6px 10px',
+                          paddingRight: fileSearchQuery.trim() ? '28px' : '10px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          backgroundColor: '#F0F0F0',
+                          fontSize: '13px',
+                          color: '#2A2A2A',
+                          boxSizing: 'border-box',
+                        }}
+                        aria-label="Пошук файлів"
+                      />
+                      {fileSearchQuery.trim() && (
+                        <button
+                          type="button"
+                          onClick={() => setFileSearchQuery('')}
+                          aria-label="Очистити пошук"
+                          style={{
+                            position: 'absolute',
+                            right: '6px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: '18px',
+                            height: '18px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            padding: 0,
+                            borderRadius: '4px',
+                          }}
+                          className="workspace-action-btn hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+                        >
+                          <svg
+                            width="11"
+                            height="11"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M18 6L6 18M6 6l12 12"
+                              stroke="#575757"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                     <div
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px',
+                        gap: '6px',
                         marginLeft: 'auto',
                       }}
                     >
                       <button
                         type="button"
                         onClick={handleRemoveAllFiles}
-                        className="workspace-files-panel-field workspace-action-btn workspace-remove-all-btn"
+                        className="workspace-files-panel-field workspace-action-btn workspace-remove-all-btn workspace-icon-btn"
                         style={{
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          border: '1px solid #E0E0E0',
-                          backgroundColor: '#fff',
-                          fontSize: '14px',
-                          color: '#2A2A2A',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          backgroundColor: 'transparent',
                           cursor: 'pointer',
-                          whiteSpace: 'nowrap',
+                          padding: 0,
+                          flexShrink: 0,
                         }}
                         aria-label="Видалити всі файли"
                       >
-                        Видалити все
+                        <svg
+                          width="16"
+                          height="17"
+                          viewBox="0 0 19.5 20.75"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M5.75001 4.8924L5.75001 3.22091C5.75001 2.05611 5.75001 1.47372 6.09942 1.11186C6.44884 0.750006 7.01122 0.750006 8.13597 0.750006L11.364 0.750006C12.4888 0.750006 13.0512 0.750006 13.4006 1.11186C13.75 1.47372 13.75 2.05611 13.75 3.22091V4.8924"
+                            stroke="#575757"
+                            strokeWidth="1.5"
+                          />
+                          <path
+                            d="M9.75 20C8.39924 20 7.44238 19.9986 6.69727 19.9229C5.96606 19.8485 5.51545 19.7083 5.1582 19.4766C4.87615 19.2936 4.62398 19.0679 4.41113 18.8076C4.14158 18.478 3.95301 18.0458 3.79883 17.3272C3.64172 16.5948 3.53502 15.6435 3.38672 14.3008L2.35156 4.93068L17.1484 4.93068L16.1133 14.3008C15.965 15.6435 15.8583 16.5948 15.7012 17.3272C15.547 18.0458 15.3584 18.478 15.0889 18.8076C14.876 19.0679 14.6239 19.2936 14.3418 19.4766C13.9845 19.7083 13.5339 19.8485 12.8027 19.9229C12.0576 19.9986 11.1007 20 9.75 20Z"
+                            stroke="#575757"
+                            strokeWidth="1.5"
+                          />
+                          <path
+                            d="M0.75 4.87201H18.75"
+                            stroke="#575757"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                          />
+                        </svg>
                       </button>
                       <FileFilterButton
+                        formatOptions={availableFormatOptions}
                         selectedFormats={selectedFormats}
                         onChange={setSelectedFormats}
+                        inPill
                       />
                     </div>
                   </div>
@@ -1305,24 +1532,17 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     ref={fileListScrollRef}
                     className="scrollbar-hidden"
                     style={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                      alignContent: 'flex-start',
-                      alignItems: 'flex-start',
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
                       gap: '8px',
                       overflowY: 'auto',
                       maxHeight: '420px',
-                      ...((selectedFormats.size > 0 || fileSearchQuery.trim()) &&
-                      savedFileListHeight != null
-                        ? { minHeight: savedFileListHeight }
-                        : {}),
                     }}
                   >
                     {filteredAttachedFiles.map(({ item, originalIndex }) => (
                       <div
                         key={`${item.file.name}-${item.file.size}-${originalIndex}`}
-                        style={{ flexShrink: 0, width: EXPANDED_FILE_CARD_WIDTH }}
+                        style={{ minWidth: 0 }}
                       >
                         <FilePreview
                           file={item.file}
@@ -1341,9 +1561,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               <div
                 style={{
                   minHeight: '103px',
-                  backgroundColor: systemPromptEditorOpen
-                    ? AI_SPACE_EDITOR_ACTIVE_BG
-                    : 'rgba(245, 246, 246, 1)',
+                  backgroundColor: 'rgba(245, 246, 246, 1)',
                   borderRadius: '16px',
                   padding: '13px 13px 8px 13px',
                   boxSizing: 'border-box',
@@ -1496,7 +1714,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     <button
                       type="button"
                       className="workspace-action-btn workspace-icon-btn"
-                      aria-label="Редактор чату (system prompt)"
+                      aria-label="Редактор промпту"
                       aria-pressed={systemPromptEditorOpen}
                       onClick={() => setSystemPromptEditorOpen(true)}
                       style={{
@@ -1716,10 +1934,10 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
-      {/* Редактор промпту (system prompt) — модалка; при відкритті AI space світло-синій, кнопка-олівець активна */}
+      {/* Редактор промпту — модалка; при відкритті весь AI space блакитний з голубим сяйвом */}
       {systemPromptEditorOpen && (
         <div
           role="dialog"
@@ -1817,7 +2035,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                   padding: '10px 16px',
                   borderRadius: '8px',
                   border: 'none',
-                  backgroundColor: '#0070f3',
+                  backgroundColor: '#2A2A2A',
                   fontSize: '14px',
                   color: '#fff',
                   cursor: 'pointer',
