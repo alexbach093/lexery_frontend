@@ -339,13 +339,10 @@ function FileFilterButton({
  * Figma: node 0:1339 (AI box)
  * Contains: Greeting or Chat list, Chat input, Action buttons
  */
-/** Інтервал (ms) між появою букв у полі вводу (ефект «по одній букві»). Мінімальний для плавності. */
-const INPUT_TYPEWRITER_MS = 1;
-
 export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   /** Відображуваний текст — з’являється по одній букві. */
   const [value, setValue] = useState('');
-  /** Повний намір користувача (що набрано/вставлено). */
+  /** Дубль для canSend / handleSend (тримаємо в синці з value). */
   const [targetValue, setTargetValue] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -506,34 +503,6 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
       textareaRef.current.style.overflowY = 'hidden';
     }
   }, []);
-
-  /** Ефект «по одній букві»: value доганяє targetValue. */
-  const typewriterIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  useEffect(() => {
-    if (value.length >= targetValue.length) {
-      if (typewriterIntervalRef.current) {
-        clearInterval(typewriterIntervalRef.current);
-        typewriterIntervalRef.current = null;
-      }
-      return;
-    }
-    typewriterIntervalRef.current = setInterval(() => {
-      setValue((prev) => {
-        const next = targetValue.slice(0, prev.length + 1);
-        if (next.length >= targetValue.length && typewriterIntervalRef.current) {
-          clearInterval(typewriterIntervalRef.current);
-          typewriterIntervalRef.current = null;
-        }
-        return next;
-      });
-    }, INPUT_TYPEWRITER_MS);
-    return () => {
-      if (typewriterIntervalRef.current) {
-        clearInterval(typewriterIntervalRef.current);
-        typewriterIntervalRef.current = null;
-      }
-    };
-  }, [targetValue, value.length]);
 
   useEffect(() => {
     if (textareaRef.current) resizeTextarea(textareaRef.current, hasMessages);
@@ -832,10 +801,10 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const next = e.target.value;
       setTargetValue(next);
-      if (next.length <= value.length) setValue(next);
+      setValue(next);
       resizeTextarea(e.target, hasMessages);
     },
-    [resizeTextarea, hasMessages, value.length]
+    [resizeTextarea, hasMessages]
   );
 
   const handleKeyDown = useCallback(

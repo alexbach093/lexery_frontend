@@ -68,11 +68,11 @@ function AssistantContent({ content }: { content: string }) {
             fontFamily: 'Inter, sans-serif',
             fontWeight: 400,
             fontSize: '14px',
-            lineHeight: '20px',
+            lineHeight: 1.5,
             letterSpacing: '0.13px',
             color: '#000000',
             margin: 0,
-            marginBottom: i < lines.length - 1 ? '4px' : 0,
+            marginBottom: i < lines.length - 1 ? '1em' : 0,
             wordBreak: 'break-word',
             overflowWrap: 'break-word',
           }}
