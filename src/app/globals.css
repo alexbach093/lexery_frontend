@@ -631,14 +631,23 @@ body:has([role='status'][aria-label='Loading application']) {
   color: var(--foreground);
 }
 
-/* Lists */
-.chat-assistant-markdown ul,
-.chat-assistant-markdown ol {
+/* Lists (Preflight resets list-style — force bullets and numbers to show) */
+.chat-assistant-markdown ul {
+  list-style-type: disc !important;
+  list-style-position: inside;
   margin: 0.5em 0 1em;
-  padding-left: 1.5em;
+  padding-left: 0.5em;
+}
+.chat-assistant-markdown ol {
+  list-style-type: decimal !important;
+  list-style-position: inside;
+  margin: 0.5em 0 1em;
+  padding-left: 0.5em;
 }
 .chat-assistant-markdown li {
   margin: 0.25em 0;
+  display: list-item !important;
+  padding-left: 0.25em;
 }
 .chat-assistant-markdown ul ul,
 .chat-assistant-markdown ul ol,

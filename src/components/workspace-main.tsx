@@ -759,7 +759,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   );
 
   const handleRegenerate = useCallback(
-    (assistantMessageId: string, _modifier?: string) => {
+    (assistantMessageId: string, modifier?: string) => {
       const msg = messages.find((m) => m.id === assistantMessageId);
       if (!msg || msg.role !== 'assistant') return;
       const assistantIndex = messages.findIndex((m) => m.id === assistantMessageId);
@@ -776,6 +776,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
           const newVersion: MessageVersion = {
             content,
             createdAt: new Date().toISOString(),
+            modifier,
           };
           setMessages((prev) =>
             prev.map((m) => {
@@ -800,6 +801,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
           const newVersion: MessageVersion = {
             content: `**Помилка:** ${message}`,
             createdAt: new Date().toISOString(),
+            modifier,
           };
           setMessages((prev) =>
             prev.map((m) => {
@@ -2310,7 +2312,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                 border: '1px solid #E0E0E0',
                 fontSize: '14px',
                 color: '#2A2A2A',
-                resize: 'vertical',
+                resize: 'none',
                 minHeight: '88px',
               }}
               aria-label="Системний промпт"

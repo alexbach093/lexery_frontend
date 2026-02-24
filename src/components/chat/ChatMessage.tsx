@@ -11,6 +11,16 @@ import type { MessageAttachment, MessageVersion } from '@/types/chat';
 /** History icon from Figma (node 174:222, frame 122:303), exported via scripts/export-chat-action-icons.mjs. */
 const HISTORY_ICON_SRC = '/images/chat/history.svg';
 
+/** Label for version dropdown: Оригінал / Додано деталі / Коротше / Повторно згенеровано / "уточнення". */
+function getVersionLabel(v: MessageVersion, index: number): string {
+  if (index === 0) return 'Оригінал';
+  const mod = v.modifier?.trim() ?? '';
+  if (!mod) return 'Повторно згенеровано';
+  if (mod === 'Додай більше деталей') return 'Додано деталі';
+  if (mod === 'Зроби відповідь коротшою') return 'Коротше';
+  return `"${mod}"`;
+}
+
 export interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
@@ -392,19 +402,19 @@ function ActionIconsRow({
                   ? { top: '100%', marginTop: '6px' }
                   : { bottom: '100%', marginBottom: '6px' }),
                 right: 0,
-                width: '220px',
+                width: '210px',
                 padding: '8px',
                 borderRadius: '10px',
                 backgroundColor: '#FFFFFF',
                 border: '1px solid #E0E0E0',
                 boxShadow: 'none',
-                zIndex: 50,
+                zIndex: 9999,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '4px',
               }}
             >
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', minWidth: 0 }}>
                 <input
                   type="text"
                   value={regeneratePrompt}
@@ -418,7 +428,8 @@ function ActionIconsRow({
                   placeholder="Уточнення"
                   autoFocus
                   style={{
-                    flex: 1,
+                    flex: '1 1 0',
+                    minWidth: 0,
                     padding: '6px 10px',
                     borderRadius: '6px',
                     border: '1px solid #E0E0E0',
@@ -437,8 +448,10 @@ function ActionIconsRow({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: '30px',
-                    height: '30px',
+                    width: '32px',
+                    height: '32px',
+                    minWidth: '32px',
+                    minHeight: '32px',
                     padding: 0,
                     border: 'none',
                     borderRadius: '6px',
@@ -446,6 +459,7 @@ function ActionIconsRow({
                     color: regeneratePrompt.trim() ? '#FFFFFF' : '#ABABAB',
                     cursor: regeneratePrompt.trim() ? 'pointer' : 'not-allowed',
                     transition: 'background-color 0.15s ease, color 0.15s ease',
+                    flexShrink: 0,
                   }}
                   aria-label="Надіслати"
                 >
@@ -1392,11 +1406,21 @@ export function ChatMessage({
                                 fontSize: '14px',
                                 textAlign: 'left',
                                 cursor: 'pointer',
+                                minWidth: 0,
                               }}
                               className="chat-regenerate-option-btn"
                             >
-                              <span style={{ fontWeight: i === activeVersionIndex ? 600 : 400 }}>
-                                Версія {i + 1}
+                              <span
+                                style={{
+                                  fontWeight: i === activeVersionIndex ? 600 : 400,
+                                  display: 'block',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                                title={getVersionLabel(v, i)}
+                              >
+                                {getVersionLabel(v, i)}
                               </span>
                               {v.createdAt && (
                                 <span

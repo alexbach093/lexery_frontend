@@ -9,6 +9,8 @@ export interface MessageAttachment {
 export interface MessageVersion {
   content: string;
   createdAt?: string;
+  /** Modifier used when generating this version: preset ("Додай більше деталей", "Зроби відповідь коротшою"), empty for "Спробувати знову", or custom user text. */
+  modifier?: string;
 }
 
 /** Single chat message. */
