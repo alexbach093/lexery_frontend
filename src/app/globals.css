@@ -546,3 +546,157 @@ body:has([role='status'][aria-label='Loading application']) {
 .scrollbar-hidden::-webkit-scrollbar {
   display: none;
 }
+
+/* ========== Chat assistant message: Markdown styling (only for AI output in chat) ========== */
+.chat-assistant-markdown {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: 0.13px;
+  color: var(--foreground);
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.chat-assistant-markdown > *:first-child {
+  margin-top: 0;
+}
+.chat-assistant-markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Headings */
+.chat-assistant-markdown h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 1em 0 0.5em;
+  line-height: 1.25;
+}
+.chat-assistant-markdown h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+  line-height: 1.3;
+}
+.chat-assistant-markdown h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.9em 0 0.4em;
+  line-height: 1.35;
+}
+.chat-assistant-markdown h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.8em 0 0.4em;
+  line-height: 1.4;
+}
+.chat-assistant-markdown h5 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0.75em 0 0.35em;
+  line-height: 1.4;
+}
+.chat-assistant-markdown h6 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0.7em 0 0.35em;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+/* Paragraphs */
+.chat-assistant-markdown p {
+  margin: 0 0 1em;
+}
+.chat-assistant-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+/* Text formatting */
+.chat-assistant-markdown strong {
+  font-weight: 700;
+}
+.chat-assistant-markdown em {
+  font-style: italic;
+}
+.chat-assistant-markdown del {
+  text-decoration: line-through;
+}
+.chat-assistant-markdown code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+/* Lists */
+.chat-assistant-markdown ul,
+.chat-assistant-markdown ol {
+  margin: 0.5em 0 1em;
+  padding-left: 1.5em;
+}
+.chat-assistant-markdown li {
+  margin: 0.25em 0;
+}
+.chat-assistant-markdown ul ul,
+.chat-assistant-markdown ul ol,
+.chat-assistant-markdown ol ul,
+.chat-assistant-markdown ol ol {
+  margin: 0.2em 0;
+}
+
+/* Blockquote */
+.chat-assistant-markdown blockquote {
+  margin: 0.75em 0 1em;
+  padding: 0.25em 0 0.25em 1em;
+  border-left: 4px solid var(--border);
+  color: var(--foreground);
+}
+
+/* Horizontal rule */
+.chat-assistant-markdown hr {
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: 1em 0;
+}
+
+/* Table */
+.chat-assistant-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 0.75em 0 1em;
+  font-size: 0.95em;
+}
+.chat-assistant-markdown th,
+.chat-assistant-markdown td {
+  padding: 0.5em 0.75em;
+  border: 1px solid var(--border);
+  text-align: left;
+  background: var(--muted);
+}
+.chat-assistant-markdown th {
+  font-weight: 700;
+}
+
+/* Task list (GFM): - [ ] / - [x] */
+.chat-assistant-markdown input[type='checkbox'] {
+  margin-right: 0.5em;
+  vertical-align: middle;
+  accent-color: var(--foreground);
+}
+.chat-assistant-markdown li:has(input[type='checkbox']:checked) {
+  color: var(--muted-foreground);
+  text-decoration: line-through;
+}
+.chat-assistant-markdown li:has(input[type='checkbox']) {
+  list-style: none;
+  margin-left: -1em;
+}
+.chat-assistant-markdown li:has(input[type='checkbox'])::marker {
+  content: none;
+}

@@ -2,6 +2,8 @@
 
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import { formatFileSize } from '@/components/file-preview';
 import type { MessageAttachment, MessageVersion } from '@/types/chat';
@@ -34,53 +36,12 @@ export interface ChatMessageProps {
   onSetActiveVersion?: (index: number) => void;
 }
 
-/** Parse **bold** and newlines into React nodes. */
-function parseContent(text: string): React.ReactNode[] {
-  const parts: React.ReactNode[] = [];
-  const boldRegex = /\*\*(.+?)\*\*/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  let keyIdx = 0;
-  const key = () => `b-${keyIdx++}`;
-
-  while ((match = boldRegex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(<span key={key()}>{text.slice(lastIndex, match.index)}</span>);
-    }
-    parts.push(<strong key={key()}>{match[1]}</strong>);
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < text.length) {
-    parts.push(<span key={key()}>{text.slice(lastIndex)}</span>);
-  }
-  return parts;
-}
-
-/** Split by newlines and render with bold parsing per line. */
+/** Renders AI message content as Markdown (headings, bold, lists, blockquote, table, task list, etc.). Scoped to chat only. */
 function AssistantContent({ content }: { content: string }) {
-  const lines = content.split('\n');
   return (
-    <>
-      {lines.map((line, i) => (
-        <p
-          key={i}
-          style={{
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: 400,
-            fontSize: '14px',
-            lineHeight: 1.5,
-            letterSpacing: '0.13px',
-            color: '#000000',
-            margin: 0,
-            marginBottom: i < lines.length - 1 ? '1em' : 0,
-            wordBreak: 'break-word',
-            overflowWrap: 'break-word',
-          }}
-        >
-          {parseContent(line)}
-        </p>
-      ))}
-    </>
+    <div className="chat-assistant-markdown">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+    </div>
   );
 }
 
@@ -101,7 +62,7 @@ function ActionIconsRow({
   /** Елемент справа в рядку (наприклад кнопка Історія). */
   trailing?: React.ReactNode;
 }) {
-  const iconSize = 14;
+  const iconSize = 16;
   const size = 32; // square clickable area (circle = border-radius on container)
   const [tooltipVisibleId, setTooltipVisibleId] = useState<TooltipId>(null);
   const [copyFeedback, setCopyFeedback] = useState(false);
@@ -234,7 +195,7 @@ function ActionIconsRow({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '6px',
+        gap: '8px',
         marginTop: '14px',
       }}
       role="group"
@@ -243,7 +204,7 @@ function ActionIconsRow({
       {leading}
       <div
         className="chat-action-icons-stagger"
-        style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
         onMouseLeave={hideTooltip}
         onBlurCapture={hideTooltip}
       >
@@ -463,7 +424,7 @@ function ActionIconsRow({
                     border: '1px solid #E0E0E0',
                     backgroundColor: '#F7F7F7',
                     color: '#2A2A2A',
-                    fontSize: '13px',
+                    fontSize: '14px',
                     outline: 'none',
                   }}
                   aria-label="Текст зміни відповіді"
@@ -516,7 +477,7 @@ function ActionIconsRow({
                   border: 'none',
                   borderRadius: '6px',
                   color: '#2A2A2A',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
@@ -543,7 +504,7 @@ function ActionIconsRow({
                   border: 'none',
                   borderRadius: '6px',
                   color: '#2A2A2A',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
@@ -573,7 +534,7 @@ function ActionIconsRow({
                   border: 'none',
                   borderRadius: '6px',
                   color: '#2A2A2A',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   cursor: 'pointer',
                   textAlign: 'left',
                 }}
@@ -609,7 +570,7 @@ function ActionIconsRow({
             marginLeft: '6px',
             borderRadius: 6,
             fontFamily: 'Inter, sans-serif',
-            fontSize: '13px',
+            fontSize: '14px',
             fontWeight: 400,
             color: '#9A9A9A',
             backgroundColor: 'transparent',
@@ -740,7 +701,7 @@ function UserAttachmentsMultiple({ attachments }: { attachments: MessageAttachme
             <span
               style={{
                 fontFamily: 'Inter, sans-serif',
-                fontSize: '13px',
+                fontSize: '14px',
                 fontWeight: 500,
                 color: '#333333',
                 overflow: 'hidden',
@@ -766,7 +727,7 @@ function UserAttachmentsMultiple({ attachments }: { attachments: MessageAttachme
           borderRadius: '14px',
           cursor: 'pointer',
           fontFamily: 'Inter, sans-serif',
-          fontSize: '13px',
+          fontSize: '14px',
           fontWeight: 500,
           color: '#333333',
           boxSizing: 'border-box',
@@ -841,7 +802,7 @@ function UserFileBubble({ attachment }: { attachment: MessageAttachment }) {
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
         ) : (
-          <span style={{ color: '#888', fontSize: 8 }}>?</span>
+          <span style={{ color: '#888', fontSize: 9 }}>?</span>
         )}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
@@ -849,7 +810,7 @@ function UserFileBubble({ attachment }: { attachment: MessageAttachment }) {
           style={{
             fontFamily: 'Inter, sans-serif',
             fontWeight: 500,
-            fontSize: '11px',
+            fontSize: '12px',
             lineHeight: '14px',
             color: '#333333',
             overflow: 'hidden',
@@ -863,7 +824,7 @@ function UserFileBubble({ attachment }: { attachment: MessageAttachment }) {
           style={{
             fontFamily: 'Inter, sans-serif',
             fontWeight: 400,
-            fontSize: '9px',
+            fontSize: '10px',
             color: '#888888',
           }}
         >
@@ -1003,7 +964,7 @@ export function ChatMessage({
   }, [historyDropdownOpen]);
 
   if (role === 'user') {
-    const iconSize = 14;
+    const iconSize = 16;
     const iconBtnStyle: React.CSSProperties = {
       display: 'flex',
       alignItems: 'center',
@@ -1134,7 +1095,7 @@ export function ChatMessage({
                 borderRadius: '18px',
                 border: '1px solid #E0E0E0',
                 fontFamily: 'Inter, sans-serif',
-                fontSize: '14px',
+                fontSize: '15px',
                 lineHeight: '20px',
                 color: '#2A2A2A',
                 resize: 'none',
@@ -1152,7 +1113,7 @@ export function ChatMessage({
                   borderRadius: '6px',
                   border: '1px solid #E0E0E0',
                   background: '#fff',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   color: '#2A2A2A',
                   cursor: 'pointer',
                 }}
@@ -1167,7 +1128,7 @@ export function ChatMessage({
                   borderRadius: '6px',
                   border: 'none',
                   background: '#2A2A2A',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   color: '#fff',
                   cursor: 'pointer',
                 }}
@@ -1191,7 +1152,7 @@ export function ChatMessage({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-end',
-          gap: '6px',
+          gap: '8px',
         }}
       >
         {attachments.length === 1 ? <UserFileBubble attachment={attachments[0]} /> : null}
@@ -1200,26 +1161,26 @@ export function ChatMessage({
             style={{
               display: 'inline-block',
               width: 'max-content',
-              maxWidth: '570px',
+              maxWidth: '600px',
               background: '#F5F5F5',
               ...(attachments.length === 1
                 ? {
-                    borderTopLeftRadius: '18px',
+                    borderTopLeftRadius: '16px',
                     borderTopRightRadius: '7px',
-                    borderBottomRightRadius: '18px',
-                    borderBottomLeftRadius: '18px',
+                    borderBottomRightRadius: '16px',
+                    borderBottomLeftRadius: '16px',
                   }
                 : attachments.length > 1
                   ? {
-                      borderTopLeftRadius: '18px',
-                      borderTopRightRadius: '18px',
+                      borderTopLeftRadius: '16px',
+                      borderTopRightRadius: '16px',
                       borderBottomRightRadius: '7px',
-                      borderBottomLeftRadius: '18px',
+                      borderBottomLeftRadius: '16px',
                     }
-                  : { borderRadius: '18px' }),
-              padding: '9px 14px',
+                  : { borderRadius: '16px' }),
+              padding: '12px 14px',
               fontFamily: 'Inter, sans-serif',
-              fontSize: '14px',
+              fontSize: '15px',
               fontWeight: 400,
               lineHeight: '20px',
               letterSpacing: '0.13px',
@@ -1234,13 +1195,13 @@ export function ChatMessage({
         ) : null}
         {attachments.length > 1 ? <UserAttachmentsMultiple attachments={attachments} /> : null}
         <div
-          className="flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-          style={{ flexShrink: 0, marginLeft: '-4px' }}
+          className="flex items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+          style={{ flexShrink: 0, marginLeft: '-4px', gap: '8px' }}
           role="group"
           aria-label="Дії з повідомленням"
         >
           <div
-            style={{ display: 'flex', alignItems: 'center', gap: 0 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
             onMouseLeave={hideUserTooltip}
             onBlurCapture={hideUserTooltip}
           >
@@ -1428,7 +1389,7 @@ export function ChatMessage({
                                 border: 'none',
                                 background: i === activeVersionIndex ? '#F0F0F0' : 'transparent',
                                 color: '#2A2A2A',
-                                fontSize: '13px',
+                                fontSize: '14px',
                                 textAlign: 'left',
                                 cursor: 'pointer',
                               }}
@@ -1441,7 +1402,7 @@ export function ChatMessage({
                                 <span
                                   style={{
                                     display: 'block',
-                                    fontSize: '11px',
+                                    fontSize: '12px',
                                     color: '#575757',
                                     marginTop: '2px',
                                   }}

@@ -39,16 +39,17 @@ export function ChatMessageList({
   const lastMsg = messages[messages.length - 1];
   const lastIsEmptyAssistant = lastMsg?.role === 'assistant' && !(lastMsg.content ?? '').trim();
   const showTypingInsideLast = isAssistantTyping && lastIsEmptyAssistant;
-  const showTypingAsSeparate = isAssistantTyping && !showTypingInsideLast;
+  /** Під час стримінгу не показуємо три крапки окремо під текстом — лише текст. */
+  const showTypingAsSeparate = false;
 
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '72px',
+        gap: '24px',
         padding: '52px 0 138px 0',
-        maxWidth: '738px',
+        maxWidth: '720px',
         margin: '0 auto',
         width: '100%',
         boxSizing: 'border-box',

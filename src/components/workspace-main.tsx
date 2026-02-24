@@ -352,6 +352,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileListRef = useRef<HTMLDivElement>(null);
+  const streamAbortControllerRef = useRef<AbortController | null>(null);
   const isEmpty = targetValue.trim().length === 0;
   const isGenerationInProgress = isAssistantTyping || regeneratingMessageId != null;
   const canSend = (!isEmpty || attachedFiles.length > 0) && !isGenerationInProgress;
@@ -526,12 +527,14 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     (
       messagesForApi: { role: 'user' | 'assistant'; content: string }[],
       assistantMessageId: string,
-      onError: (message: string) => void
+      onError: (message: string) => void,
+      signal?: AbortSignal
     ) => {
       fetch('/api/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: messagesForApi }),
+        signal,
       })
         .then(async (res) => {
           if (!res.ok) {
@@ -549,7 +552,6 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
             if (pendingContent.length === 0) return;
             const toFlush = pendingContent;
             pendingContent = '';
-            setIsAssistantTyping(false);
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantMessageId ? { ...m, content: (m.content ?? '') + toFlush } : m
@@ -597,7 +599,6 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                   const parsed = JSON.parse(data) as { content?: string; error?: string };
                   if (parsed.error) throw new Error(parsed.error);
                   if (typeof parsed.content === 'string' && parsed.content.length > 0) {
-                    if (pendingContent.length === 0) setIsAssistantTyping(false);
                     pendingContent += parsed.content;
                   }
                 } catch {
@@ -608,15 +609,41 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
           } finally {
             clearInterval(flushInterval);
           }
+          streamAbortControllerRef.current = null;
           setIsAssistantTyping(false);
         })
         .catch((err) => {
+          streamAbortControllerRef.current = null;
+          if (err instanceof Error && err.name === 'AbortError') {
+            setIsAssistantTyping(false);
+            setMessages((prev) =>
+              prev.map((m) => {
+                if (m.id !== assistantMessageId || m.role !== 'assistant') return m;
+                const content = (m.content ?? '').trim() || '';
+                return {
+                  ...m,
+                  content: content || 'Немає відповіді.',
+                  versions: [
+                    { content: content || 'Немає відповіді.', createdAt: new Date().toISOString() },
+                  ],
+                  activeVersionIndex: 0,
+                };
+              })
+            );
+            return;
+          }
           onError(err instanceof Error ? err.message : 'Помилка отримання відповіді');
           setIsAssistantTyping(false);
         });
     },
     []
   );
+
+  const handleStopGeneration = useCallback(() => {
+    streamAbortControllerRef.current?.abort();
+    streamAbortControllerRef.current = null;
+    setIsAssistantTyping(false);
+  }, []);
 
   const handleSend = useCallback(() => {
     const text = targetValue.trim();
@@ -648,51 +675,17 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     ]);
     resetInput();
     setIsAssistantTyping(true);
+    streamAbortControllerRef.current?.abort();
+    const controller = new AbortController();
+    streamAbortControllerRef.current = controller;
     const messagesForApi: { role: 'user' | 'assistant'; content: string }[] = [
       ...messages.map((m) => ({ role: m.role, content: m.content })),
       { role: 'user', content: text || '' },
     ];
-    streamChatResponse(messagesForApi, assistantId, (errorMessage) => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId
-            ? {
-                ...m,
-                content: `**Помилка:** ${errorMessage}`,
-                versions: [
-                  {
-                    content: `**Помилка:** ${errorMessage}`,
-                    createdAt: new Date().toISOString(),
-                  },
-                ],
-                activeVersionIndex: 0,
-              }
-            : m
-        )
-      );
-    });
-  }, [targetValue, attachedFiles, resetInput, messages, streamChatResponse]);
-
-  const handleSuggestionClick = useCallback(
-    (suggestionText: string) => {
-      const assistantId = generateId();
-      setMessages((prev) => [
-        ...prev,
-        { id: generateId(), role: 'user', content: suggestionText },
-        {
-          id: assistantId,
-          role: 'assistant',
-          content: '',
-          versions: [],
-          activeVersionIndex: 0,
-        },
-      ]);
-      setIsAssistantTyping(true);
-      const messagesForApi: { role: 'user' | 'assistant'; content: string }[] = [
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user', content: suggestionText },
-      ];
-      streamChatResponse(messagesForApi, assistantId, (errorMessage) => {
+    streamChatResponse(
+      messagesForApi,
+      assistantId,
+      (errorMessage) => {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
@@ -710,7 +703,57 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               : m
           )
         );
-      });
+      },
+      controller.signal
+    );
+  }, [targetValue, attachedFiles, resetInput, messages, streamChatResponse]);
+
+  const handleSuggestionClick = useCallback(
+    (suggestionText: string) => {
+      const assistantId = generateId();
+      setMessages((prev) => [
+        ...prev,
+        { id: generateId(), role: 'user', content: suggestionText },
+        {
+          id: assistantId,
+          role: 'assistant',
+          content: '',
+          versions: [],
+          activeVersionIndex: 0,
+        },
+      ]);
+      setIsAssistantTyping(true);
+      streamAbortControllerRef.current?.abort();
+      const controller = new AbortController();
+      streamAbortControllerRef.current = controller;
+      const messagesForApi: { role: 'user' | 'assistant'; content: string }[] = [
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        { role: 'user', content: suggestionText },
+      ];
+      streamChatResponse(
+        messagesForApi,
+        assistantId,
+        (errorMessage) => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    content: `**Помилка:** ${errorMessage}`,
+                    versions: [
+                      {
+                        content: `**Помилка:** ${errorMessage}`,
+                        createdAt: new Date().toISOString(),
+                      },
+                    ],
+                    activeVersionIndex: 0,
+                  }
+                : m
+            )
+          );
+        },
+        controller.signal
+      );
     },
     [messages, streamChatResponse]
   );
@@ -1457,61 +1500,95 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       </span>
                     </button>
                   )}
-                  <button
-                    disabled={!canSend}
-                    onClick={handleSend}
-                    className="workspace-action-btn workspace-send-btn"
-                    style={{
-                      width: '44px',
-                      height: '44px',
-                      padding: '3px',
-                      border: 'none',
-                      cursor: canSend ? 'pointer' : 'not-allowed',
-                      backgroundColor: 'transparent',
-                      flexShrink: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: '8px',
-                      transition: 'opacity 0.15s ease',
-                    }}
-                    aria-label="Надіслати повідомлення"
-                  >
-                    <svg
-                      width="38"
-                      height="38"
-                      viewBox="0 0 37 37"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      aria-hidden="true"
+                  {isGenerationInProgress ? (
+                    <button
+                      type="button"
+                      onClick={handleStopGeneration}
+                      className="workspace-action-btn animate-pulse-subtle"
+                      style={{
+                        width: '44px',
+                        height: '44px',
+                        padding: '3px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        backgroundColor: '#F0F0F0',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '8px',
+                        transition: 'opacity 0.2s ease, transform 0.2s ease',
+                      }}
+                      aria-label="Stop generation"
                     >
-                      <rect
-                        x="0.37"
-                        y="0.37"
-                        width="36.26"
-                        height="36.26"
-                        rx="8.63"
-                        fill={canSend ? '#2A2A2A' : '#EDEDED'}
-                        style={{ transition: 'fill 0.15s ease' }}
-                      />
-                      {canSend && (
+                      <svg
+                        width="38"
+                        height="38"
+                        viewBox="0 0 37 37"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden="true"
+                      >
+                        <rect x="11.5" y="11.5" width="14" height="14" rx="2" fill="#2A2A2A" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <button
+                      disabled={!canSend}
+                      onClick={handleSend}
+                      className="workspace-action-btn workspace-send-btn"
+                      style={{
+                        width: '44px',
+                        height: '44px',
+                        padding: '3px',
+                        border: 'none',
+                        cursor: canSend ? 'pointer' : 'not-allowed',
+                        backgroundColor: 'transparent',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '8px',
+                        transition: 'opacity 0.15s ease',
+                      }}
+                      aria-label="Надіслати повідомлення"
+                    >
+                      <svg
+                        width="38"
+                        height="38"
+                        viewBox="0 0 37 37"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        aria-hidden="true"
+                      >
                         <rect
                           x="0.37"
                           y="0.37"
                           width="36.26"
                           height="36.26"
                           rx="8.63"
-                          stroke="#9A9A9A"
-                          strokeWidth="0.74"
+                          fill={canSend ? '#2A2A2A' : '#EDEDED'}
+                          style={{ transition: 'fill 0.15s ease' }}
                         />
-                      )}
-                      <path
-                        d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
-                        fill={canSend ? 'white' : '#ABABAB'}
-                        style={{ transition: 'fill 0.15s ease' }}
-                      />
-                    </svg>
-                  </button>
+                        {canSend && (
+                          <rect
+                            x="0.37"
+                            y="0.37"
+                            width="36.26"
+                            height="36.26"
+                            rx="8.63"
+                            stroke="#9A9A9A"
+                            strokeWidth="0.74"
+                          />
+                        )}
+                        <path
+                          d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
+                          fill={canSend ? 'white' : '#ABABAB'}
+                          style={{ transition: 'fill 0.15s ease' }}
+                        />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1534,21 +1611,36 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               overflowX: 'visible',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
               position: 'relative',
               zIndex: 0,
               backgroundColor: 'transparent',
             }}
           >
-            <ChatMessageList
-              messages={messages}
-              isAssistantTyping={isAssistantTyping}
-              regeneratingMessageId={regeneratingMessageId}
-              onSuggestionClick={handleSuggestionClick}
-              onRegenerate={handleRegenerate}
-              onEditMessage={handleEditMessage}
-              onSetActiveVersion={handleSetActiveVersion}
-            />
+            <div
+              style={{
+                width: '100%',
+                padding: '0 20px',
+                boxSizing: 'border-box',
+              }}
+            >
+              <div
+                style={{
+                  width: `${CHAT_INPUT_MAX_WIDTH}px`,
+                  maxWidth: '100%',
+                  margin: '0 auto',
+                }}
+              >
+                <ChatMessageList
+                  messages={messages}
+                  isAssistantTyping={isAssistantTyping}
+                  regeneratingMessageId={regeneratingMessageId}
+                  onSuggestionClick={handleSuggestionClick}
+                  onRegenerate={handleRegenerate}
+                  onEditMessage={handleEditMessage}
+                  onSetActiveVersion={handleSetActiveVersion}
+                />
+              </div>
+            </div>
           </div>
           <div
             style={{
@@ -2058,61 +2150,95 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                         </span>
                       </button>
                     )}
-                    <button
-                      disabled={!canSend}
-                      onClick={handleSend}
-                      className="workspace-action-btn workspace-send-btn"
-                      style={{
-                        width: '44px',
-                        height: '44px',
-                        padding: '3px',
-                        border: 'none',
-                        cursor: canSend ? 'pointer' : 'not-allowed',
-                        backgroundColor: 'transparent',
-                        flexShrink: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderRadius: '8px',
-                        transition: 'opacity 0.15s ease',
-                      }}
-                      aria-label="Надіслати повідомлення"
-                    >
-                      <svg
-                        width="38"
-                        height="38"
-                        viewBox="0 0 37 37"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden="true"
+                    {isGenerationInProgress ? (
+                      <button
+                        type="button"
+                        onClick={handleStopGeneration}
+                        className="workspace-action-btn animate-pulse-subtle"
+                        style={{
+                          width: '44px',
+                          height: '44px',
+                          padding: '3px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          backgroundColor: '#F0F0F0',
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '8px',
+                          transition: 'opacity 0.2s ease, transform 0.2s ease',
+                        }}
+                        aria-label="Stop generation"
                       >
-                        <rect
-                          x="0.37"
-                          y="0.37"
-                          width="36.26"
-                          height="36.26"
-                          rx="8.63"
-                          fill={canSend ? '#2A2A2A' : '#EDEDED'}
-                          style={{ transition: 'fill 0.15s ease' }}
-                        />
-                        {canSend && (
+                        <svg
+                          width="38"
+                          height="38"
+                          viewBox="0 0 37 37"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
+                          <rect x="11.5" y="11.5" width="14" height="14" rx="2" fill="#2A2A2A" />
+                        </svg>
+                      </button>
+                    ) : (
+                      <button
+                        disabled={!canSend}
+                        onClick={handleSend}
+                        className="workspace-action-btn workspace-send-btn"
+                        style={{
+                          width: '44px',
+                          height: '44px',
+                          padding: '3px',
+                          border: 'none',
+                          cursor: canSend ? 'pointer' : 'not-allowed',
+                          backgroundColor: 'transparent',
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: '8px',
+                          transition: 'opacity 0.15s ease',
+                        }}
+                        aria-label="Надіслати повідомлення"
+                      >
+                        <svg
+                          width="38"
+                          height="38"
+                          viewBox="0 0 37 37"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
                           <rect
                             x="0.37"
                             y="0.37"
                             width="36.26"
                             height="36.26"
                             rx="8.63"
-                            stroke="#9A9A9A"
-                            strokeWidth="0.74"
+                            fill={canSend ? '#2A2A2A' : '#EDEDED'}
+                            style={{ transition: 'fill 0.15s ease' }}
                           />
-                        )}
-                        <path
-                          d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
-                          fill={canSend ? 'white' : '#ABABAB'}
-                          style={{ transition: 'fill 0.15s ease' }}
-                        />
-                      </svg>
-                    </button>
+                          {canSend && (
+                            <rect
+                              x="0.37"
+                              y="0.37"
+                              width="36.26"
+                              height="36.26"
+                              rx="8.63"
+                              stroke="#9A9A9A"
+                              strokeWidth="0.74"
+                            />
+                          )}
+                          <path
+                            d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
+                            fill={canSend ? 'white' : '#ABABAB'}
+                            style={{ transition: 'fill 0.15s ease' }}
+                          />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
