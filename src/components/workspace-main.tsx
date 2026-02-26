@@ -282,8 +282,8 @@ function FileFilterButton({
       >
         {/* Іконка з 3 полосами з Figma 165:197 */}
         <svg
-          width="14"
-          height="11"
+          width="16"
+          height="16"
           viewBox="0 0 17.5 13.5"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
@@ -836,11 +836,65 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     );
   }, []);
 
-  const handleEditMessage = useCallback((messageId: string, newContent: string) => {
-    setMessages((prev) =>
-      prev.map((m) => (m.id === messageId ? { ...m, content: newContent } : m))
-    );
-  }, []);
+  const handleEditMessage = useCallback(
+    (messageId: string, newContent: string) => {
+      const trimmed = newContent.trim();
+      const idx = messages.findIndex((m) => m.id === messageId);
+      if (idx === -1 || messages[idx].role !== 'user') return;
+      const nextMessage = messages[idx + 1];
+      const removeFollowingAssistant = nextMessage?.role === 'assistant';
+      const assistantId = generateId();
+      const messagesForApi: { role: 'user' | 'assistant'; content: string }[] = [
+        ...messages.slice(0, idx).map((m) => ({ role: m.role, content: m.content })),
+        { role: 'user', content: trimmed },
+      ];
+      setMessages((prev) => {
+        const updated = prev.map((m) => (m.id === messageId ? { ...m, content: trimmed } : m));
+        const upToEdited = updated.slice(0, idx + 1);
+        const after = removeFollowingAssistant ? prev.slice(idx + 2) : prev.slice(idx + 1);
+        return [
+          ...upToEdited,
+          {
+            id: assistantId,
+            role: 'assistant',
+            content: '',
+            versions: [],
+            activeVersionIndex: 0,
+          },
+          ...after,
+        ];
+      });
+      setIsAssistantTyping(true);
+      streamAbortControllerRef.current?.abort();
+      const controller = new AbortController();
+      streamAbortControllerRef.current = controller;
+      streamChatResponse(
+        messagesForApi,
+        assistantId,
+        (errorMessage) => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    content: `**Помилка:** ${errorMessage}`,
+                    versions: [
+                      {
+                        content: `**Помилка:** ${errorMessage}`,
+                        createdAt: new Date().toISOString(),
+                      },
+                    ],
+                    activeVersionIndex: 0,
+                  }
+                : m
+            )
+          );
+        },
+        controller.signal
+      );
+    },
+    [messages, streamChatResponse]
+  );
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -1111,27 +1165,32 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     >
                       <svg
                         width="16"
-                        height="17"
-                        viewBox="0 0 19.5 20.75"
+                        height="16"
+                        viewBox="0 0 18 20"
                         fill="none"
                         xmlns="http://www.w3.org/2000/svg"
                         aria-hidden="true"
                       >
                         <path
-                          d="M5.75001 4.8924L5.75001 3.22091C5.75001 2.05611 5.75001 1.47372 6.09942 1.11186C6.44884 0.750006 7.01122 0.750006 8.13597 0.750006L11.364 0.750006C12.4888 0.750006 13.0512 0.750006 13.4006 1.11186C13.75 1.47372 13.75 2.05611 13.75 3.22091V4.8924"
-                          stroke="#575757"
-                          strokeWidth="1.5"
-                        />
-                        <path
-                          d="M9.75 20C8.39924 20 7.44238 19.9986 6.69727 19.9229C5.96606 19.8485 5.51545 19.7083 5.1582 19.4766C4.87615 19.2936 4.62398 19.0679 4.41113 18.8076C4.14158 18.478 3.95301 18.0458 3.79883 17.3272C3.64172 16.5948 3.53502 15.6435 3.38672 14.3008L2.35156 4.93068L17.1484 4.93068L16.1133 14.3008C15.965 15.6435 15.8583 16.5948 15.7012 17.3272C15.547 18.0458 15.3584 18.478 15.0889 18.8076C14.876 19.0679 14.6239 19.2936 14.3418 19.4766C13.9845 19.7083 13.5339 19.8485 12.8027 19.9229C12.0576 19.9986 11.1007 20 9.75 20Z"
-                          stroke="#575757"
-                          strokeWidth="1.5"
-                        />
-                        <path
-                          d="M0.75 4.87201H18.75"
+                          d="M2.82051 4.87179V17.1795C2.82051 18.3124 3.7389 19.2308 4.8718 19.2308H13.0769C14.2098 19.2308 15.1282 18.3124 15.1282 17.1795V4.87179"
                           stroke="#575757"
                           strokeWidth="1.5"
                           strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M0.769231 4.87179H17.1795"
+                          stroke="#575757"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M3.84615 4.87179L5.89744 0.769231H12.0513L14.1026 4.87179"
+                          stroke="#575757"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         />
                       </svg>
                     </button>
@@ -1609,38 +1668,46 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
             style={{
               flex: 1,
               minHeight: 0,
-              overflowY: 'auto',
-              overflowX: 'visible',
               display: 'flex',
               flexDirection: 'column',
               position: 'relative',
-              zIndex: 0,
-              backgroundColor: 'transparent',
             }}
           >
             <div
               style={{
-                width: '100%',
-                padding: '0 20px',
-                boxSizing: 'border-box',
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                overflowX: 'visible',
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: 'transparent',
               }}
             >
               <div
                 style={{
-                  width: `${CHAT_INPUT_MAX_WIDTH}px`,
-                  maxWidth: '100%',
-                  margin: '0 auto',
+                  width: '100%',
+                  padding: '0 20px',
+                  boxSizing: 'border-box',
                 }}
               >
-                <ChatMessageList
-                  messages={messages}
-                  isAssistantTyping={isAssistantTyping}
-                  regeneratingMessageId={regeneratingMessageId}
-                  onSuggestionClick={handleSuggestionClick}
-                  onRegenerate={handleRegenerate}
-                  onEditMessage={handleEditMessage}
-                  onSetActiveVersion={handleSetActiveVersion}
-                />
+                <div
+                  style={{
+                    width: `${CHAT_INPUT_MAX_WIDTH}px`,
+                    maxWidth: '100%',
+                    margin: '0 auto',
+                  }}
+                >
+                  <ChatMessageList
+                    messages={messages}
+                    isAssistantTyping={isAssistantTyping}
+                    regeneratingMessageId={regeneratingMessageId}
+                    onSuggestionClick={handleSuggestionClick}
+                    onRegenerate={handleRegenerate}
+                    onEditMessage={handleEditMessage}
+                    onSetActiveVersion={handleSetActiveVersion}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1774,27 +1841,32 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                       >
                         <svg
                           width="16"
-                          height="17"
-                          viewBox="0 0 19.5 20.75"
+                          height="18"
+                          viewBox="0 0 18 20"
                           fill="none"
                           xmlns="http://www.w3.org/2000/svg"
                           aria-hidden="true"
                         >
                           <path
-                            d="M5.75001 4.8924L5.75001 3.22091C5.75001 2.05611 5.75001 1.47372 6.09942 1.11186C6.44884 0.750006 7.01122 0.750006 8.13597 0.750006L11.364 0.750006C12.4888 0.750006 13.0512 0.750006 13.4006 1.11186C13.75 1.47372 13.75 2.05611 13.75 3.22091V4.8924"
-                            stroke="#575757"
-                            strokeWidth="1.5"
-                          />
-                          <path
-                            d="M9.75 20C8.39924 20 7.44238 19.9986 6.69727 19.9229C5.96606 19.8485 5.51545 19.7083 5.1582 19.4766C4.87615 19.2936 4.62398 19.0679 4.41113 18.8076C4.14158 18.478 3.95301 18.0458 3.79883 17.3272C3.64172 16.5948 3.53502 15.6435 3.38672 14.3008L2.35156 4.93068L17.1484 4.93068L16.1133 14.3008C15.965 15.6435 15.8583 16.5948 15.7012 17.3272C15.547 18.0458 15.3584 18.478 15.0889 18.8076C14.876 19.0679 14.6239 19.2936 14.3418 19.4766C13.9845 19.7083 13.5339 19.8485 12.8027 19.9229C12.0576 19.9986 11.1007 20 9.75 20Z"
-                            stroke="#575757"
-                            strokeWidth="1.5"
-                          />
-                          <path
-                            d="M0.75 4.87201H18.75"
+                            d="M2.82051 4.87179V17.1795C2.82051 18.3124 3.7389 19.2308 4.8718 19.2308H13.0769C14.2098 19.2308 15.1282 18.3124 15.1282 17.1795V4.87179"
                             stroke="#575757"
                             strokeWidth="1.5"
                             strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M0.769231 4.87179H17.1795"
+                            stroke="#575757"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d="M3.84615 4.87179L5.89744 0.769231H12.0513L14.1026 4.87179"
+                            stroke="#575757"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           />
                         </svg>
                       </button>

@@ -50,7 +50,18 @@ export interface ChatMessageProps {
 function AssistantContent({ content }: { content: string }) {
   return (
     <div className="chat-assistant-markdown">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          table: ({ children, ...props }) => (
+            <div className="chat-markdown-table-wrapper">
+              <table {...props}>{children}</table>
+            </div>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   );
 }
@@ -264,19 +275,30 @@ function ActionIconsRow({
           <button
             type="button"
             style={btnStyle}
-            className={`chat-action-btn chat-action-btn--circle${feedbackLike === 'like' ? 'chat-action-btn--liked' : ''}`}
+            className={`chat-action-btn chat-action-btn--circle chat-action-btn--thumbs${feedbackLike === 'like' ? 'chat-action-btn--liked' : ''}`}
             aria-label="Подобається"
             aria-describedby="chat-action-tooltip-thumbs-up"
             onClick={() => handleLike('like')}
           >
-            <Image
-              src="/images/chat/thumbs-up.svg"
-              alt=""
+            <svg
               width={iconSize}
               height={iconSize}
+              viewBox="0 0 12 11"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
               aria-hidden
               className="chat-action-icon"
-            />
+              style={{ display: 'block' }}
+            >
+              <path
+                d="M8.88126 10.5459H1.71581C1.01911 10.5459 0.45433 9.98113 0.45433 9.28444V5.5C0.45433 4.8033 1.01911 4.23852 1.71581 4.23852H2.9329C3.35468 4.23852 3.74856 4.02773 3.98252 3.67678L5.80357 0.945213C6.00812 0.638382 6.35249 0.454083 6.72125 0.454083C7.40279 0.454083 7.92121 1.06606 7.80917 1.73832L7.63728 2.76966C7.50912 3.53857 8.10207 4.23852 8.88159 4.23852H9.63815C10.4342 4.23852 11.0312 4.9668 10.8751 5.7474L10.1182 9.53183C10.0003 10.1215 9.48258 10.5459 8.88126 10.5459Z"
+                stroke="currentColor"
+                strokeWidth="0.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path d="M2.97729 4.23852V10.5459" stroke="currentColor" strokeWidth="0.9" />
+            </svg>
           </button>
           <span
             id="chat-action-tooltip-thumbs-up"
@@ -308,19 +330,30 @@ function ActionIconsRow({
           <button
             type="button"
             style={btnStyle}
-            className={`chat-action-btn chat-action-btn--circle${feedbackLike === 'dislike' ? 'chat-action-btn--disliked' : ''}`}
+            className={`chat-action-btn chat-action-btn--circle chat-action-btn--thumbs${feedbackLike === 'dislike' ? 'chat-action-btn--disliked' : ''}`}
             aria-label="Не подобається"
             aria-describedby="chat-action-tooltip-thumbs-down"
             onClick={() => handleLike('dislike')}
           >
-            <Image
-              src="/images/chat/thumbs-down.svg"
-              alt=""
+            <svg
               width={iconSize}
               height={iconSize}
+              viewBox="0 0 12 11"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
               aria-hidden
               className="chat-action-icon"
-            />
+              style={{ display: 'block' }}
+            >
+              <path
+                d="M2.47304 0.454082L9.63849 0.454083C10.3352 0.454083 10.9 1.01887 10.9 1.71556L10.9 5.5C10.9 6.1967 10.3352 6.76148 9.63849 6.76148L8.42139 6.76148C7.99961 6.76148 7.60574 6.97227 7.37178 7.32321L5.55073 10.0548C5.34618 10.3616 5.00181 10.5459 4.63305 10.5459C3.95151 10.5459 3.43309 9.93394 3.54513 9.26168L3.71702 8.23034C3.84517 7.46143 3.25222 6.76148 2.47271 6.76148L1.71615 6.76148C0.920101 6.76148 0.323052 6.0332 0.47917 5.2526L1.23606 1.46817C1.35399 0.878519 1.87172 0.454082 2.47304 0.454082Z"
+                stroke="currentColor"
+                strokeWidth="0.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path d="M8.37701 6.76148L8.37701 0.454083" stroke="currentColor" strokeWidth="0.9" />
+            </svg>
           </button>
           <span
             id="chat-action-tooltip-thumbs-down"

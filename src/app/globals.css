@@ -426,9 +426,13 @@ body:has([role='status'][aria-label='Loading application']) {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  transition: transform 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease;
   cursor: pointer;
-  transition: background-color 150ms ease;
+  color: #575757;
 }
 .chat-action-btn.chat-action-btn--circle:hover,
 .chat-action-btn.chat-action-btn--circle:active {
@@ -453,30 +457,42 @@ body:has([role='status'][aria-label='Loading application']) {
 .chat-action-btn.chat-action-btn--circle:hover .chat-action-icon {
   filter: brightness(0) saturate(100%) invert(0.45);
 }
-/* «Подобається» / «Не подобається» — зелений / червоний тільки після кліку (класи --liked / --disliked) */
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked .chat-action-icon,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked img,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:hover .chat-action-icon,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:hover img,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active .chat-action-icon,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active img {
-  filter: brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(86deg)
-    brightness(98%) contrast(90%);
+/* Thumbs (inline SVG з currentColor) — не застосовувати filter, колір через color */
+.chat-action-btn--thumbs .chat-action-icon,
+.chat-action-btn--thumbs:hover .chat-action-icon {
+  filter: none;
+}
+.chat-action-btn--thumbs:hover:not(.chat-action-btn--liked):not(.chat-action-btn--disliked) {
+  color: #333;
+}
+/* «Подобається» — зелений, світиться до кліку на «Не подобається»; один клік, без повторів */
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:hover {
+  color: #22c55e !important;
+  background-color: rgba(34, 197, 94, 0.08);
 }
 .chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active {
   transform: none;
 }
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked .chat-action-icon,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked img,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:hover .chat-action-icon,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:hover img,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active .chat-action-icon,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active img {
-  filter: brightness(0) saturate(100%) invert(26%) sepia(89%) saturate(1582%) hue-rotate(343deg)
-    brightness(98%) contrast(89%);
+/* Вимикаємо filter для liked — іконка кольору через currentColor */
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:hover .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active .chat-action-icon {
+  filter: none !important;
+}
+/* «Не подобається» — червоний, світиться до кліку на «Подобається»; один клік, без повторів */
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:hover {
+  color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.08);
 }
 .chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active {
   transform: none;
+}
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:hover .chat-action-icon,
+.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active .chat-action-icon {
+  filter: none !important;
 }
 .chat-action-btn:hover {
   background-color: rgba(0, 0, 0, 0.08);
@@ -672,23 +688,43 @@ body:has([role='status'][aria-label='Loading application']) {
   margin: 1em 0;
 }
 
-/* Table */
-.chat-assistant-markdown table {
-  width: 100%;
+/* Table — обгортка з горизонтальним скролом для широких таблиць */
+.chat-markdown-table-wrapper {
+  overflow-x: auto;
+  margin: 0.75em 0 1em;
+  border-radius: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.chat-markdown-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+.chat-markdown-table-wrapper::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: 4px;
+}
+.chat-markdown-table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.chat-markdown-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+.chat-assistant-markdown .chat-markdown-table-wrapper table {
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   border-radius: 8px;
-  overflow: hidden;
-  margin: 0.75em 0 1em;
   font-size: 0.95em;
 }
-.chat-assistant-markdown th,
-.chat-assistant-markdown td {
+.chat-assistant-markdown .chat-markdown-table-wrapper th,
+.chat-assistant-markdown .chat-markdown-table-wrapper td {
   padding: 0.5em 0.75em;
   border: 1px solid var(--border);
   text-align: left;
   background: var(--muted);
+  white-space: nowrap;
 }
-.chat-assistant-markdown th {
+.chat-assistant-markdown .chat-markdown-table-wrapper th {
   font-weight: 700;
 }
 

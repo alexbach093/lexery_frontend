@@ -40,6 +40,7 @@ const iconNodes = {
   tips: '0:1337', // Tips/Поради icon
   'send-button': '0:1355', // Main send button
   attachments: '0:1347', // Attachment icons
+  trash: '194:169', // Trash/Видалити всі файли (from node 145-166)
 };
 
 async function exportSVGs() {

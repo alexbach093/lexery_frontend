@@ -13,11 +13,55 @@ export interface FilePreviewProps {
   uniformWidth?: boolean;
 }
 
+/** Розмір квадратного контейнера (як у базових іконок). */
 const THUMBNAIL_SIZE = 28;
 const THUMBNAIL_RADIUS = 4;
+/** Розмір іконки всередині контейнера — менший за фон. */
+const ICON_SIZE = 16;
 const CARD_RADIUS = 6;
 /** Fixed max width so the pill doesn’t stretch; right side stays clear of AI space edge (Perplexity-style). */
 const CARD_MAX_WIDTH = 240;
+
+const ICONS_BASE = '/images/file-types';
+
+/** Map extension (lowercase, with dot) → icon slug. Icons from Figma 238:989 (document+icon). */
+const EXT_TO_ICON: Record<string, string> = {
+  '.png': 'image',
+  '.jpg': 'image',
+  '.jpeg': 'image',
+  '.gif': 'image',
+  '.webp': 'image',
+  '.bmp': 'image',
+  '.svg': 'image',
+  '.avif': 'image',
+  '.ico': 'image',
+  '.mp4': 'video',
+  '.mov': 'video',
+  '.avi': 'video',
+  '.webm': 'video',
+  '.mkv': 'video',
+  '.m4v': 'video',
+  '.mp3': 'audio',
+  '.wav': 'audio',
+  '.ogg': 'audio',
+  '.m4a': 'audio',
+  '.aac': 'audio',
+  '.flac': 'audio',
+  '.pdf': 'document',
+  '.doc': 'document',
+  '.docx': 'document',
+  '.txt': 'document',
+  '.rtf': 'document',
+  '.xls': 'document',
+  '.xlsx': 'document',
+  '.csv': 'document',
+  '.md': 'document',
+};
+
+function getFileTypeIcon(extension: string): string {
+  const ext = extension.toLowerCase();
+  return EXT_TO_ICON[ext] ?? 'document';
+}
 
 /** Human-readable file size (e.g. 20.4 KB, 1.2 MB) with one decimal place. */
 export function formatFileSize(bytes: number): string {
@@ -35,27 +79,6 @@ const IMAGE_EXTENSIONS = /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/i;
 function isImageOrSvg(file: File): boolean {
   if (file.type.startsWith('image/')) return true;
   return IMAGE_EXTENSIONS.test(file.name);
-}
-
-/** Generic image/file placeholder: landscape with mountain and sun (per design). */
-function PlaceholderIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      {/* Sun */}
-      <circle cx="18" cy="6" r="3" fill="#9A9A9A" />
-      {/* Mountain / hill silhouette */}
-      <path d="M2 24L10 10h4l8-6v20H2z" fill="#B0B0B0" />
-      {/* Folded corner */}
-      <path d="M18 4v2h2l-2-2z" fill="#A0A0A0" />
-    </svg>
-  );
 }
 
 /**
@@ -104,7 +127,7 @@ export function FilePreview({ file, previewUrl, onRemove, uniformWidth }: FilePr
         boxSizing: 'border-box',
       }}
     >
-      {/* Left: square thumbnail — light grey bg, rounded; image or landscape placeholder */}
+      {/* Left: square container — format-specific icon or image preview */}
       <div
         style={{
           width: THUMBNAIL_SIZE,
@@ -132,7 +155,19 @@ export function FilePreview({ file, previewUrl, onRemove, uniformWidth }: FilePr
             onError={() => setImageError(true)}
           />
         ) : (
-          <PlaceholderIcon />
+          <img
+            src={`${ICONS_BASE}/${getFileTypeIcon(extension)}.svg`}
+            alt=""
+            width={ICON_SIZE}
+            height={ICON_SIZE}
+            style={{
+              width: ICON_SIZE,
+              height: ICON_SIZE,
+              objectFit: 'contain',
+              display: 'block',
+              filter: 'brightness(0) saturate(100%) invert(0.45)',
+            }}
+          />
         )}
       </div>
 
