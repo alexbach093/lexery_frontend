@@ -528,7 +528,8 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
       messagesForApi: { role: 'user' | 'assistant'; content: string }[],
       assistantMessageId: string,
       onError: (message: string) => void,
-      signal?: AbortSignal
+      signal?: AbortSignal,
+      options?: { modifier?: string; appendVersion?: boolean; onComplete?: () => void }
     ) => {
       fetch('/api/chat/stream', {
         method: 'POST',
@@ -547,17 +548,49 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
           let buffer = '';
           let streamDone = false;
           let pendingContent = '';
-          const FLUSH_MS = 70;
-          const flushInterval = setInterval(() => {
-            if (pendingContent.length === 0) return;
-            const toFlush = pendingContent;
-            pendingContent = '';
+          const TYPEWRITER_MS = 25;
+          const finalize = () => {
+            streamAbortControllerRef.current = null;
+            setIsAssistantTyping(false);
+            options?.onComplete?.();
             setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMessageId ? { ...m, content: (m.content ?? '') + toFlush } : m
-              )
+              prev.map((m) => {
+                if (m.id !== assistantMessageId || m.role !== 'assistant') return m;
+                const content = (m.content ?? '').trim() || 'Немає відповіді.';
+                const newVersion: MessageVersion = {
+                  content,
+                  createdAt: new Date().toISOString(),
+                  modifier: options?.modifier,
+                };
+                const versions: MessageVersion[] =
+                  options?.appendVersion && m.versions?.length
+                    ? [...m.versions, newVersion]
+                    : [newVersion];
+                return {
+                  ...m,
+                  content,
+                  suggestions: ['Детальніше', 'Ще приклад'],
+                  versions,
+                  activeVersionIndex: versions.length - 1,
+                };
+              })
             );
-          }, FLUSH_MS);
+          };
+          const typewriterInterval = setInterval(() => {
+            if (pendingContent.length > 0) {
+              const char = pendingContent[0];
+              pendingContent = pendingContent.slice(1);
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantMessageId ? { ...m, content: (m.content ?? '') + char } : m
+                )
+              );
+            }
+            if (streamDone && pendingContent.length === 0) {
+              clearInterval(typewriterInterval);
+              finalize();
+            }
+          }, TYPEWRITER_MS);
           try {
             while (!streamDone) {
               const { done, value } = await reader.read();
@@ -570,29 +603,6 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                 const data = line.slice(6);
                 if (data === '[DONE]') {
                   streamDone = true;
-                  clearInterval(flushInterval);
-                  if (pendingContent.length > 0) {
-                    setMessages((prev) =>
-                      prev.map((m) =>
-                        m.id === assistantMessageId
-                          ? { ...m, content: (m.content ?? '') + pendingContent }
-                          : m
-                      )
-                    );
-                  }
-                  setMessages((prev) =>
-                    prev.map((m) => {
-                      if (m.id !== assistantMessageId || m.role !== 'assistant') return m;
-                      const content = (m.content ?? '').trim() || 'Немає відповіді.';
-                      return {
-                        ...m,
-                        content,
-                        suggestions: ['Детальніше', 'Ще приклад'],
-                        versions: [{ content, createdAt: new Date().toISOString() }],
-                        activeVersionIndex: 0,
-                      };
-                    })
-                  );
                   break;
                 }
                 try {
@@ -607,26 +617,41 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               }
             }
           } finally {
-            clearInterval(flushInterval);
+            if (!streamDone) clearInterval(typewriterInterval);
           }
-          streamAbortControllerRef.current = null;
-          setIsAssistantTyping(false);
+          if (streamDone && pendingContent.length === 0) {
+            clearInterval(typewriterInterval);
+            finalize();
+          } else if (!streamDone) {
+            streamAbortControllerRef.current = null;
+            setIsAssistantTyping(false);
+            options?.onComplete?.();
+          }
         })
         .catch((err) => {
           streamAbortControllerRef.current = null;
           if (err instanceof Error && err.name === 'AbortError') {
             setIsAssistantTyping(false);
+            options?.onComplete?.();
             setMessages((prev) =>
               prev.map((m) => {
                 if (m.id !== assistantMessageId || m.role !== 'assistant') return m;
                 const content = (m.content ?? '').trim() || '';
+                const fallback = content || 'Немає відповіді.';
+                const newVersion: MessageVersion = {
+                  content: fallback,
+                  createdAt: new Date().toISOString(),
+                  modifier: options?.modifier,
+                };
+                const versions: MessageVersion[] =
+                  options?.appendVersion && m.versions?.length
+                    ? [...m.versions, newVersion]
+                    : [newVersion];
                 return {
                   ...m,
-                  content: content || 'Немає відповіді.',
-                  versions: [
-                    { content: content || 'Немає відповіді.', createdAt: new Date().toISOString() },
-                  ],
-                  activeVersionIndex: 0,
+                  content: fallback,
+                  versions,
+                  activeVersionIndex: versions.length - 1,
                 };
               })
             );
@@ -634,6 +659,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
           }
           onError(err instanceof Error ? err.message : 'Помилка отримання відповіді');
           setIsAssistantTyping(false);
+          options?.onComplete?.();
         });
     },
     []
@@ -643,6 +669,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
     streamAbortControllerRef.current?.abort();
     streamAbortControllerRef.current = null;
     setIsAssistantTyping(false);
+    setRegeneratingMessageId(null);
   }, []);
 
   const handleSend = useCallback(() => {
@@ -764,17 +791,27 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
       if (!msg || msg.role !== 'assistant') return;
       const assistantIndex = messages.findIndex((m) => m.id === assistantMessageId);
       const messagesBeforeAssistant = messages.slice(0, assistantIndex);
-      const messagesForApi = messagesBeforeAssistant.map((m) => ({
+      let messagesForApi = messagesBeforeAssistant.map((m) => ({
         role: m.role,
         content: m.content,
       })) as { role: 'user' | 'assistant'; content: string }[];
       if (messagesForApi.length === 0) return;
+      if (modifier?.trim()) {
+        messagesForApi = [...messagesForApi, { role: 'user' as const, content: modifier.trim() }];
+      }
+      setMessages((prev) =>
+        prev.map((m) => (m.id === assistantMessageId ? { ...m, content: '' } : m))
+      );
       setRegeneratingMessageId(assistantMessageId);
-      fetchChatResponse(messagesForApi)
-        .then((newContent) => {
-          const content = newContent?.trim() || 'Немає відповіді.';
+      streamAbortControllerRef.current?.abort();
+      const controller = new AbortController();
+      streamAbortControllerRef.current = controller;
+      streamChatResponse(
+        messagesForApi,
+        assistantMessageId,
+        (errorMessage) => {
           const newVersion: MessageVersion = {
-            content,
+            content: `**Помилка:** ${errorMessage}`,
             createdAt: new Date().toISOString(),
             modifier,
           };
@@ -785,44 +822,24 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                 { content: m.content, createdAt: new Date().toISOString() },
               ];
               const nextVersions = [...versions, newVersion];
-              const activeVersionIndex = nextVersions.length - 1;
-              return {
-                ...m,
-                content,
-                versions: nextVersions,
-                activeVersionIndex,
-                suggestions: ['Детальніше', 'Ще приклад'],
-              };
-            })
-          );
-        })
-        .catch((err) => {
-          const message = err instanceof Error ? err.message : 'Помилка регенерації';
-          const newVersion: MessageVersion = {
-            content: `**Помилка:** ${message}`,
-            createdAt: new Date().toISOString(),
-            modifier,
-          };
-          setMessages((prev) =>
-            prev.map((m) => {
-              if (m.id !== assistantMessageId) return m;
-              const versions: MessageVersion[] = m.versions ?? [
-                { content: m.content, createdAt: new Date().toISOString() },
-              ];
-              const nextVersions = [...versions, newVersion];
-              const activeVersionIndex = nextVersions.length - 1;
               return {
                 ...m,
                 content: newVersion.content,
                 versions: nextVersions,
-                activeVersionIndex,
+                activeVersionIndex: nextVersions.length - 1,
               };
             })
           );
-        })
-        .finally(() => setRegeneratingMessageId(null));
+        },
+        controller.signal,
+        {
+          modifier,
+          appendVersion: true,
+          onComplete: () => setRegeneratingMessageId(null),
+        }
+      );
     },
-    [messages, fetchChatResponse]
+    [messages, streamChatResponse]
   );
 
   const handleSetActiveVersion = useCallback((assistantMessageId: string, index: number) => {

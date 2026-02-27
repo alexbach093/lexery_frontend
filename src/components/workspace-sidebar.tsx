@@ -50,8 +50,8 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
           <Image
             src="/images/workspace/logo.svg"
             alt="LEXERY Logo"
-            width={42}
-            height={40}
+            width={32}
+            height={30}
             style={{ display: 'block' }}
           />
           <p

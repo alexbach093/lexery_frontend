@@ -70,7 +70,9 @@ export function ChatMessageList({
               : undefined
           }
           isTyping={
-            (msg.role === 'assistant' && msg.id === regeneratingMessageId) ||
+            (msg.role === 'assistant' &&
+              msg.id === regeneratingMessageId &&
+              !(msg.content ?? '').trim()) ||
             (showTypingInsideLast && lastMsg?.id === msg.id)
           }
           messageId={msg.id}
