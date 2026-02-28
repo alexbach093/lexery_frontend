@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ChatMessageList } from '@/components/chat';
+import { MessageList } from '@/features/message-list';
 import type { Message, MessageVersion } from '@/types/chat';
 
 import { FilePreview } from './file-preview';
@@ -1715,7 +1715,7 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                     margin: '0 auto',
                   }}
                 >
-                  <ChatMessageList
+                  <MessageList
                     messages={messages}
                     isAssistantTyping={isAssistantTyping}
                     regeneratingMessageId={regeneratingMessageId}

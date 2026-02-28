@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { createChatCompletion } from '@/lib/openrouter';
+import { createChatCompletion } from '@/lib/server/openrouter';
 
 export const maxDuration = 60;
 

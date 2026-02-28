@@ -1,4 +1,4 @@
 export { ChatMessage } from './ChatMessage';
 export type { ChatMessageProps } from './ChatMessage';
-export { ChatMessageList } from './ChatMessageList';
-export type { ChatMessageListProps } from './ChatMessageList';
+export { MessageList as ChatMessageList } from '@/features/message-list';
+export type { MessageListProps as ChatMessageListProps } from '@/features/message-list';

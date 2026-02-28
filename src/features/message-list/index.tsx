@@ -2,26 +2,20 @@
 
 import { useEffect, useRef } from 'react';
 
+import { ChatMessage } from '@/components/chat/ChatMessage';
 import type { Message } from '@/types/chat';
 
-import { ChatMessage } from './ChatMessage';
-
-export interface ChatMessageListProps {
+export interface MessageListProps {
   messages: Message[];
-  /** When true, show typing indicator as last item. */
   isAssistantTyping?: boolean;
-  /** Id повідомлення асистента, яке зараз перегенеровується — показуємо typing на його місці. */
   regeneratingMessageId?: string | null;
   onSuggestionClick?: (text: string) => void;
-  /** Regenerate assistant response by message id. modifier = custom instruction for change. */
   onRegenerate?: (assistantMessageId: string, modifier?: string) => void;
-  /** Після збереження редагування користувацького повідомлення. */
   onEditMessage?: (messageId: string, newContent: string) => void;
-  /** Вибір активної версії відповіді асистента (історія версій). */
   onSetActiveVersion?: (assistantMessageId: string, index: number) => void;
 }
 
-export function ChatMessageList({
+export function MessageList({
   messages,
   isAssistantTyping = false,
   regeneratingMessageId = null,
@@ -29,7 +23,7 @@ export function ChatMessageList({
   onRegenerate,
   onEditMessage,
   onSetActiveVersion,
-}: ChatMessageListProps) {
+}: MessageListProps) {
   const listEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -39,7 +33,6 @@ export function ChatMessageList({
   const lastMsg = messages[messages.length - 1];
   const lastIsEmptyAssistant = lastMsg?.role === 'assistant' && !(lastMsg.content ?? '').trim();
   const showTypingInsideLast = isAssistantTyping && lastIsEmptyAssistant;
-  /** Під час стримінгу не показуємо три крапки окремо під текстом — лише текст. */
   const showTypingAsSeparate = false;
 
   return (

@@ -1,4 +1,4 @@
-import { createChatCompletionStream } from '@/lib/openrouter';
+import { createChatCompletionStream } from '@/lib/server/openrouter';
 
 export const maxDuration = 60;
 
