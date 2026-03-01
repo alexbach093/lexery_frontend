@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
+import { AiSuggestions } from '@/features/ai-suggestions';
 import type { MessageAttachment, MessageVersion } from '@/types/chat';
 
 import { MessageActions } from './MessageActions';
@@ -78,9 +79,9 @@ function TypingIndicator() {
 export function ChatMessage({
   role,
   content,
-  suggestions: _suggestions = [],
+  suggestions = [],
   attachments = [],
-  onSuggestionClick: _onSuggestionClick,
+  onSuggestionClick,
   isTyping = false,
   onRegenerate,
   messageId,
@@ -459,6 +460,9 @@ export function ChatMessage({
       ) : (
         <div style={{ width: '100%', position: 'relative' }}>
           <MessageMarkdown content={content} />
+          {suggestions.length > 0 && onSuggestionClick && (
+            <AiSuggestions suggestions={suggestions} onSuggestionClick={onSuggestionClick} />
+          )}
           {versions && versions.length > 0 && (
             <div
               style={{
