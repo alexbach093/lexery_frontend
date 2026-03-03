@@ -25,6 +25,11 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
   const [regeneratePopoverOpen, setRegeneratePopoverOpen] = useState(false);
   const [regeneratePrompt, setRegeneratePrompt] = useState('');
   const [regeneratePopoverBelow, setRegeneratePopoverBelow] = useState(false);
+  const [popoverCoords, setPopoverCoords] = useState<{
+    top?: number;
+    bottom?: number;
+    right: number;
+  } | null>(null);
   const regenerateAnchorRef = useRef<HTMLDivElement>(null);
   const regeneratePopoverRef = useRef<HTMLDivElement>(null);
 
@@ -35,7 +40,14 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
     setRegeneratePopoverOpen((open) => {
       if (!open && regenerateAnchorRef.current) {
         const rect = regenerateAnchorRef.current.getBoundingClientRect();
-        setRegeneratePopoverBelow(rect.top < POPOVER_APPROX_HEIGHT + 12);
+        const showBelow = rect.top < POPOVER_APPROX_HEIGHT + 12;
+        setRegeneratePopoverBelow(showBelow);
+        const right = window.innerWidth - rect.right;
+        if (showBelow) {
+          setPopoverCoords({ top: rect.bottom + 6, right });
+        } else {
+          setPopoverCoords({ bottom: window.innerHeight - rect.top + 6, right });
+        }
       }
       return !open;
     });
@@ -359,17 +371,16 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
           >
             Згенерувати знову
           </span>
-          {regeneratePopoverOpen && (
+          {regeneratePopoverOpen && popoverCoords && (
             <div
               ref={regeneratePopoverRef}
               role="dialog"
               aria-label="Змінити відповідь"
               style={{
-                position: 'absolute',
-                ...(regeneratePopoverBelow
-                  ? { top: '100%', marginTop: '6px' }
-                  : { bottom: '100%', marginBottom: '6px' }),
-                right: 0,
+                position: 'fixed',
+                ...(popoverCoords.top !== undefined ? { top: popoverCoords.top } : {}),
+                ...(popoverCoords.bottom !== undefined ? { bottom: popoverCoords.bottom } : {}),
+                right: popoverCoords.right,
                 width: '210px',
                 padding: '8px',
                 borderRadius: '10px',
