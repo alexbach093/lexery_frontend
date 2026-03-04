@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import type { MessageVersion } from '@/types/chat';
 
@@ -29,8 +30,19 @@ export function MessageVersions({
   onVersionChange,
 }: MessageVersionsProps) {
   const [open, setOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const anchorRef = useRef<HTMLDivElement>(null);
+
+  const openDropdown = () => {
+    if (!anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    setDropdownPos({
+      top: rect.bottom + 4,
+      left: rect.left,
+    });
+    setOpen(true);
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -49,7 +61,7 @@ export function MessageVersions({
     <div ref={anchorRef} style={{ position: 'relative' }}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => (open ? setOpen(false) : openDropdown())}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -77,87 +89,89 @@ export function MessageVersions({
           style={{ display: 'block', flexShrink: 0, objectFit: 'contain' }}
         />
       </button>
-      {open && (
-        <div
-          ref={dropdownRef}
-          role="listbox"
-          aria-label="Версії відповіді"
-          style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            marginTop: '4px',
-            minWidth: '200px',
-            maxWidth: '320px',
-            padding: '6px',
-            borderRadius: '10px',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E0E0E0',
-            boxShadow: 'none',
-            zIndex: 50,
-            maxHeight: '280px',
-            overflowY: 'auto',
-          }}
-        >
-          {versions.map((v, i) => (
-            <button
-              key={i}
-              type="button"
-              role="option"
-              aria-selected={i === activeVersionIndex}
-              onClick={() => {
-                onVersionChange(i);
-                setOpen(false);
-              }}
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '8px 10px',
-                borderRadius: '6px',
-                border: 'none',
-                background: i === activeVersionIndex ? '#F0F0F0' : 'transparent',
-                color: '#2A2A2A',
-                fontSize: '14px',
-                textAlign: 'left',
-                cursor: 'pointer',
-                minWidth: 0,
-              }}
-              className="chat-regenerate-option-btn"
-            >
-              <span
-                style={{
-                  fontWeight: i === activeVersionIndex ? 600 : 400,
-                  display: 'block',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+      {open &&
+        dropdownPos &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            role="listbox"
+            aria-label="Версії відповіді"
+            style={{
+              position: 'fixed',
+              top: dropdownPos.top,
+              left: dropdownPos.left,
+              width: '200px',
+              padding: '6px',
+              borderRadius: '10px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E0E0',
+              boxShadow: 'none',
+              zIndex: 1000,
+              maxHeight: '280px',
+              overflowY: 'auto',
+            }}
+          >
+            {versions.map((v, i) => (
+              <button
+                key={i}
+                type="button"
+                role="option"
+                aria-selected={i === activeVersionIndex}
+                onClick={() => {
+                  onVersionChange(i);
+                  setOpen(false);
                 }}
-                title={getVersionLabel(v, i)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: i === activeVersionIndex ? '#F0F0F0' : 'transparent',
+                  color: '#2A2A2A',
+                  fontSize: '14px',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  minWidth: 0,
+                }}
+                className="chat-regenerate-option-btn"
               >
-                {getVersionLabel(v, i)}
-              </span>
-              {v.createdAt && (
                 <span
                   style={{
+                    fontWeight: i === activeVersionIndex ? 600 : 400,
                     display: 'block',
-                    fontSize: '12px',
-                    color: '#575757',
-                    marginTop: '2px',
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}
+                  title={getVersionLabel(v, i)}
                 >
-                  {new Date(v.createdAt).toLocaleString('uk-UA', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
+                  {getVersionLabel(v, i)}
                 </span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+                {v.createdAt && (
+                  <span
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      color: '#575757',
+                      marginTop: '2px',
+                    }}
+                  >
+                    {new Date(v.createdAt).toLocaleString('uk-UA', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

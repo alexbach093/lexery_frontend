@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 type TooltipId = 'copy' | 'thumbs-up' | 'thumbs-down' | 'refresh' | null;
 
@@ -24,18 +25,28 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
   const [showThankYouTooltip, setShowThankYouTooltip] = useState(false);
   const [regeneratePopoverOpen, setRegeneratePopoverOpen] = useState(false);
   const [regeneratePrompt, setRegeneratePrompt] = useState('');
-  const [regeneratePopoverBelow, setRegeneratePopoverBelow] = useState(false);
+  const [popoverPos, setPopoverPos] = useState<{
+    top: number;
+    right: number;
+    openUpward: boolean;
+  } | null>(null);
   const regenerateAnchorRef = useRef<HTMLDivElement>(null);
   const regeneratePopoverRef = useRef<HTMLDivElement>(null);
 
   const POPOVER_APPROX_HEIGHT = 200;
+  const POPOVER_WIDTH = 210;
   const TOOLTIP_DELAY_MS = 1250;
 
   const toggleRegeneratePopover = () => {
     setRegeneratePopoverOpen((open) => {
       if (!open && regenerateAnchorRef.current) {
         const rect = regenerateAnchorRef.current.getBoundingClientRect();
-        setRegeneratePopoverBelow(rect.top < POPOVER_APPROX_HEIGHT + 12);
+        const openUpward = rect.top > POPOVER_APPROX_HEIGHT + 12;
+        setPopoverPos({
+          top: openUpward ? rect.top : rect.bottom + 6,
+          right: window.innerWidth - rect.right,
+          openUpward,
+        });
       }
       return !open;
     });
@@ -359,183 +370,188 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
           >
             Згенерувати знову
           </span>
-          {regeneratePopoverOpen && (
-            <div
-              ref={regeneratePopoverRef}
-              role="dialog"
-              aria-label="Змінити відповідь"
-              style={{
-                position: 'absolute',
-                ...(regeneratePopoverBelow
-                  ? { top: '100%', marginTop: '6px' }
-                  : { bottom: '100%', marginBottom: '6px' }),
-                right: 0,
-                width: '210px',
-                padding: '8px',
-                borderRadius: '10px',
-                backgroundColor: '#FFFFFF',
-                border: '1px solid #E0E0E0',
-                boxShadow: 'none',
-                zIndex: 9999,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px',
-              }}
-            >
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', minWidth: 0 }}>
-                <input
-                  type="text"
-                  value={regeneratePrompt}
-                  onChange={(e) => setRegeneratePrompt(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (regeneratePrompt.trim()) runRegenerate(regeneratePrompt.trim());
+          {regeneratePopoverOpen &&
+            popoverPos &&
+            createPortal(
+              <div
+                ref={regeneratePopoverRef}
+                role="dialog"
+                aria-label="Змінити відповідь"
+                style={{
+                  position: 'fixed',
+                  ...(popoverPos.openUpward
+                    ? { bottom: window.innerHeight - popoverPos.top + 6, top: 'auto' }
+                    : { top: popoverPos.top, bottom: 'auto' }),
+                  right: popoverPos.right,
+                  width: `${POPOVER_WIDTH}px`,
+                  padding: '8px',
+                  borderRadius: '10px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  boxShadow: 'none',
+                  zIndex: 1000,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                }}
+              >
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', minWidth: 0 }}>
+                  <input
+                    type="text"
+                    value={regeneratePrompt}
+                    onChange={(e) => setRegeneratePrompt(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (regeneratePrompt.trim()) runRegenerate(regeneratePrompt.trim());
+                      }
+                    }}
+                    placeholder="Уточнення"
+                    autoFocus
+                    style={{
+                      flex: '1 1 0',
+                      minWidth: 0,
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid #E0E0E0',
+                      backgroundColor: '#F7F7F7',
+                      color: '#2A2A2A',
+                      fontSize: '14px',
+                      outline: 'none',
+                    }}
+                    aria-label="Текст зміни відповіді"
+                  />
+                  <button
+                    type="button"
+                    disabled={!regeneratePrompt.trim()}
+                    onClick={() =>
+                      regeneratePrompt.trim() && runRegenerate(regeneratePrompt.trim())
                     }
-                  }}
-                  placeholder="Уточнення"
-                  autoFocus
-                  style={{
-                    flex: '1 1 0',
-                    minWidth: 0,
-                    padding: '6px 10px',
-                    borderRadius: '6px',
-                    border: '1px solid #E0E0E0',
-                    backgroundColor: '#F7F7F7',
-                    color: '#2A2A2A',
-                    fontSize: '14px',
-                    outline: 'none',
-                  }}
-                  aria-label="Текст зміни відповіді"
-                />
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '32px',
+                      height: '32px',
+                      minWidth: '32px',
+                      minHeight: '32px',
+                      padding: 0,
+                      border: 'none',
+                      borderRadius: '6px',
+                      backgroundColor: regeneratePrompt.trim() ? '#2A2A2A' : '#EDEDED',
+                      color: regeneratePrompt.trim() ? '#FFFFFF' : '#ABABAB',
+                      cursor: regeneratePrompt.trim() ? 'pointer' : 'not-allowed',
+                      transition: 'background-color 0.15s ease, color 0.15s ease',
+                      flexShrink: 0,
+                    }}
+                    aria-label="Надіслати"
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 37 37"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      style={{ transition: 'fill 0.15s ease' }}
+                    >
+                      <path
+                        d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <div style={{ height: 1, backgroundColor: '#E0E0E0', margin: '2px 0' }} />
                 <button
                   type="button"
-                  disabled={!regeneratePrompt.trim()}
-                  onClick={() => regeneratePrompt.trim() && runRegenerate(regeneratePrompt.trim())}
+                  onClick={() => runRegenerate()}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '32px',
-                    height: '32px',
-                    minWidth: '32px',
-                    minHeight: '32px',
-                    padding: 0,
+                    gap: '8px',
+                    width: '100%',
+                    padding: '6px 10px',
                     border: 'none',
                     borderRadius: '6px',
-                    backgroundColor: regeneratePrompt.trim() ? '#2A2A2A' : '#EDEDED',
-                    color: regeneratePrompt.trim() ? '#FFFFFF' : '#ABABAB',
-                    cursor: regeneratePrompt.trim() ? 'pointer' : 'not-allowed',
-                    transition: 'background-color 0.15s ease, color 0.15s ease',
-                    flexShrink: 0,
+                    color: '#2A2A2A',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
                   }}
-                  aria-label="Надіслати"
+                  className="chat-regenerate-option-btn"
+                >
+                  <Image
+                    src="/images/chat/refresh.svg"
+                    alt=""
+                    width={14}
+                    height={14}
+                    style={{ opacity: 0.9 }}
+                  />
+                  Спробувати знову
+                </button>
+                <button
+                  type="button"
+                  onClick={() => runRegenerate('Додай більше деталей')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '6px 10px',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: '#2A2A2A',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                  className="chat-regenerate-option-btn"
                 >
                   <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 37 37"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
                     fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    style={{ transition: 'fill 0.15s ease' }}
+                    stroke="currentColor"
+                    strokeWidth="2"
                   >
-                    <path
-                      d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
-                      fill="currentColor"
-                    />
+                    <path d="M12 5v14M5 12h14" />
                   </svg>
+                  Додати деталі
                 </button>
-              </div>
-              <div style={{ height: 1, backgroundColor: '#E0E0E0', margin: '2px 0' }} />
-              <button
-                type="button"
-                onClick={() => runRegenerate()}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  width: '100%',
-                  padding: '6px 10px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  color: '#2A2A2A',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-                className="chat-regenerate-option-btn"
-              >
-                <Image
-                  src="/images/chat/refresh.svg"
-                  alt=""
-                  width={14}
-                  height={14}
-                  style={{ opacity: 0.9 }}
-                />
-                Спробувати знову
-              </button>
-              <button
-                type="button"
-                onClick={() => runRegenerate('Додай більше деталей')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  width: '100%',
-                  padding: '6px 10px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  color: '#2A2A2A',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-                className="chat-regenerate-option-btn"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
+                <button
+                  type="button"
+                  onClick={() => runRegenerate('Зроби відповідь коротшою')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    width: '100%',
+                    padding: '6px 10px',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: '#2A2A2A',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                  className="chat-regenerate-option-btn"
                 >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Додати деталі
-              </button>
-              <button
-                type="button"
-                onClick={() => runRegenerate('Зроби відповідь коротшою')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  width: '100%',
-                  padding: '6px 10px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  color: '#2A2A2A',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-                className="chat-regenerate-option-btn"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M5 12h14" />
-                </svg>
-                Коротше
-              </button>
-            </div>
-          )}
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M5 12h14" />
+                  </svg>
+                  Коротше
+                </button>
+              </div>,
+              document.body
+            )}
         </div>
       </div>
       <div
