@@ -2,7 +2,7 @@
 
 import { WorkspaceSidebar } from '@/components/workspace-sidebar';
 
-const SIDEBAR_WIDTH = 260;
+const SIDEBAR_WIDTH = 220;
 const SIDEBAR_FADE_MS = 600;
 
 interface AppLayoutProps {

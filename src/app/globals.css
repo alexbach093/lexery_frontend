@@ -580,6 +580,8 @@ body:has([role='status'][aria-label='Loading application']) {
   color: var(--foreground);
   word-break: break-word;
   overflow-wrap: break-word;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .chat-assistant-markdown > *:first-child {
@@ -653,6 +655,27 @@ body:has([role='status'][aria-label='Loading application']) {
   border-radius: 4px;
   background: var(--muted);
   color: var(--foreground);
+}
+
+/* Code blocks (fenced ```): wrap long lines (e.g. one-line JSON) instead of overflowing */
+.chat-assistant-markdown pre {
+  max-width: 100%;
+  min-width: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  margin: 0.75em 0 1em;
+  padding: 0.75em 1em;
+  border-radius: 8px;
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  overflow-x: auto;
+}
+.chat-assistant-markdown pre code {
+  padding: 0;
+  background: transparent;
+  font-size: inherit;
 }
 
 /* Lists (Preflight resets list-style — force bullets and numbers to show) */
