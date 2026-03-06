@@ -7,6 +7,27 @@ import { createPortal } from 'react-dom';
 import type { MessageVersion } from '@/types/chat';
 
 const HISTORY_ICON_SRC = '/images/chat/history.svg';
+const DROPDOWN_WIDTH = 200;
+const SAFE_MARGIN = 12;
+
+/** Viewport-aware dropdown position so it does not overflow right edge on narrow screens. */
+function calculateDropdownPosition(
+  anchorRect: DOMRect,
+  dropdownWidth: number,
+  safeMargin: number = SAFE_MARGIN
+): { top: number; left: number } {
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  let left = anchorRect.left;
+  const wouldOverflow = left + dropdownWidth + safeMargin > viewportWidth;
+  if (wouldOverflow) {
+    left = Math.max(safeMargin, viewportWidth - dropdownWidth - safeMargin);
+  }
+  left = Math.max(safeMargin, left);
+  return {
+    top: anchorRect.bottom + 4,
+    left,
+  };
+}
 
 /** Label for version dropdown: Оригінал / Додано деталі / Коротше / Повторно згенеровано / "уточнення". */
 function getVersionLabel(v: MessageVersion, index: number): string {
@@ -37,10 +58,7 @@ export function MessageVersions({
   const openDropdown = () => {
     if (!anchorRef.current) return;
     const rect = anchorRef.current.getBoundingClientRect();
-    setDropdownPos({
-      top: rect.bottom + 4,
-      left: rect.left,
-    });
+    setDropdownPos(calculateDropdownPosition(rect, DROPDOWN_WIDTH, SAFE_MARGIN));
     setOpen(true);
   };
 
@@ -53,6 +71,27 @@ export function MessageVersions({
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  // Reposition dropdown on resize/scroll so it stays in viewport and does not "jump"
+  useEffect(() => {
+    if (!open || !anchorRef.current) return;
+    let rafId: number | undefined;
+    const handleReposition = () => {
+      if (rafId !== undefined) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (!anchorRef.current) return;
+        const rect = anchorRef.current.getBoundingClientRect();
+        setDropdownPos(calculateDropdownPosition(rect, DROPDOWN_WIDTH, SAFE_MARGIN));
+      });
+    };
+    window.addEventListener('resize', handleReposition);
+    window.addEventListener('scroll', handleReposition, true);
+    return () => {
+      window.removeEventListener('resize', handleReposition);
+      window.removeEventListener('scroll', handleReposition, true);
+      if (rafId !== undefined) cancelAnimationFrame(rafId);
+    };
   }, [open]);
 
   if (versions.length <= 1) return null;
@@ -100,7 +139,7 @@ export function MessageVersions({
               position: 'fixed',
               top: dropdownPos.top,
               left: dropdownPos.left,
-              width: '200px',
+              width: `${DROPDOWN_WIDTH}px`,
               padding: '6px',
               borderRadius: '10px',
               backgroundColor: '#FFFFFF',
