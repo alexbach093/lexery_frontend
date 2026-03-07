@@ -1,6 +1,6 @@
 'use client';
 
-import { FilePreview } from '@/components/file-preview';
+import { FilePreview } from '@/components/ui/file-preview';
 
 import { FileFilterButton } from './FileFilterButton';
 import type { AttachedFile } from './types';

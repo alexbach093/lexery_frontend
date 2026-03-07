@@ -1,7 +1,7 @@
 'use client';
 
 import { AppLayout } from '@/components/layout';
-import { WorkspaceMain } from '@/components/workspace-main';
+import { WorkspaceMain } from '@/components/ui/workspace-main';
 
 /**
  * Workspace Page - Main application interface (AI space, chats).

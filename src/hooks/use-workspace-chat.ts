@@ -10,7 +10,10 @@ import {
   HOME_TEXTAREA_MIN_HEIGHT,
   HOME_TEXTAREA_MAX_HEIGHT,
 } from '@/features/chat-input';
+import { upsertRecentChat } from '@/lib/recent-chats';
 import type { Message, MessageVersion } from '@/types/chat';
+
+const HISTORY_TITLE_MAX_LENGTH = 60;
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -340,6 +343,21 @@ export function useWorkspaceChat(onReady?: () => void) {
             }))
           : undefined;
       const assistantId = generateId();
+      const isNewChat = messages.length === 0;
+      if (isNewChat) {
+        const raw = text.trim();
+        const title =
+          raw.length > 0
+            ? raw.slice(0, HISTORY_TITLE_MAX_LENGTH) +
+              (raw.length > HISTORY_TITLE_MAX_LENGTH ? '…' : '')
+            : 'Новий чат';
+        const chatId = generateId();
+        upsertRecentChat({
+          id: chatId,
+          title,
+          createdAt: new Date().toISOString(),
+        });
+      }
       setMessages((prev) => [
         ...prev,
         { id: generateId(), role: 'user', content: text || '', attachments },

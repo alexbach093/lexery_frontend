@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { BootScreen } from '@/components/boot-screen';
 import { AppLayout } from '@/components/layout';
-import { WorkspaceMain } from '@/components/workspace-main';
+import { BootScreen } from '@/components/ui/boot-screen';
+import { WorkspaceMain } from '@/components/ui/workspace-main';
 
 /** Boot overlay fade-out duration (ms). */
 const BOOT_FADE_MS = 500;

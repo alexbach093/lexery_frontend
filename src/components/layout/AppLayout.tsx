@@ -1,8 +1,8 @@
 'use client';
 
-import { WorkspaceSidebar } from '@/components/workspace-sidebar';
+import { WorkspaceSidebar } from '@/components/ui/workspace-sidebar';
 
-const SIDEBAR_WIDTH = 220;
+const SIDEBAR_WIDTH = 288; // 18rem, Claude-style
 const SIDEBAR_FADE_MS = 600;
 
 interface AppLayoutProps {

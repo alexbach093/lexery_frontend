@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -188,14 +187,33 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
             aria-describedby="chat-action-tooltip-copy"
             onClick={handleCopy}
           >
-            <Image
-              src="/images/chat/copy.svg"
-              alt=""
+            <svg
               width={iconSize}
               height={iconSize}
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
               aria-hidden
               className="chat-action-icon"
-            />
+              style={{ display: 'block' }}
+            >
+              <g transform="translate(8, 8) scale(1.23077) translate(-5.5, -6.5)">
+                <path
+                  d="M8.02285 0.454063H1.71573C1.01907 0.454063 0.454309 1.01882 0.454309 1.71549V8.65331"
+                  stroke="currentColor"
+                  strokeWidth="0.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M2.97715 4.23833C2.97715 3.54167 3.54191 2.97691 4.23858 2.97691H9.28427C9.98093 2.97691 10.5457 3.54167 10.5457 4.23833V10.5454C10.5457 11.2421 9.98093 11.8069 9.28427 11.8069H4.23858C3.54191 11.8069 2.97715 11.2421 2.97715 10.5454V4.23833Z"
+                  stroke="currentColor"
+                  strokeWidth="0.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </g>
+            </svg>
           </button>
           <span
             id="chat-action-tooltip-copy"
@@ -221,7 +239,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
           <button
             type="button"
             style={btnStyle}
-            className={`chat-action-btn chat-action-btn--circle chat-action-btn--thumbs${feedbackLike === 'like' ? 'chat-action-btn--liked' : ''}`}
+            className={`chat-action-btn chat-action-btn--circle chat-action-btn--thumbs ${feedbackLike === 'like' ? 'chat-action-btn--liked' : ''}`}
             aria-label="Подобається"
             aria-describedby="chat-action-tooltip-thumbs-up"
             onClick={() => handleLike('like')}
@@ -276,7 +294,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
           <button
             type="button"
             style={btnStyle}
-            className={`chat-action-btn chat-action-btn--circle chat-action-btn--thumbs${feedbackLike === 'dislike' ? 'chat-action-btn--disliked' : ''}`}
+            className={`chat-action-btn chat-action-btn--circle chat-action-btn--thumbs ${feedbackLike === 'dislike' ? 'chat-action-btn--disliked' : ''}`}
             aria-label="Не подобається"
             aria-describedby="chat-action-tooltip-thumbs-down"
             onClick={() => handleLike('dislike')}
@@ -345,14 +363,31 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
             aria-describedby="chat-action-tooltip-refresh"
             onClick={toggleRegeneratePopover}
           >
-            <Image
-              src="/images/chat/refresh.svg"
-              alt=""
+            <svg
               width={iconSize}
               height={iconSize}
+              viewBox="0 0 13 12"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
               aria-hidden
               className="chat-action-icon"
-            />
+              style={{ display: 'block' }}
+            >
+              <path
+                d="M3.26939 9.73042C5.38619 11.8472 8.8182 11.8472 10.935 9.73042C13.0518 7.61362 13.0518 4.18161 10.935 2.06481C8.8182 -0.0519925 5.38619 -0.0519925 3.26939 2.06481C2.21031 3.12389 1.68111 4.5122 1.68179 5.90029L1.68178 7.10215"
+                stroke="currentColor"
+                strokeWidth="0.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M0.477455 5.89761L1.68199 7.10215L2.88652 5.89762"
+                stroke="currentColor"
+                strokeWidth="0.9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
           <span
             id="chat-action-tooltip-refresh"
@@ -480,13 +515,30 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
                   }}
                   className="chat-regenerate-option-btn"
                 >
-                  <Image
-                    src="/images/chat/refresh.svg"
-                    alt=""
+                  <svg
                     width={14}
                     height={14}
-                    style={{ opacity: 0.9 }}
-                  />
+                    viewBox="0 0 13 12"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ opacity: 0.9, display: 'block', flexShrink: 0 }}
+                    aria-hidden
+                  >
+                    <path
+                      d="M3.26939 9.73042C5.38619 11.8472 8.8182 11.8472 10.935 9.73042C13.0518 7.61362 13.0518 4.18161 10.935 2.06481C8.8182 -0.0519925 5.38619 -0.0519925 3.26939 2.06481C2.21031 3.12389 1.68111 4.5122 1.68179 5.90029L1.68178 7.10215"
+                      stroke="currentColor"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M0.477455 5.89761L1.68199 7.10215L2.88652 5.89762"
+                      stroke="currentColor"
+                      strokeWidth="0.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                   Спробувати знову
                 </button>
                 <button

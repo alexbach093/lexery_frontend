@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { formatFileSize } from '@/components/file-preview';
+import { formatFileSize } from '@/components/ui/file-preview';
 import type { MessageAttachment } from '@/types/chat';
 
 /** Іконка скріпки для блоку "N вкладень". */

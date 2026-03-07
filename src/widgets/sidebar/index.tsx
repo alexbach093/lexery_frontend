@@ -1,1 +1,1 @@
-export { WorkspaceSidebar } from '@/components/workspace-sidebar';
+export { WorkspaceSidebar } from '@/components/ui/workspace-sidebar';
