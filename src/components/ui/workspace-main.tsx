@@ -1,5 +1,7 @@
 'use client';
 
+import { useRef, useEffect } from 'react';
+
 import { AttachmentsPanelCollapsed, AttachmentsPanelExpanded } from '@/features/attachments';
 import { ChatInput } from '@/features/chat-input';
 import { ChatMeta } from '@/features/chat-meta';
@@ -15,6 +17,21 @@ export interface WorkspaceMainProps {
 
 export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
   const chat = useWorkspaceChat(onReady);
+  const systemPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const SYSTEM_PROMPT_MIN_H = 88;
+  const SYSTEM_PROMPT_MAX_H = 320;
+
+  useEffect(() => {
+    if (!chat.systemPromptEditorOpen) return;
+    const el = systemPromptTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const h = Math.min(Math.max(el.scrollHeight, SYSTEM_PROMPT_MIN_H), SYSTEM_PROMPT_MAX_H);
+    el.style.height = `${h}px`;
+    el.style.overflowY = el.scrollHeight > SYSTEM_PROMPT_MAX_H ? 'auto' : 'hidden';
+  }, [chat.systemPromptEditorOpen, chat.systemPrompt]);
+
   const chatInputBoxStyle = chat.hasMessages
     ? {
         minHeight: '103px',
@@ -223,16 +240,17 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               id="system-prompt-editor-title"
               style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 600, color: '#2A2A2A' }}
             >
-              Редактор промпту
+              Системний промпт
             </h2>
             <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#575757' }}>
               Системний промпт для чату (опційно).
             </p>
             <textarea
+              ref={systemPromptTextareaRef}
               value={chat.systemPrompt}
               onChange={(e) => chat.setSystemPrompt(e.target.value)}
               placeholder="Твоя задача давати мені повні відповіді..."
-              rows={4}
+              rows={3}
               style={{
                 width: '100%',
                 boxSizing: 'border-box',
@@ -240,9 +258,12 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
                 borderRadius: '12px',
                 border: '1px solid #E0E0E0',
                 fontSize: '14px',
+                lineHeight: '1.4',
                 color: '#2A2A2A',
                 resize: 'none',
-                minHeight: '88px',
+                minHeight: `${SYSTEM_PROMPT_MIN_H}px`,
+                maxHeight: `${SYSTEM_PROMPT_MAX_H}px`,
+                overflowY: 'hidden',
               }}
               aria-label="Системний промпт"
             />
