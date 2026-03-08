@@ -108,19 +108,21 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
             padding: '0 20px 64px',
           }}
         >
-          <p
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              fontSize: '22.587px',
-              fontWeight: 700,
-              lineHeight: 'normal',
-              color: '#000',
-              textAlign: 'center',
-              marginBottom: '38px',
-            }}
-          >
-            Доброго ранку, Олександре!
-          </p>
+          {chat.attachedFiles.length === 0 && (
+            <p
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '22.587px',
+                fontWeight: 700,
+                lineHeight: 'normal',
+                color: '#000',
+                textAlign: 'center',
+                marginBottom: '38px',
+              }}
+            >
+              Доброго ранку, Олександре!
+            </p>
+          )}
           <div style={{ width: '693px', maxWidth: '100%', position: 'relative' }}>
             {chat.attachedFiles.length > 0 && chat.filesExpanded && (
               <AttachmentsPanelExpanded {...attachmentsPanelProps} variant="home" />

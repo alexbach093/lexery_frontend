@@ -3,7 +3,7 @@
 import React from 'react';
 
 export const HOME_TEXTAREA_MIN_HEIGHT = 82;
-export const HOME_TEXTAREA_MAX_HEIGHT = 400;
+export const HOME_TEXTAREA_MAX_HEIGHT = 280;
 export const CHAT_TEXTAREA_MIN_HEIGHT = 30;
 export const CHAT_TEXTAREA_MAX_HEIGHT = 240;
 export const AI_SPACE_EDITOR_ACTIVE_BG = '#E8F0FE';

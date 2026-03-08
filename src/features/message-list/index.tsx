@@ -6,7 +6,7 @@ import { ChatMessage } from '@/components/chat/ChatMessage';
 import type { Message } from '@/types/chat';
 
 export interface MessageListProps {
-  messages: Message[];
+  messages?: Message[] | null;
   isAssistantTyping?: boolean;
   regeneratingMessageId?: string | null;
   onSuggestionClick?: (text: string) => void;
@@ -16,7 +16,7 @@ export interface MessageListProps {
 }
 
 export function MessageList({
-  messages,
+  messages: messagesProp,
   isAssistantTyping = false,
   regeneratingMessageId = null,
   onSuggestionClick,
@@ -24,6 +24,7 @@ export function MessageList({
   onEditMessage,
   onSetActiveVersion,
 }: MessageListProps) {
+  const messages = messagesProp ?? [];
   const listEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

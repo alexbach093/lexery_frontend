@@ -198,7 +198,7 @@ export function AttachmentsPanelExpanded({
           gridTemplateColumns: 'repeat(3, 1fr)',
           gap: '8px',
           overflowY: 'auto',
-          maxHeight: '420px',
+          maxHeight: variant === 'home' ? '210px' : '420px',
         }}
       >
         {filteredAttachedFiles.map(({ item, originalIndex }) => (

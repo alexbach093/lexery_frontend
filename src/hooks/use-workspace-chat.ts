@@ -15,6 +15,9 @@ import type { Message, MessageVersion } from '@/types/chat';
 
 const HISTORY_TITLE_MAX_LENGTH = 60;
 
+/** Подія для відкриття нового чату (кнопка «Новий чат» у сайдбарі). */
+export const WORKSPACE_START_NEW_CHAT_EVENT = 'workspace-start-new-chat';
+
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
@@ -47,7 +50,7 @@ export function useWorkspaceChat(onReady?: () => void) {
   const isEmpty = targetValue.trim().length === 0;
   const isGenerationInProgress = isAssistantTyping || regeneratingMessageId != null;
   const canSend = (!isEmpty || attachedFiles.length > 0) && !isGenerationInProgress;
-  const hasMessages = messages.length > 0;
+  const hasMessages = (messages?.length ?? 0) > 0;
 
   const availableFormatOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -185,6 +188,21 @@ export function useWorkspaceChat(onReady?: () => void) {
       textareaRef.current.style.overflowY = 'hidden';
     }
   }, []);
+
+  const startNewChat = useCallback(() => {
+    streamAbortControllerRef.current?.abort();
+    streamAbortControllerRef.current = null;
+    setIsAssistantTyping(false);
+    setRegeneratingMessageId(null);
+    setMessages([]);
+    resetInput();
+  }, [resetInput]);
+
+  useEffect(() => {
+    const handler = () => startNewChat();
+    window.addEventListener(WORKSPACE_START_NEW_CHAT_EVENT, handler);
+    return () => window.removeEventListener(WORKSPACE_START_NEW_CHAT_EVENT, handler);
+  }, [startNewChat]);
 
   useEffect(() => {
     if (textareaRef.current) resizeTextarea(textareaRef.current, hasMessages);

@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { AppLayout } from '@/components/layout';
 import { BootScreen } from '@/components/ui/boot-screen';
 import { WorkspaceMain } from '@/components/ui/workspace-main';
+
+/** Ключ sessionStorage: boot уже пройдено в цій сесії. */
+const BOOT_DONE_KEY = 'lexery-boot-done';
 
 /** Boot overlay fade-out duration (ms). */
 const BOOT_FADE_MS = 500;
@@ -16,6 +19,7 @@ const MIN_BOOT_MS = 50;
 /**
  * Головна сторінка: boot показується до готовності main space,
  * але не менше MIN_BOOT_MS. Після цього — плавний перехід у workspace.
+ * При поверненні з інших сторінок (наприклад налаштувань) boot не показується.
  */
 export default function HomePage() {
   const [showBoot, setShowBoot] = useState(true);
@@ -25,6 +29,17 @@ export default function HomePage() {
   const bootStartRef = useRef<number>(0);
   const completedRef = useRef(false);
 
+  useLayoutEffect(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem(BOOT_DONE_KEY) === '1') {
+      completedRef.current = true;
+      queueMicrotask(() => {
+        setShowBoot(false);
+        setBootFading(false);
+        setWorkspaceVisible(true);
+      });
+    }
+  }, []);
+
   useEffect(() => {
     bootStartRef.current = Date.now();
   }, []);
@@ -32,6 +47,7 @@ export default function HomePage() {
   const handleBootComplete = () => {
     if (completedRef.current) return;
     completedRef.current = true;
+    if (typeof window !== 'undefined') sessionStorage.setItem(BOOT_DONE_KEY, '1');
     setBootFading(true);
     fadeTimeoutRef.current = setTimeout(() => {
       setShowBoot(false);
