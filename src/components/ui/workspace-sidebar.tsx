@@ -1,9 +1,9 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
-import { useSettingsOpen } from '@/contexts/settings-open';
 import type { RecentChatItem } from '@/entities/chat/model';
 import { WORKSPACE_START_NEW_CHAT_EVENT } from '@/hooks/use-workspace-chat';
 import {
@@ -24,7 +24,7 @@ interface WorkspaceSidebarProps {
  * Contains: Logo, Navigation items, User profile
  */
 export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
-  const { open: openSettings } = useSettingsOpen();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +80,7 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
 
   const handleSettingsClick = () => {
     setIsMenuOpen(false);
-    openSettings();
+    router.push('/settings/account/details');
   };
 
   const handleReportErrorClick = () => {

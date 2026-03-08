@@ -53,8 +53,8 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       onClick={onChange}
       aria-pressed={checked}
       style={{
-        width: '32px',
-        height: '18px',
+        width: '36px',
+        height: '20px',
         borderRadius: '999px',
         border: 'none',
         padding: '2px',
@@ -67,11 +67,11 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       <span
         style={{
           display: 'block',
-          width: '14px',
-          height: '14px',
+          width: '16px',
+          height: '16px',
           borderRadius: '50%',
           backgroundColor: '#FFFFFF',
-          transform: checked ? 'translateX(14px)' : 'translateX(0)',
+          transform: checked ? 'translateX(16px)' : 'translateX(0)',
           transition: 'transform 150ms ease',
         }}
       />
@@ -99,8 +99,8 @@ function SideNavButton({
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
-        padding: '6px 16px 6px 12px',
-        minHeight: '32px',
+        padding: '9px 16px 9px 12px',
+        minHeight: '33px',
         border: 'none',
         borderRadius: '8px',
         backgroundColor: active ? '#F2F2F2' : 'transparent',
@@ -175,15 +175,12 @@ function Row({
   control,
   hideTopBorder: _hideTopBorder,
   hideBottomBorder,
-  controlStyle,
 }: {
   label: string;
   description?: string;
   control: React.ReactNode;
   hideTopBorder?: boolean;
   hideBottomBorder?: boolean;
-  /** Додатковий стиль для контейнера контрола (наприклад, змістити вимикач ліворуч). */
-  controlStyle?: React.CSSProperties;
 }) {
   return (
     <div
@@ -233,8 +230,7 @@ function Row({
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
-          ...(description ? { alignSelf: 'center' as const } : {}),
-          ...controlStyle,
+          alignSelf: description ? 'center' : undefined,
         }}
       >
         {control}
@@ -359,7 +355,6 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
           control={
             <Toggle checked={memoryEnabled} onChange={() => setMemoryEnabled((prev) => !prev)} />
           }
-          controlStyle={{ marginRight: '20px' }}
         />
 
         <Row

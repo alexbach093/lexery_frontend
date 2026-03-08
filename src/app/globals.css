@@ -5,6 +5,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --spacing-sideBarWidth: 300px;
+  --spacing-gap-two: 8px;
+  --spacing-gap-xs: 4px;
+  --font-weight-semimedium: 600;
+  --ease-outExpo: cubic-bezier(0.19, 1, 0.22, 1);
   --font-sans:
     var(--font-inter), 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
@@ -79,6 +84,14 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --settings-bg-base: #ffffff;
+  --settings-bg-quiet: #f3f3f3;
+  --settings-bg-subtle: #f7f7f7;
+  --settings-bg-underlay: rgba(10, 10, 10, 0.45);
+  --settings-text-quiet: #6b6b6b;
+  --settings-border-subtlest: #e5e5e5;
+  --settings-scrollbar-thumb: rgba(115, 115, 115, 0.3);
+  --settings-scrollbar-track: transparent;
 }
 
 .dark {
@@ -113,6 +126,14 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --settings-bg-base: #111111;
+  --settings-bg-quiet: #1b1b1b;
+  --settings-bg-subtle: #202020;
+  --settings-bg-underlay: rgba(0, 0, 0, 0.6);
+  --settings-text-quiet: #a3a3a3;
+  --settings-border-subtlest: rgba(255, 255, 255, 0.12);
+  --settings-scrollbar-thumb: rgba(255, 255, 255, 0.16);
+  --settings-scrollbar-track: transparent;
 }
 
 @layer base {
@@ -155,6 +176,58 @@
 }
 
 @layer utilities {
+  .bg-base {
+    background-color: var(--settings-bg-base);
+  }
+
+  .bg-quiet {
+    background-color: var(--settings-bg-quiet);
+  }
+
+  .bg-subtle {
+    background-color: var(--settings-bg-subtle);
+  }
+
+  .bg-underlay {
+    background-color: var(--settings-bg-underlay);
+  }
+
+  .text-quiet {
+    color: var(--settings-text-quiet);
+  }
+
+  .border-subtlest {
+    border-color: var(--settings-border-subtlest);
+  }
+
+  .ring-subtlest {
+    --tw-ring-color: var(--settings-border-subtlest);
+  }
+
+  .divide-subtlest > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--settings-border-subtlest);
+  }
+
+  .scrollbar-subtle {
+    scrollbar-color: var(--settings-scrollbar-thumb) var(--settings-scrollbar-track);
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-thumb {
+    background-color: var(--settings-scrollbar-thumb);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .scrollbar-subtle::-webkit-scrollbar-track {
+    background-color: var(--settings-scrollbar-track);
+  }
+
   .animate-float {
     animation: float 3s ease-in-out infinite;
   }

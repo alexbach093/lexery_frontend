@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { BootErrorScreen } from '@/components/boot-error-screen';
+import { BootErrorScreen } from '@/components/ui/boot-error-screen';
 
 export default function BootErrorDemoPage() {
   const [showError, setShowError] = useState(true);
@@ -106,7 +106,7 @@ export default function BootErrorDemoPage() {
             <div className="border-border bg-muted/30 mt-12 rounded-lg border p-6 text-left">
               <h3 className="text-foreground mb-4 font-semibold">Usage Example</h3>
               <pre className="bg-background text-foreground overflow-x-auto rounded p-4 text-xs">
-                <code>{`import { BootErrorScreen } from '@/components/boot-error-screen';
+                <code>{`import { BootErrorScreen } from '@/components/ui/boot-error-screen';
 
 function App() {
   return (
