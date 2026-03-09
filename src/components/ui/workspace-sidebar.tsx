@@ -1,9 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
+import { useSettingsOpen } from '@/contexts/settings-open';
 import type { RecentChatItem } from '@/entities/chat/model';
 import { WORKSPACE_START_NEW_CHAT_EVENT } from '@/hooks/use-workspace-chat';
 import {
@@ -24,7 +24,7 @@ interface WorkspaceSidebarProps {
  * Contains: Logo, Navigation items, User profile
  */
 export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
-  const router = useRouter();
+  const { open: openSettings } = useSettingsOpen();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +80,7 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
 
   const handleSettingsClick = () => {
     setIsMenuOpen(false);
-    router.push('/settings/account/details');
+    openSettings();
   };
 
   const handleReportErrorClick = () => {
@@ -162,8 +162,8 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
             }}
           >
             <svg
-              width={16}
-              height={16}
+              width={18}
+              height={18}
               viewBox="0 0 18 18"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -171,16 +171,21 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
               aria-hidden
             >
               <rect
-                x="0.75"
-                y="0.75"
-                width="16.5"
-                height="16.5"
+                x="1"
+                y="1"
+                width="16"
+                height="16"
                 rx="3.5"
                 stroke="currentColor"
-                strokeWidth="1.5"
+                strokeWidth="1.45"
                 fill="none"
               />
-              <path d="M6.25 1v16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path
+                d="M6.5 1.25v15.5"
+                stroke="currentColor"
+                strokeWidth="1.45"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -220,30 +225,33 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
               <svg
                 width={18}
                 height={18}
-                viewBox="0 0 16.5 16.5"
+                viewBox="14 14 150 150"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
                 style={{ display: 'block', flexShrink: 0 }}
                 aria-hidden
               >
                 <path
-                  d="M12.4167 0.75H4.08333C2.24238 0.75 0.75 2.24238 0.75 4.08333V12.4167C0.75 14.2576 2.24238 15.75 4.08333 15.75H12.4167C14.2576 15.75 15.75 14.2576 15.75 12.4167V4.08333C15.75 2.24238 14.2576 0.75 12.4167 0.75Z"
+                  d="M89 155.75C125.865 155.75 155.75 125.865 155.75 88.9996C155.75 52.1345 125.865 22.2496 89 22.2496C52.135 22.2496 22.25 52.1345 22.25 88.9996C22.25 100.033 24.9269 110.441 29.6667 119.61L22.25 155.75L58.3899 148.333C67.5587 153.073 77.9667 155.75 89 155.75Z"
+                  fill="none"
                   stroke="currentColor"
-                  strokeWidth="1.4"
+                  strokeWidth="12.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
                 <path
-                  d="M10.9067 8.07843H5.24989"
+                  d="M89 66.7572V111.257"
+                  fill="none"
                   stroke="currentColor"
-                  strokeWidth="1.4"
+                  strokeWidth="12.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
                 <path
-                  d="M8.07861 5.25V10.9069"
+                  d="M66.75 89.0072H111.25"
+                  fill="none"
                   stroke="currentColor"
-                  strokeWidth="1.5"
+                  strokeWidth="12.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
@@ -263,53 +271,6 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
             </span>
           </button>
 
-          {/* Пошук — іконка лупи */}
-          <button
-            className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
-            style={{
-              display: 'flex',
-              gap: '12px',
-              alignItems: 'center',
-              height: '32px',
-              padding: '6px 16px 6px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              width: '100%',
-              textAlign: 'left',
-            }}
-          >
-            <svg
-              width={18}
-              height={18}
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ display: 'block', flexShrink: 0 }}
-              aria-hidden
-            >
-              <path
-                d="M17.4998 17.5001L13.7615 13.7551M15.8332 8.75008C15.8332 10.6287 15.0869 12.4304 13.7585 13.7588C12.4301 15.0871 10.6285 15.8334 8.74984 15.8334C6.87122 15.8334 5.06955 15.0871 3.74116 13.7588C2.41278 12.4304 1.6665 10.6287 1.6665 8.75008C1.6665 6.87146 2.41278 5.06979 3.74116 3.74141C5.06955 2.41303 6.87122 1.66675 8.74984 1.66675C10.6285 1.66675 12.4301 2.41303 13.7585 3.74141C15.0869 5.06979 15.8332 6.87146 15.8332 8.75008Z"
-                stroke="currentColor"
-                strokeWidth="1.66667"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <p
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 500,
-                fontSize: '14px',
-                lineHeight: '20px',
-                letterSpacing: '0.14px',
-                color: '#000000',
-              }}
-            >
-              Пошук
-            </p>
-          </button>
-
           {/* Чати — Figma 14:4 (MCP), той самий стиль що інші іконки */}
           <button
             className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
@@ -324,7 +285,6 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
               cursor: 'pointer',
               width: '100%',
               textAlign: 'left',
-              marginTop: '10px',
             }}
           >
             <svg
@@ -341,7 +301,7 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
                 <path
                   d="M64.8725 125.994C93.4857 124.369 116.198 100.127 116.198 70.4578C116.198 39.7373 91.8463 14.8333 61.8072 14.8333C31.7681 14.8333 7.41667 39.7373 7.41667 70.4578C7.41667 81.4038 10.5073 91.6108 15.8462 100.217L12.0023 112.01L11.9962 112.027C10.524 116.544 9.78751 118.803 10.3119 120.307C10.7689 121.618 11.7832 122.651 13.0646 123.118C14.5302 123.653 16.7242 122.905 21.1112 121.409L21.1736 121.39L32.7086 117.459C41.1234 122.919 51.1045 126.081 61.8077 126.081C62.8362 126.081 63.8581 126.051 64.8725 125.994ZM64.8725 125.994C64.8732 125.996 64.8717 125.992 64.8725 125.994ZM64.8725 125.994C72.3143 147.645 92.4843 163.167 116.199 163.167C126.902 163.167 136.881 160.002 145.295 154.542L156.828 158.473L156.85 158.478C161.266 159.983 163.48 160.737 164.95 160.201C166.232 159.734 167.233 158.701 167.69 157.39C168.215 155.884 167.481 153.622 166.004 149.093L162.161 137.3L163.448 135.118C167.994 126.99 170.583 117.575 170.583 107.541C170.583 76.8203 146.237 51.9163 116.198 51.9163L114.162 51.9547L113.135 52.006"
                   stroke="currentColor"
-                  strokeWidth="14.8333"
+                  strokeWidth="14"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
@@ -361,7 +321,7 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
             </p>
           </button>
 
-          {/* Проєкти — Claude: h-8 py-1.5 px-4 rounded-lg */}
+          {/* Проєкти — Figma 62:11 */}
           <button
             className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
             style={{
@@ -380,37 +340,45 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
             <svg
               width={18}
               height={18}
-              viewBox="0 0 20 20"
+              viewBox="22.25 22.25 133.5 133.5"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               style={{ display: 'block', flexShrink: 0 }}
               aria-hidden
             >
-              <path
-                d="M7.5 2.5H3.33333C2.8731 2.5 2.5 2.8731 2.5 3.33333V7.5C2.5 7.96024 2.8731 8.33333 3.33333 8.33333H7.5C7.96024 8.33333 8.33333 7.96024 8.33333 7.5V3.33333C8.33333 2.8731 7.96024 2.5 7.5 2.5Z"
+              <circle
+                cx="126.083"
+                cy="51.9167"
+                r="22.25"
+                fill="none"
                 stroke="currentColor"
-                strokeWidth="1.5"
+                strokeWidth="11.125"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle
+                cx="51.9167"
+                cy="126.083"
+                r="22.25"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="11.125"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <path
-                d="M7.5 11.6667H3.33333C2.8731 11.6667 2.5 12.0398 2.5 12.5V16.6667C2.5 17.1269 2.8731 17.5 3.33333 17.5H7.5C7.96024 17.5 8.33333 17.1269 8.33333 16.6667V12.5C8.33333 12.0398 7.96024 11.6667 7.5 11.6667Z"
+                d="M103.833 103.833H148.333V140.917C148.333 145.013 145.013 148.333 140.917 148.333H111.25C107.154 148.333 103.833 145.013 103.833 140.917V103.833Z"
+                fill="none"
                 stroke="currentColor"
-                strokeWidth="1.5"
+                strokeWidth="11.125"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
               <path
-                d="M16.6667 2.5H12.5C12.0398 2.5 11.6667 2.8731 11.6667 3.33333V7.5C11.6667 7.96024 12.0398 8.33333 12.5 8.33333H16.6667C17.1269 8.33333 17.5 7.96024 17.5 7.5V3.33333C17.5 2.8731 17.1269 2.5 16.6667 2.5Z"
+                d="M29.6667 29.6667H74.1667V66.75C74.1667 70.8461 70.8461 74.1667 66.75 74.1667H37.0833C32.9872 74.1667 29.6667 70.8461 29.6667 66.75V29.6667Z"
+                fill="none"
                 stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M16.6667 11.6667H12.5C12.0398 11.6667 11.6667 12.0398 11.6667 12.5V16.6667C11.6667 17.1269 12.0398 17.5 12.5 17.5H16.6667C17.1269 17.5 17.5 17.1269 17.5 16.6667V12.5C17.5 12.0398 17.1269 11.6667 16.6667 11.6667Z"
-                stroke="currentColor"
-                strokeWidth="1.5"
+                strokeWidth="11.125"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
