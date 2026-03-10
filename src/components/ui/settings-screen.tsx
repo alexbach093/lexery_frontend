@@ -15,6 +15,16 @@ const MODAL_HEIGHT = 564;
 const SIDEBAR_WIDTH = 186;
 const CLOSE_BUTTON_SIZE = 36;
 const CONTROL_HEIGHT = 36;
+const DELETE_CONFIRM_WIDTH = 436;
+const DELETE_CONFIRM_HEIGHT = 152;
+const DELETE_CONFIRM_RADIUS = 28;
+const DELETE_CONFIRM_CANCEL_WIDTH = 102;
+const DELETE_CONFIRM_PRIMARY_MIN_WIDTH = 172;
+const DELETE_CONFIRM_BUTTON_HEIGHT = 42;
+const DELETE_ACCOUNT_CONFIRM_WIDTH = 620;
+const DELETE_ACCOUNT_CONFIRM_RADIUS = 28;
+const DELETE_ACCOUNT_PRIMARY_WIDTH = 156;
+const DELETE_ACCOUNT_PRIMARY_HEIGHT = 44;
 
 const THEME_OPTIONS = ['Системна', 'Темна', 'Світла'] as const;
 type ThemeOption = (typeof THEME_OPTIONS)[number];
@@ -30,6 +40,7 @@ type SettingRow = {
   value?: string;
   actionLabel?: string;
   danger?: boolean;
+  disabled?: boolean;
 };
 
 type SettingsSection = {
@@ -76,13 +87,7 @@ const SECTIONS: SettingsSection[] = [
         description: 'Перегляд чатів, які були відкриті для інших користувачів.',
         kind: 'action',
         actionLabel: 'Переглянути',
-      },
-      {
-        id: 'download',
-        label: 'Завантажити інформацію облікового запису',
-        description: 'Експорт профілю та прив’язаних даних у локальний файл.',
-        kind: 'action',
-        actionLabel: 'Завантажити',
+        disabled: true,
       },
       {
         id: 'delete-account',
@@ -104,6 +109,7 @@ const SECTIONS: SettingsSection[] = [
         description: 'Додає другий рівень перевірки для входу в Lexery.',
         kind: 'action',
         actionLabel: 'Підключити',
+        disabled: true,
       },
       {
         id: 'signout-all',
@@ -227,10 +233,22 @@ function SettingsTab({
   );
 }
 
-function ActionButton({ children, danger = false }: { children: ReactNode; danger?: boolean }) {
+function ActionButton({
+  children,
+  danger = false,
+  onClick,
+  disabled = false,
+}: {
+  children: ReactNode;
+  danger?: boolean;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
+      onClick={onClick}
+      disabled={disabled}
       style={{
         minWidth: '92px',
         height: `${CONTROL_HEIGHT}px`,
@@ -239,10 +257,11 @@ function ActionButton({ children, danger = false }: { children: ReactNode; dange
         justifyContent: 'center',
         padding: '0 12px',
         borderRadius: '999px',
-        border: `1px solid ${danger ? '#F19A9A' : '#D7D7D7'}`,
-        backgroundColor: '#FFFFFF',
-        color: danger ? '#F25555' : '#3A3A3A',
-        cursor: 'pointer',
+        border: `1px solid ${disabled ? '#E4E4E4' : danger ? '#F19A9A' : '#D7D7D7'}`,
+        backgroundColor: disabled ? '#F5F5F5' : '#FFFFFF',
+        color: disabled ? '#AAAAAA' : danger ? '#F25555' : '#3A3A3A',
+        cursor: disabled ? 'default' : 'pointer',
+        opacity: disabled ? 1 : 1,
         fontFamily: 'var(--font-sans)',
         fontWeight: 400,
         fontSize: '14px',
@@ -350,20 +369,28 @@ function SettingRowItem({
   isLast: boolean;
 }) {
   const hasDescription = Boolean(row.description);
+  const centeredInfoRow = row.id === 'shared';
 
   return (
     <div
       style={{
-        minHeight: hasDescription ? '80px' : '54px',
+        minHeight: hasDescription ? (centeredInfoRow ? '76px' : '80px') : '54px',
         display: 'grid',
         gridTemplateColumns: 'minmax(0, 1fr) auto',
         gap: '16px',
-        alignItems: hasDescription ? 'start' : 'center',
-        padding: hasDescription ? '12px 0' : '8px 0',
+        alignItems: hasDescription ? (centeredInfoRow ? 'center' : 'start') : 'center',
+        padding: hasDescription ? (centeredInfoRow ? '10px 0' : '12px 0') : '8px 0',
         borderBottom: isLast ? 'none' : '1px solid #ECECEC',
       }}
     >
-      <div style={{ minWidth: 0 }}>
+      <div
+        style={{
+          minWidth: 0,
+          display: centeredInfoRow ? 'flex' : 'block',
+          flexDirection: centeredInfoRow ? 'column' : undefined,
+          justifyContent: centeredInfoRow ? 'center' : undefined,
+        }}
+      >
         <div
           style={{
             fontFamily: 'var(--font-sans)',
@@ -397,13 +424,319 @@ function SettingRowItem({
       <div
         style={{
           display: 'flex',
-          alignItems: hasDescription ? 'flex-start' : 'center',
+          alignItems: hasDescription ? (centeredInfoRow ? 'center' : 'flex-start') : 'center',
           justifyContent: 'flex-end',
-          paddingTop: hasDescription ? '2px' : 0,
+          paddingTop: hasDescription ? (centeredInfoRow ? 0 : '2px') : 0,
           flexShrink: 0,
         }}
       >
         {control}
+      </div>
+    </div>
+  );
+}
+
+function DeleteChatsConfirmDialog({
+  onCancel,
+  onConfirm,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      onClick={onCancel}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 40,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-chats-confirm-title"
+        aria-describedby="delete-chats-confirm-description"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: `${DELETE_CONFIRM_WIDTH}px`,
+          height: `${DELETE_CONFIRM_HEIGHT}px`,
+          padding: '28px 24px 22px',
+          borderRadius: `${DELETE_CONFIRM_RADIUS}px`,
+          border: '1px solid #D9D9D9',
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          boxSizing: 'border-box',
+        }}
+      >
+        <h3
+          id="delete-chats-confirm-title"
+          style={{
+            margin: 0,
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: 700,
+            fontSize: '16px',
+            lineHeight: '22px',
+            letterSpacing: 0,
+            color: '#000000',
+            textAlign: 'center',
+          }}
+        >
+          Очистити історію чатів - ви впевнені?
+        </h3>
+        <p
+          id="delete-chats-confirm-description"
+          style={{
+            margin: '6px 0 0',
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: 400,
+            fontSize: '12px',
+            lineHeight: '17px',
+            letterSpacing: 0,
+            color: 'rgba(0, 0, 0, 0.4)',
+            textAlign: 'center',
+          }}
+        >
+          Щоб очистити пам&apos;ять із чатів, зайдіть у{' '}
+          <span style={{ textDecoration: 'underline' }}>налаштування.</span>
+        </p>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            marginTop: '15px',
+          }}
+        >
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              width: `${DELETE_CONFIRM_CANCEL_WIDTH}px`,
+              height: `${DELETE_CONFIRM_BUTTON_HEIGHT}px`,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 16px',
+              borderRadius: '999px',
+              border: '1px solid rgba(0, 0, 0, 0.1)',
+              backgroundColor: 'rgba(255, 255, 255, 0.72)',
+              color: '#000000',
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 400,
+              fontSize: '15px',
+              lineHeight: '21px',
+              letterSpacing: 0,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Скасувати
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            style={{
+              minWidth: `${DELETE_CONFIRM_PRIMARY_MIN_WIDTH}px`,
+              height: `${DELETE_CONFIRM_BUTTON_HEIGHT}px`,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 18px',
+              borderRadius: '999px',
+              border: 'none',
+              backgroundColor: '#FF4747',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 400,
+              fontSize: '15px',
+              lineHeight: '21px',
+              letterSpacing: 0,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Підтвердити видалення
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeleteAccountConfirmDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 45,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
+        backgroundColor: 'rgba(250, 250, 250, 0.68)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-account-confirm-title"
+        aria-describedby="delete-account-confirm-description"
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: `min(${DELETE_ACCOUNT_CONFIRM_WIDTH}px, calc(100% - 48px))`,
+          maxHeight: 'calc(100% - 48px)',
+          overflowY: 'auto',
+          borderRadius: `${DELETE_ACCOUNT_CONFIRM_RADIUS}px`,
+          border: '1px solid #D9D9D9',
+          backgroundColor: '#FFFFFF',
+          boxSizing: 'border-box',
+        }}
+        className="scrollbar-subtle"
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: '16px',
+            padding: '24px 24px 16px',
+            borderBottom: '1px solid #EEEEEE',
+          }}
+        >
+          <h3
+            id="delete-account-confirm-title"
+            style={{
+              margin: 0,
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 600,
+              fontSize: '18px',
+              lineHeight: '26px',
+              letterSpacing: 0,
+              color: '#000000',
+            }}
+          >
+            Видалити обліковий запис - ви впевнені?
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Закрити підтвердження видалення облікового запису"
+            style={{
+              width: '28px',
+              height: '28px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#000000',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+
+        <div
+          id="delete-account-confirm-description"
+          style={{
+            padding: '18px 24px 0',
+          }}
+        >
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: '22px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              listStyleType: 'disc',
+              listStylePosition: 'outside',
+              color: '#000000',
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 400,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: 0,
+            }}
+          >
+            <li>Видалення облікового запису є незворотним і його не можна скасувати.</li>
+            <li>Ви не зможете створити новий обліковий запис із цією ж електронною адресою.</li>
+            <li>
+              Ваші дані буде видалено протягом 30 днів, але частина даних може зберігатися довше,
+              якщо цього вимагає або дозволяє закон.
+            </li>
+          </ul>
+
+          <p
+            style={{
+              margin: '18px 0 0',
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 400,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: 0,
+              color: 'rgba(0, 0, 0, 0.34)',
+            }}
+          >
+            Ви зможете видалити обліковий запис лише якщо входили в нього протягом останніх 10
+            хвилин. Увійдіть ще раз, а потім поверніться сюди.
+          </p>
+        </div>
+
+        <div
+          style={{
+            marginTop: '22px',
+            padding: '14px 24px 22px',
+            borderTop: '1px solid #EEEEEE',
+            display: 'flex',
+            justifyContent: 'flex-end',
+          }}
+        >
+          <button
+            type="button"
+            style={{
+              width: `${DELETE_ACCOUNT_PRIMARY_WIDTH}px`,
+              height: `${DELETE_ACCOUNT_PRIMARY_HEIGHT}px`,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 24px',
+              border: 'none',
+              borderRadius: '999px',
+              backgroundColor: '#000000',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              fontWeight: 400,
+              fontSize: '14px',
+              lineHeight: '20px',
+              letterSpacing: 0,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Оновити вхід
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -416,6 +749,8 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const [themeOpen, setThemeOpen] = useState(false);
   const [themeHovered, setThemeHovered] = useState(false);
   const [memoryEnabled, setMemoryEnabled] = useState(true);
+  const [deleteChatsConfirmOpen, setDeleteChatsConfirmOpen] = useState(false);
+  const [deleteAccountConfirmOpen, setDeleteAccountConfirmOpen] = useState(false);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
 
   const sectionIcons = useMemo<Record<SectionId, ReactNode>>(
@@ -441,6 +776,20 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
 
+  useEffect(() => {
+    if (!deleteChatsConfirmOpen && !deleteAccountConfirmOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setDeleteChatsConfirmOpen(false);
+        setDeleteAccountConfirmOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [deleteAccountConfirmOpen, deleteChatsConfirmOpen]);
+
   const handleClose = () => {
     if (onClose) {
       onClose();
@@ -449,6 +798,8 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
 
     router.back();
   };
+
+  const handleDeleteChatsConfirm = () => setDeleteChatsConfirmOpen(false);
 
   const renderControl = (row: SettingRow) => {
     if (row.kind === 'theme') {
@@ -521,7 +872,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
       return (
         <SelectLikeControl>
           <span>{row.value}</span>
-          <ChevronDownIcon />
+          {row.id !== 'language' && <ChevronDownIcon />}
         </SelectLikeControl>
       );
     }
@@ -535,7 +886,31 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
       );
     }
 
-    return <ActionButton danger={row.danger}>{row.actionLabel}</ActionButton>;
+    return (
+      <ActionButton
+        danger={row.danger}
+        disabled={row.disabled}
+        onClick={
+          row.id === 'delete-chats'
+            ? () => {
+                setThemeOpen(false);
+                setThemeHovered(false);
+                setDeleteAccountConfirmOpen(false);
+                setDeleteChatsConfirmOpen(true);
+              }
+            : row.id === 'delete-account'
+              ? () => {
+                  setThemeOpen(false);
+                  setThemeHovered(false);
+                  setDeleteChatsConfirmOpen(false);
+                  setDeleteAccountConfirmOpen(true);
+                }
+              : undefined
+        }
+      >
+        {row.actionLabel}
+      </ActionButton>
+    );
   };
 
   return (
@@ -562,6 +937,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
           width: '100%',
           maxWidth: `${MODAL_WIDTH}px`,
           minHeight: `${MODAL_HEIGHT}px`,
+          position: 'relative',
           display: 'grid',
           gridTemplateColumns: `${SIDEBAR_WIDTH}px minmax(0, 1fr)`,
           border: '1px solid #D9D9D9',
@@ -570,6 +946,15 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
           backgroundColor: '#FFFFFF',
         }}
       >
+        {deleteAccountConfirmOpen && (
+          <DeleteAccountConfirmDialog onClose={() => setDeleteAccountConfirmOpen(false)} />
+        )}
+        {deleteChatsConfirmOpen && (
+          <DeleteChatsConfirmDialog
+            onCancel={() => setDeleteChatsConfirmOpen(false)}
+            onConfirm={handleDeleteChatsConfirm}
+          />
+        )}
         <aside
           style={{
             minHeight: `${MODAL_HEIGHT}px`,

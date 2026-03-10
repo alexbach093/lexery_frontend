@@ -5,6 +5,8 @@ import { FilePreview } from '@/components/ui/file-preview';
 import { FileFilterButton } from './FileFilterButton';
 import type { AttachedFile } from './types';
 
+const EXPANDED_ATTACHMENTS_MAX_HEIGHT = '210px';
+
 export interface AttachmentsPanelProps {
   attachedFiles: AttachedFile[];
   onRemove: (index: number) => void;
@@ -198,7 +200,7 @@ export function AttachmentsPanelExpanded({
           gridTemplateColumns: 'repeat(3, 1fr)',
           gap: '8px',
           overflowY: 'auto',
-          maxHeight: variant === 'home' ? '210px' : '420px',
+          maxHeight: EXPANDED_ATTACHMENTS_MAX_HEIGHT,
         }}
       >
         {filteredAttachedFiles.map(({ item, originalIndex }) => (

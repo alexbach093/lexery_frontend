@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 type TooltipId = 'copy' | 'thumbs-up' | 'thumbs-down' | 'refresh' | null;
@@ -26,29 +26,52 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
   const [regeneratePrompt, setRegeneratePrompt] = useState('');
   const [popoverPos, setPopoverPos] = useState<{
     top: number;
-    right: number;
-    openUpward: boolean;
+    left: number;
   } | null>(null);
   const regenerateAnchorRef = useRef<HTMLDivElement>(null);
   const regeneratePopoverRef = useRef<HTMLDivElement>(null);
 
   const POPOVER_APPROX_HEIGHT = 200;
   const POPOVER_WIDTH = 210;
+  const POPOVER_GAP = 6;
+  const POPOVER_VIEWPORT_MARGIN = 8;
   const TOOLTIP_DELAY_MS = 1250;
 
+  const updateRegeneratePopoverPosition = useCallback(() => {
+    const anchor = regenerateAnchorRef.current;
+    if (!anchor) return;
+
+    const rect = anchor.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const popoverHeight = regeneratePopoverRef.current?.offsetHeight ?? POPOVER_APPROX_HEIGHT;
+    const preferredTop =
+      rect.top > popoverHeight + POPOVER_GAP + POPOVER_VIEWPORT_MARGIN
+        ? rect.top - popoverHeight - POPOVER_GAP
+        : rect.bottom + POPOVER_GAP;
+    const maxTop = Math.max(
+      POPOVER_VIEWPORT_MARGIN,
+      viewportHeight - popoverHeight - POPOVER_VIEWPORT_MARGIN
+    );
+    const maxLeft = Math.max(
+      POPOVER_VIEWPORT_MARGIN,
+      viewportWidth - POPOVER_WIDTH - POPOVER_VIEWPORT_MARGIN
+    );
+    const nextTop = Math.min(Math.max(POPOVER_VIEWPORT_MARGIN, preferredTop), maxTop);
+    const nextLeft = Math.min(
+      Math.max(POPOVER_VIEWPORT_MARGIN, rect.right - POPOVER_WIDTH),
+      maxLeft
+    );
+
+    setPopoverPos((prev) =>
+      prev && prev.top === nextTop && prev.left === nextLeft
+        ? prev
+        : { top: nextTop, left: nextLeft }
+    );
+  }, []);
+
   const toggleRegeneratePopover = () => {
-    setRegeneratePopoverOpen((open) => {
-      if (!open && regenerateAnchorRef.current) {
-        const rect = regenerateAnchorRef.current.getBoundingClientRect();
-        const openUpward = rect.top > POPOVER_APPROX_HEIGHT + 12;
-        setPopoverPos({
-          top: openUpward ? rect.top : rect.bottom + 6,
-          right: window.innerWidth - rect.right,
-          openUpward,
-        });
-      }
-      return !open;
-    });
+    setRegeneratePopoverOpen((open) => !open);
   };
 
   const handleLike = (value: 'like' | 'dislike') => {
@@ -135,6 +158,37 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [regeneratePopoverOpen]);
+
+  useEffect(() => {
+    if (!regeneratePopoverOpen) {
+      queueMicrotask(() => setPopoverPos(null));
+      return;
+    }
+
+    let frameId: number | null = null;
+    const schedulePositionUpdate = () => {
+      if (frameId != null) cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(() => {
+        updateRegeneratePopoverPosition();
+        frameId = null;
+      });
+    };
+
+    schedulePositionUpdate();
+    window.addEventListener('resize', schedulePositionUpdate);
+    window.addEventListener('scroll', schedulePositionUpdate, true);
+
+    const observer = new ResizeObserver(schedulePositionUpdate);
+    if (regenerateAnchorRef.current) observer.observe(regenerateAnchorRef.current);
+    if (regeneratePopoverRef.current) observer.observe(regeneratePopoverRef.current);
+
+    return () => {
+      if (frameId != null) cancelAnimationFrame(frameId);
+      window.removeEventListener('resize', schedulePositionUpdate);
+      window.removeEventListener('scroll', schedulePositionUpdate, true);
+      observer.disconnect();
+    };
+  }, [regeneratePopoverOpen, updateRegeneratePopoverPosition]);
 
   const runRegenerate = (modifier?: string) => {
     onRegenerate?.(modifier);
@@ -414,10 +468,8 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
                 aria-label="Змінити відповідь"
                 style={{
                   position: 'fixed',
-                  ...(popoverPos.openUpward
-                    ? { bottom: window.innerHeight - popoverPos.top + 6, top: 'auto' }
-                    : { top: popoverPos.top, bottom: 'auto' }),
-                  right: popoverPos.right,
+                  top: popoverPos.top,
+                  left: popoverPos.left,
                   width: `${POPOVER_WIDTH}px`,
                   padding: '8px',
                   borderRadius: '10px',
