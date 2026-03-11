@@ -3,10 +3,14 @@
 import { useState } from 'react';
 
 import { SettingsScreen } from '@/components/ui/settings-screen';
-import { WorkspaceSidebar } from '@/components/ui/workspace-sidebar';
+import {
+  WORKSPACE_SIDEBAR_COLLAPSED_WIDTH,
+  WORKSPACE_SIDEBAR_EXPANDED_WIDTH,
+  WORKSPACE_SIDEBAR_TRANSITION,
+  WorkspaceSidebar,
+} from '@/components/ui/workspace-sidebar';
 import { SettingsOpenContext } from '@/contexts/settings-open';
 
-const SIDEBAR_WIDTH = 288; // 18rem, Claude-style
 const SIDEBAR_FADE_MS = 600;
 
 interface AppLayoutProps {
@@ -22,11 +26,15 @@ interface AppLayoutProps {
  */
 export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const settingsContextValue = {
     isOpen: settingsOpen,
     open: () => setSettingsOpen(true),
     close: () => setSettingsOpen(false),
   };
+  const sidebarWidth = sidebarCollapsed
+    ? WORKSPACE_SIDEBAR_COLLAPSED_WIDTH
+    : WORKSPACE_SIDEBAR_EXPANDED_WIDTH;
 
   return (
     <SettingsOpenContext.Provider value={settingsContextValue}>
@@ -45,17 +53,21 @@ export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutPro
             transition: `opacity ${SIDEBAR_FADE_MS}ms ease-out`,
           }}
         >
-          <WorkspaceSidebar />
+          <WorkspaceSidebar
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+          />
         </div>
         <div
           style={{
-            marginLeft: `${SIDEBAR_WIDTH}px`,
+            marginLeft: `${sidebarWidth}px`,
             height: '100vh',
             display: 'flex',
             flexDirection: 'column',
             position: 'relative',
             backgroundColor: '#FFFFFF',
             overflow: 'visible',
+            transition: `margin-left ${WORKSPACE_SIDEBAR_TRANSITION}`,
           }}
         >
           {children}

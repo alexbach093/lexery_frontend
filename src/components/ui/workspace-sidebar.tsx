@@ -14,7 +14,18 @@ import {
 
 interface WorkspaceSidebarProps {
   className?: string;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
+
+export const WORKSPACE_SIDEBAR_EXPANDED_WIDTH = 250;
+export const WORKSPACE_SIDEBAR_COLLAPSED_WIDTH = 64;
+export const WORKSPACE_SIDEBAR_TRANSITION = '220ms cubic-bezier(0.4, 0, 0.2, 1)';
+
+const SIDEBAR_EDGE_PADDING = 8;
+const SIDEBAR_STACK_GAP = 2;
+const SIDEBAR_BRAND_SECTION_GAP = 19;
+const SIDEBAR_HISTORY_SECTION_GAP = 6;
 
 /**
  * Workspace Sidebar Component - Left navigation panel
@@ -23,7 +34,11 @@ interface WorkspaceSidebarProps {
  * Width: 288px (18rem) fixed, Claude-style spacing
  * Contains: Logo, Navigation items, User profile
  */
-export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
+export function WorkspaceSidebar({
+  className,
+  collapsed = false,
+  onToggleCollapse,
+}: WorkspaceSidebarProps) {
   const { open: openSettings } = useSettingsOpen();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -78,6 +93,10 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (collapsed) queueMicrotask(() => setIsMenuOpen(false));
+  }, [collapsed]);
+
   const handleSettingsClick = () => {
     setIsMenuOpen(false);
     openSettings();
@@ -93,30 +112,104 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
     // TODO: wire logout (e.g. clear session, redirect)
   };
 
+  const sidebarLabelStyle: React.CSSProperties = {
+    overflow: 'hidden',
+    minWidth: 0,
+    maxWidth: collapsed ? '0px' : '160px',
+    opacity: collapsed ? 0 : 1,
+    whiteSpace: 'nowrap',
+    transition: [
+      `max-width ${WORKSPACE_SIDEBAR_TRANSITION}`,
+      `opacity ${WORKSPACE_SIDEBAR_TRANSITION}`,
+    ].join(', '),
+  };
+
+  const sidebarBrandStyle: React.CSSProperties = {
+    overflow: 'hidden',
+    minWidth: 0,
+    maxWidth: collapsed ? '0px' : '120px',
+    opacity: collapsed ? 0 : 1,
+    whiteSpace: 'nowrap',
+    transition: [
+      `max-width ${WORKSPACE_SIDEBAR_TRANSITION}`,
+      `opacity ${WORKSPACE_SIDEBAR_TRANSITION}`,
+    ].join(', '),
+  };
+
+  const navButtonStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    height: '32px',
+    padding: '6px 16px 6px 15px',
+    borderRadius: '8px',
+    border: 'none',
+    cursor: 'pointer',
+    width: '100%',
+    textAlign: 'left',
+  };
+
+  const stackedHoverFillClassName =
+    'relative isolate transition-colors duration-150 before:pointer-events-none before:absolute before:left-0 before:right-0 before:-top-[2px] before:-bottom-[2px] before:rounded-[8px] before:bg-transparent before:transition-colors before:duration-150 before:-z-10 hover:before:bg-[#F4F4F6] first:before:top-0 last:before:bottom-0 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset';
+
+  const toggleButtonStyle: React.CSSProperties = collapsed
+    ? {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '32px',
+        height: '32px',
+        padding: 0,
+        border: 'none',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        flexShrink: 0,
+        color: '#6B7280',
+      }
+    : {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '32px',
+        height: '32px',
+        marginRight: '-5px',
+        border: 'none',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        flexShrink: 0,
+        color: '#6B7280',
+      };
+
   return (
     <aside
       className={className}
+      data-sidebar
+      data-collapsed={collapsed ? 'true' : 'false'}
       style={{
         position: 'fixed',
         left: 0,
         top: 0,
-        width: '250px',
+        width: collapsed
+          ? `${WORKSPACE_SIDEBAR_COLLAPSED_WIDTH}px`
+          : `${WORKSPACE_SIDEBAR_EXPANDED_WIDTH}px`,
         height: '100vh',
         backgroundColor: '#FFFFFF',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         borderRight: '1px solid #E0E7E8',
+        transition: `width ${WORKSPACE_SIDEBAR_TRANSITION}`,
       }}
     >
       {/* Фіксовано зверху: лого + Новий чат, Пошук, Чати, Проєкти */}
       <div
         style={{
           flexShrink: 0,
-          padding: '8px',
+          padding: `${SIDEBAR_EDGE_PADDING}px`,
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
+          gap: `${SIDEBAR_BRAND_SECTION_GAP}px`,
         }}
       >
         {/* Верхній ряд: лого зліва, іконка split-panel справа (Figma 22:5) */}
@@ -124,42 +217,49 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: collapsed ? 'flex-start' : 'space-between',
             height: '32px',
-            paddingLeft: '12px',
-            paddingRight: '8px',
+            gap: collapsed ? 0 : '8px',
+            paddingLeft: collapsed ? `${SIDEBAR_EDGE_PADDING}px` : '12px',
+            paddingRight: collapsed ? 0 : `${SIDEBAR_EDGE_PADDING}px`,
             paddingTop: '10px',
           }}
         >
-          <p
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 600,
-              fontSize: '18px',
-              lineHeight: '20px',
-              letterSpacing: '0.02em',
-              color: '#000000',
-              margin: 0,
-            }}
-          >
-            LEXERY
-          </p>
+          {!collapsed ? (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                minWidth: 0,
+                flex: 1,
+              }}
+            >
+              <div style={sidebarBrandStyle} aria-hidden={collapsed}>
+                <p
+                  style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 600,
+                    fontSize: '18px',
+                    lineHeight: '20px',
+                    letterSpacing: '0.02em',
+                    color: '#000000',
+                    margin: 0,
+                  }}
+                >
+                  LEXERY
+                </p>
+              </div>
+            </div>
+          ) : null}
           <button
             type="button"
-            aria-label="Перемикнути панель"
-            className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '32px',
-              height: '32px',
-              marginRight: '-5px',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              backgroundColor: 'transparent',
-            }}
+            onClick={onToggleCollapse}
+            data-sidebar-toggle
+            aria-label={collapsed ? 'Розгорнути sidebar' : 'Згорнути sidebar'}
+            aria-expanded={!collapsed}
+            className="transition-[background-color,color] duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+            style={toggleButtonStyle}
           >
             <svg
               width={18}
@@ -195,8 +295,8 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '1px',
-            marginTop: '10px',
+            gap: `${SIDEBAR_STACK_GAP}px`,
+            marginTop: 0,
           }}
         >
           {/* Новий чат — Claude: h-8 py-1.5 px-4 rounded-lg gap-3 */}
@@ -204,23 +304,13 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent(WORKSPACE_START_NEW_CHAT_EVENT))}
             aria-label="Новий чат"
-            className="group transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
-            style={{
-              display: 'flex',
-              gap: '12px',
-              alignItems: 'center',
-              height: '32px',
-              padding: '6px 16px 6px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              width: '100%',
-              textAlign: 'left',
-            }}
+            className={`group ${stackedHoverFillClassName}`}
+            title="Новий чат"
+            style={navButtonStyle}
           >
             <span
               className="inline-flex items-center gap-3 transition-transform duration-100 group-active:scale-[0.98]"
-              style={{ gap: '12px' }}
+              style={{ gap: '12px', minWidth: 0 }}
             >
               <svg
                 width={18}
@@ -256,36 +346,30 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
                   strokeLinejoin="round"
                 />
               </svg>
-              <p
-                style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 500,
-                  fontSize: '14px',
-                  lineHeight: '20px',
-                  letterSpacing: '0.14px',
-                  color: '#000000',
-                }}
-              >
-                Новий чат
-              </p>
+              <span style={sidebarLabelStyle} aria-hidden={collapsed}>
+                <p
+                  style={{
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 500,
+                    fontSize: '14px',
+                    lineHeight: '20px',
+                    letterSpacing: '0.14px',
+                    color: '#000000',
+                    margin: 0,
+                  }}
+                >
+                  Новий чат
+                </p>
+              </span>
             </span>
           </button>
 
           {/* Чати — Figma 14:4 (MCP), той самий стиль що інші іконки */}
           <button
-            className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
-            style={{
-              display: 'flex',
-              gap: '12px',
-              alignItems: 'center',
-              height: '32px',
-              padding: '6px 16px 6px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              width: '100%',
-              textAlign: 'left',
-            }}
+            aria-label="Чати"
+            className={stackedHoverFillClassName}
+            title="Чати"
+            style={navButtonStyle}
           >
             <svg
               width={18}
@@ -307,35 +391,29 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
                 />
               </g>
             </svg>
-            <p
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 500,
-                fontSize: '14px',
-                lineHeight: '20px',
-                letterSpacing: '0.14px',
-                color: '#000000',
-              }}
-            >
-              Чати
-            </p>
+            <span style={sidebarLabelStyle} aria-hidden={collapsed}>
+              <p
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '20px',
+                  letterSpacing: '0.14px',
+                  color: '#000000',
+                  margin: 0,
+                }}
+              >
+                Чати
+              </p>
+            </span>
           </button>
 
           {/* Проєкти — Figma 62:11 */}
           <button
-            className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
-            style={{
-              display: 'flex',
-              gap: '12px',
-              alignItems: 'center',
-              height: '32px',
-              padding: '6px 16px 6px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              width: '100%',
-              textAlign: 'left',
-            }}
+            aria-label="Проєкти"
+            className={stackedHoverFillClassName}
+            title="Проєкти"
+            style={navButtonStyle}
           >
             <svg
               width={18}
@@ -383,29 +461,32 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
                 strokeLinejoin="round"
               />
             </svg>
-            <p
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 500,
-                fontSize: '14px',
-                lineHeight: '20px',
-                letterSpacing: '0.14px',
-                color: '#000000',
-              }}
-            >
-              Проєкти
-            </p>
+            <span style={sidebarLabelStyle} aria-hidden={collapsed}>
+              <p
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  lineHeight: '20px',
+                  letterSpacing: '0.14px',
+                  color: '#000000',
+                  margin: 0,
+                }}
+              >
+                Проєкти
+              </p>
+            </span>
           </button>
         </div>
       </div>
 
       {/* Лінія над історією — з’являється при прокрутці, тільки коли історія розгорнута */}
-      {historyExpanded && historyScrolled && (
+      {!collapsed && historyExpanded && historyScrolled && (
         <div
           style={{
             flexShrink: 0,
-            paddingLeft: '8px',
-            paddingRight: '8px',
+            paddingLeft: `${SIDEBAR_EDGE_PADDING}px`,
+            paddingRight: `${SIDEBAR_EDGE_PADDING}px`,
           }}
         >
           <div
@@ -421,138 +502,150 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
 
       {/* Прокручується тільки Історія — список чатів (прокрутка тільки коли розгорнуто) */}
       <div
-        ref={historyScrollRef}
-        onScroll={handleHistoryScroll}
         style={{
           flex: 1,
           minHeight: 0,
-          overflowY: historyExpanded ? 'auto' : 'hidden',
-          overflowX: 'hidden',
-          padding: '0 8px 8px',
-          display: 'flex',
-          flexDirection: 'column',
+          overflow: 'hidden',
+          opacity: collapsed ? 0 : 1,
+          pointerEvents: collapsed ? 'none' : 'auto',
+          transition: `opacity ${WORKSPACE_SIDEBAR_TRANSITION}`,
         }}
       >
-        {/* Історія — кнопка + список останніх чатів */}
         <div
+          ref={historyScrollRef}
+          onScroll={handleHistoryScroll}
           style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: historyExpanded ? 'auto' : 'hidden',
+            overflowX: 'hidden',
+            padding: `${SIDEBAR_HISTORY_SECTION_GAP}px ${SIDEBAR_EDGE_PADDING}px ${SIDEBAR_EDGE_PADDING}px`,
             display: 'flex',
             flexDirection: 'column',
-            gap: '1px',
-            marginTop: '1px',
+            height: '100%',
           }}
         >
-          <button
-            type="button"
-            onClick={() => {
-              if (historyExpanded) {
-                setHistoryScrolled(false);
-                setHistoryClosing(true);
-                setTimeout(() => {
-                  setHistoryExpanded(false);
-                  setHistoryClosing(false);
-                }, 220);
-              } else {
-                setHistoryExpanded(true);
-              }
-            }}
-            className="focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+          {/* Історія — кнопка + список останніх чатів */}
+          <div
             style={{
               display: 'flex',
-              gap: '12px',
-              alignItems: 'center',
-              height: '31px',
-              padding: '5px 16px 5px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              width: 'fit-content',
-              textAlign: 'left',
+              flexDirection: 'column',
+              gap: `${SIDEBAR_STACK_GAP}px`,
+              marginTop: 0,
             }}
           >
-            <p
+            <button
+              type="button"
+              onClick={() => {
+                if (historyExpanded) {
+                  setHistoryScrolled(false);
+                  setHistoryClosing(true);
+                  setTimeout(() => {
+                    setHistoryExpanded(false);
+                    setHistoryClosing(false);
+                  }, 220);
+                } else {
+                  setHistoryExpanded(true);
+                }
+              }}
+              className="focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
               style={{
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 500,
-                fontSize: '13px',
-                lineHeight: '20px',
-                letterSpacing: '0.14px',
-                color: historyExpanded ? '#6B7280' : '#000000',
-                transition: 'color 0.22s ease-out',
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center',
+                height: '32px',
+                padding: '6px 16px 6px 12px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                width: 'fit-content',
+                textAlign: 'left',
               }}
             >
-              Історія
-            </p>
-          </button>
-          {recentChats.length > 0 ? (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateRows: historyExpanded ? '1fr' : '0fr',
-                transition: 'grid-template-rows 0s',
-              }}
-            >
+              <p
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 500,
+                  fontSize: '13px',
+                  lineHeight: '20px',
+                  letterSpacing: '0.14px',
+                  color: historyExpanded ? '#6B7280' : '#000000',
+                  transition: 'color 0.22s ease-out',
+                }}
+              >
+                Історія
+              </p>
+            </button>
+            {recentChats.length > 0 ? (
               <div
                 style={{
-                  minHeight: 0,
-                  overflow: 'hidden',
-                  opacity: historyExpanded && !historyClosing ? 1 : 0,
-                  transform:
-                    historyExpanded && !historyClosing ? 'translateY(0)' : 'translateY(-10px)',
-                  transition: historyClosing
-                    ? 'opacity 0.18s cubic-bezier(0.33, 1, 0.68, 1), transform 0.2s cubic-bezier(0.34, 1.15, 0.64, 1)'
-                    : 'opacity 0.28s cubic-bezier(0.33, 1, 0.68, 1), transform 0.32s cubic-bezier(0.34, 1.15, 0.64, 1)',
+                  display: 'grid',
+                  gridTemplateRows: historyExpanded ? '1fr' : '0fr',
+                  transition: 'grid-template-rows 0s',
                 }}
               >
                 <div
                   style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '1px',
-                    paddingTop: '1px',
+                    minHeight: 0,
+                    overflow: 'hidden',
+                    opacity: historyExpanded && !historyClosing ? 1 : 0,
+                    transform:
+                      historyExpanded && !historyClosing ? 'translateY(0)' : 'translateY(-10px)',
+                    transition: historyClosing
+                      ? 'opacity 0.18s cubic-bezier(0.33, 1, 0.68, 1), transform 0.2s cubic-bezier(0.34, 1.15, 0.64, 1)'
+                      : 'opacity 0.28s cubic-bezier(0.33, 1, 0.68, 1), transform 0.32s cubic-bezier(0.34, 1.15, 0.64, 1)',
                   }}
                 >
-                  {recentChats.map((chat) => (
-                    <button
-                      key={chat.id}
-                      type="button"
-                      className="transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        minHeight: '32px',
-                        padding: '6px 16px 6px 12px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        width: '100%',
-                        textAlign: 'left',
-                      }}
-                      title={chat.title}
-                    >
-                      <p
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: `${SIDEBAR_STACK_GAP}px`,
+                      paddingTop: 0,
+                    }}
+                  >
+                    {recentChats.map((chat) => (
+                      <button
+                        key={chat.id}
+                        type="button"
+                        className={stackedHoverFillClassName}
                         style={{
-                          fontFamily: 'Inter, sans-serif',
-                          fontWeight: 500,
-                          fontSize: '14px',
-                          lineHeight: '20px',
-                          letterSpacing: '0.14px',
-                          color: '#000000',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          minWidth: 0,
-                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          minHeight: '32px',
+                          padding: '6px 16px 6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          width: '100%',
+                          textAlign: 'left',
                         }}
+                        title={chat.title}
                       >
-                        {chat.title.length > 40 ? `${chat.title.slice(0, 40)}…` : chat.title}
-                      </p>
-                    </button>
-                  ))}
+                        <p
+                          style={{
+                            fontFamily: 'Inter, sans-serif',
+                            fontWeight: 500,
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            letterSpacing: '0.14px',
+                            color: '#000000',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            minWidth: 0,
+                            flex: 1,
+                          }}
+                        >
+                          {chat.title.length > 40 ? `${chat.title.slice(0, 40)}…` : chat.title}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -593,9 +686,10 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
               className="overflow-hidden rounded-xl"
               style={{
                 position: 'absolute',
-                bottom: 'calc(100% + 8px)',
-                left: '-6px',
-                right: '-6px',
+                bottom: collapsed ? '0' : 'calc(100% + 8px)',
+                left: collapsed ? 'calc(100% + 8px)' : '-6px',
+                right: collapsed ? 'auto' : '-6px',
+                width: collapsed ? '220px' : 'auto',
                 zIndex: 100,
                 backgroundColor: '#FFFFFF',
                 border: '1px solid #E0E7E8',
@@ -828,12 +922,14 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
             style={{
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'flex-start',
               gap: '8px',
               minWidth: 0,
               flex: '1 1 0',
-              padding: 0,
+              width: '100%',
+              padding: '0 0 0 8px',
               border: 'none',
-              borderRadius: 0,
+              borderRadius: '8px',
               cursor: 'pointer',
               backgroundColor: 'transparent',
               textAlign: 'left',
@@ -857,7 +953,13 @@ export function WorkspaceSidebar({ className }: WorkspaceSidebarProps) {
                 style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
               />
             </div>
-            <div style={{ minWidth: 0, flex: '1 1 0' }}>
+            <div
+              style={{
+                ...sidebarLabelStyle,
+                flex: collapsed ? '0 0 auto' : '1 1 0',
+              }}
+              aria-hidden={collapsed}
+            >
               <div
                 style={{
                   overflow: 'hidden',
