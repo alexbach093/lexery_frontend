@@ -24,8 +24,14 @@ export const WORKSPACE_SIDEBAR_TRANSITION = '220ms cubic-bezier(0.4, 0, 0.2, 1)'
 
 const SIDEBAR_EDGE_PADDING = 8;
 const SIDEBAR_STACK_GAP = 2;
-const SIDEBAR_BRAND_SECTION_GAP = 19;
+const SIDEBAR_BRAND_SECTION_GAP = 9;
 const SIDEBAR_HISTORY_SECTION_GAP = 6;
+const SIDEBAR_TOGGLE_SIZE = 32;
+const SIDEBAR_TOGGLE_TOP = 5;
+const SIDEBAR_TOGGLE_EXPANDED_LEFT =
+  WORKSPACE_SIDEBAR_EXPANDED_WIDTH - SIDEBAR_EDGE_PADDING * 2 - SIDEBAR_TOGGLE_SIZE - 4;
+const SIDEBAR_TOGGLE_COLLAPSED_LEFT =
+  (WORKSPACE_SIDEBAR_COLLAPSED_WIDTH - SIDEBAR_EDGE_PADDING * 2 - SIDEBAR_TOGGLE_SIZE) / 2;
 
 /**
  * Workspace Sidebar Component - Left navigation panel
@@ -153,33 +159,27 @@ export function WorkspaceSidebar({
   const stackedHoverFillClassName =
     'relative isolate transition-colors duration-150 before:pointer-events-none before:absolute before:left-0 before:right-0 before:-top-[2px] before:-bottom-[2px] before:rounded-[8px] before:bg-transparent before:transition-colors before:duration-150 before:-z-10 hover:before:bg-[#F4F4F6] first:before:top-0 last:before:bottom-0 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset';
 
-  const toggleButtonStyle: React.CSSProperties = collapsed
-    ? {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '32px',
-        height: '32px',
-        padding: 0,
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        flexShrink: 0,
-        color: '#6B7280',
-      }
-    : {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '32px',
-        height: '32px',
-        marginRight: '-5px',
-        border: 'none',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        flexShrink: 0,
-        color: '#6B7280',
-      };
+  const toggleButtonStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: `${SIDEBAR_TOGGLE_TOP}px`,
+    left: collapsed ? `${SIDEBAR_TOGGLE_COLLAPSED_LEFT}px` : `${SIDEBAR_TOGGLE_EXPANDED_LEFT}px`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: `${SIDEBAR_TOGGLE_SIZE}px`,
+    height: `${SIDEBAR_TOGGLE_SIZE}px`,
+    padding: 0,
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    flexShrink: 0,
+    color: '#6B7280',
+    transition: [
+      `left ${WORKSPACE_SIDEBAR_TRANSITION}`,
+      'background-color 150ms',
+      'color 150ms',
+    ].join(', '),
+  };
 
   return (
     <aside
@@ -215,43 +215,37 @@ export function WorkspaceSidebar({
         {/* Верхній ряд: лого зліва, іконка split-panel справа (Figma 22:5) */}
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'flex-start' : 'space-between',
-            height: '32px',
-            gap: collapsed ? 0 : '8px',
-            paddingLeft: collapsed ? `${SIDEBAR_EDGE_PADDING}px` : '12px',
-            paddingRight: collapsed ? 0 : `${SIDEBAR_EDGE_PADDING}px`,
-            paddingTop: '10px',
+            position: 'relative',
+            height: '42px',
           }}
         >
-          {!collapsed ? (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                minWidth: 0,
-                flex: 1,
-              }}
-            >
-              <div style={sidebarBrandStyle} aria-hidden={collapsed}>
-                <p
-                  style={{
-                    fontFamily: 'Inter, sans-serif',
-                    fontWeight: 600,
-                    fontSize: '18px',
-                    lineHeight: '20px',
-                    letterSpacing: '0.02em',
-                    color: '#000000',
-                    margin: 0,
-                  }}
-                >
-                  LEXERY
-                </p>
-              </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              height: `${SIDEBAR_TOGGLE_SIZE}px`,
+              minWidth: 0,
+              paddingTop: '10px',
+              paddingLeft: '12px',
+              paddingRight: '44px',
+            }}
+          >
+            <div style={sidebarBrandStyle} aria-hidden={collapsed}>
+              <p
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 600,
+                  fontSize: '18px',
+                  lineHeight: '20px',
+                  letterSpacing: '0.02em',
+                  color: '#000000',
+                  margin: 0,
+                }}
+              >
+                LEXERY
+              </p>
             </div>
-          ) : null}
+          </div>
           <button
             type="button"
             onClick={onToggleCollapse}

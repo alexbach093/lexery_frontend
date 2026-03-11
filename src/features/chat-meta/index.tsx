@@ -7,6 +7,8 @@ export interface ChatMetaProps {
 
 /** Top bar: Поради button (full or compact). */
 export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
+  const tipsColor = '#9A9A9A';
+
   return (
     <div
       style={{
@@ -18,6 +20,8 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
       {!hasMessages ? (
         <button
           type="button"
+          disabled
+          aria-disabled="true"
           style={{
             display: 'flex',
             gap: '10px',
@@ -28,9 +32,11 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
             backgroundColor: '#FFFFFF',
             border: '1px solid #E0E7E8',
             borderRadius: '5px',
-            cursor: 'pointer',
+            cursor: 'default',
             minWidth: '90px',
             boxSizing: 'border-box',
+            color: tipsColor,
+            opacity: 1,
           }}
           aria-label="Поради"
         >
@@ -58,7 +64,7 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
               fontSize: '14px',
               lineHeight: '20px',
               letterSpacing: '0.14px',
-              color: '#000000',
+              color: tipsColor,
             }}
           >
             Поради
@@ -67,6 +73,8 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
       ) : compact ? (
         <button
           type="button"
+          disabled
+          aria-disabled="true"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -77,8 +85,9 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
             backgroundColor: '#FFFFFF',
             border: '1px solid #E0E7E8',
             borderRadius: '5px',
-            cursor: 'pointer',
+            cursor: 'default',
             boxSizing: 'border-box',
+            opacity: 1,
           }}
           aria-label="Поради"
         >
@@ -117,6 +126,8 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
       ) : (
         <button
           type="button"
+          disabled
+          aria-disabled="true"
           style={{
             display: 'flex',
             gap: '10px',
@@ -127,9 +138,10 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
             backgroundColor: '#FFFFFF',
             border: '1px solid #E0E7E8',
             borderRadius: '5px',
-            cursor: 'pointer',
+            cursor: 'default',
             minWidth: '90px',
             boxSizing: 'border-box',
+            opacity: 1,
           }}
           aria-label="Поради"
         >
@@ -171,7 +183,7 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
               fontSize: '14px',
               lineHeight: '20px',
               letterSpacing: '0.14px',
-              color: '#000000',
+              color: tipsColor,
             }}
           >
             Поради

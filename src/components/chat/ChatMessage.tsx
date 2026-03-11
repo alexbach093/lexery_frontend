@@ -95,6 +95,7 @@ export function ChatMessage({
   const [editDraft, setEditDraft] = useState(content);
   const [editSlotHeight, setEditSlotHeight] = useState(60);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const editBlockRef = useRef<HTMLDivElement>(null);
   const userMessageWrapperRef = useRef<HTMLDivElement>(null);
   const editBlockHeightRef = useRef<number>(0);
   const [actionRowVisible, setActionRowVisible] = useState(false);
@@ -128,6 +129,26 @@ export function ChatMessage({
     });
     return () => cancelAnimationFrame(rafId);
   }, [isEditing, content]);
+
+  useEffect(() => {
+    if (!isEditing) return;
+    const block = editBlockRef.current;
+    if (!block) return;
+
+    const syncEditSlotHeight = () => {
+      const nextHeight = Math.max(editBlockHeightRef.current || 0, block.offsetHeight);
+      setEditSlotHeight(nextHeight);
+    };
+
+    syncEditSlotHeight();
+
+    const resizeObserver = new ResizeObserver(() => {
+      syncEditSlotHeight();
+    });
+    resizeObserver.observe(block);
+
+    return () => resizeObserver.disconnect();
+  }, [isEditing, editDraft]);
 
   useEffect(() => {
     const hasVersions = (versions?.length ?? 0) > 0;
@@ -233,6 +254,7 @@ export function ChatMessage({
           }}
         >
           <div
+            ref={editBlockRef}
             style={{
               position: 'absolute',
               top: 0,
