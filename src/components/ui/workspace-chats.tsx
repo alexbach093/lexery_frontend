@@ -27,8 +27,8 @@ function readableScale(value: number, minimum: number): number {
 function SearchIcon() {
   return (
     <svg
-      width={scale(22)}
-      height={scale(22)}
+      width={scale(24)}
+      height={scale(24)}
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -45,8 +45,8 @@ function SearchIcon() {
   );
 }
 
-const ACTION_ICON_SIZE = 20;
-const ACTION_ICON_STROKE = 1.45;
+const ACTION_ICON_STROKE = 1.75;
+const ACTION_ICON_BOX_SIZE = 24;
 
 function ChatActionButton({ label, children }: { label: string; children: ReactNode }) {
   const [isActive, setIsActive] = useState(false);
@@ -70,10 +70,10 @@ function ChatActionButton({ label, children }: { label: string; children: ReactN
         justifyContent: 'center',
         border: 'none',
         borderRadius: `${scale(10)}px`,
-        backgroundColor: isActive ? '#F3F4F6' : 'transparent',
+        backgroundColor: 'transparent',
         color: isActive ? '#171717' : '#6B7280',
         cursor: 'pointer',
-        transition: 'background-color 140ms ease, color 140ms ease',
+        transition: 'color 140ms ease',
       }}
       onMouseEnter={() => setIsActive(true)}
       onMouseLeave={() => setIsActive(false)}
@@ -88,9 +88,9 @@ function ChatActionButton({ label, children }: { label: string; children: ReactN
 function ChatStarIcon({ active = false }: { active?: boolean }) {
   return (
     <svg
-      width={scale(ACTION_ICON_SIZE)}
-      height={scale(ACTION_ICON_SIZE)}
-      viewBox="0 0 20 20"
+      width={scale(28)}
+      height={scale(28)}
+      viewBox="-1 -1 22 22"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
@@ -116,32 +116,46 @@ function ChatStarIcon({ active = false }: { active?: boolean }) {
 }
 
 function ChatPencilIcon() {
-  return <EditSquareIcon size={scale(18)} strokeWidth={16.9} style={{ display: 'block' }} />;
+  return (
+    <EditSquareIcon
+      size={scale(ACTION_ICON_BOX_SIZE)}
+      strokeWidth={14.2}
+      style={{ display: 'block' }}
+    />
+  );
 }
 
 function ChatTrashIcon() {
   return (
     <svg
-      width={scale(ACTION_ICON_SIZE)}
-      height={scale(ACTION_ICON_SIZE)}
-      viewBox="0 0 20 20"
+      width={scale(22)}
+      height={scale(ACTION_ICON_BOX_SIZE)}
+      viewBox="0 0 18 20"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
       style={{ display: 'block' }}
     >
       <path
-        d="M3.75 5.41667H16.25M8 2.91667H12C12.3682 2.91667 12.6667 3.21514 12.6667 3.58333V5.41667H7.33333V3.58333C7.33333 3.21514 7.63181 2.91667 8 2.91667ZM5.41667 5.41667H14.5833V15.75C14.5833 16.8546 13.6879 17.75 12.5833 17.75H7.41667C6.3121 17.75 5.41667 16.8546 5.41667 15.75V5.41667Z"
+        d="M2.82051 4.87179V17.1795C2.82051 18.3124 3.7389 19.2308 4.8718 19.2308H13.0769C14.2098 19.2308 15.1282 18.3124 15.1282 17.1795V4.87179"
         stroke="currentColor"
         strokeWidth={ACTION_ICON_STROKE}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M8.33325 8.33325V14.1666M11.6666 8.33325V14.1666"
+        d="M0.769231 4.87179H17.1795"
         stroke="currentColor"
         strokeWidth={ACTION_ICON_STROKE}
         strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M3.84615 4.87179L5.89744 0.769231H12.0513L14.1026 4.87179"
+        stroke="currentColor"
+        strokeWidth={ACTION_ICON_STROKE}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -207,6 +221,22 @@ export function WorkspaceChats() {
       }}
     >
       <div style={{ maxWidth: `${scale(1168)}px`, margin: '0 auto' }}>
+        <div
+          style={{
+            marginTop: '10px',
+            marginBottom: `${scale(34)}px`,
+            paddingLeft: `${scale(32)}px`,
+            fontFamily: 'Inter, sans-serif',
+            fontWeight: 600,
+            fontSize: `${readableScale(26, 22)}px`,
+            lineHeight: `${readableScale(32, 28)}px`,
+            letterSpacing: '-0.02em',
+            color: '#000000',
+          }}
+        >
+          Ваші чати
+        </div>
+
         <label
           htmlFor="workspace-chats-search"
           style={{
@@ -248,82 +278,103 @@ export function WorkspaceChats() {
         </label>
 
         <div
+          className="workspace-chats-list"
           style={{
-            borderTop: '1px solid #E0E7E8',
+            position: 'relative',
           }}
         >
           {filteredChats.map((chat) => (
             <div
               key={chat.id}
+              className="workspace-chat-row"
+              role="button"
+              tabIndex={0}
+              onClick={() => openChat(chat.id)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  openChat(chat.id);
+                }
+              }}
               style={{
                 width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                gap: `${scale(12)}px`,
                 padding: `${scale(14)}px ${scale(18)}px`,
-                borderBottom: '1px solid #E0E7E8',
                 backgroundColor: 'transparent',
+                position: 'relative',
+                cursor: 'pointer',
               }}
             >
-              <button
-                type="button"
-                onClick={() => openChat(chat.id)}
-                style={{
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: `${readableScale(4, 4)}px`,
-                  minWidth: 0,
-                  padding: `${scale(10)}px 0`,
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: 'Inter, sans-serif',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    lineHeight: '20px',
-                    letterSpacing: '0.14px',
-                    color: '#000000',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {chat.title}
-                </span>
-                <span
-                  style={{
-                    ...secondaryTextStyle,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {formatLastMessageLabel(chat.updatedAt)}
-                </span>
-              </button>
               <div
+                className="workspace-chat-row-content"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: `${scale(6)}px`,
-                  flexShrink: 0,
+                  gap: `${scale(12)}px`,
+                  position: 'relative',
+                  zIndex: 1,
+                  borderRadius: `${scale(16)}px`,
                 }}
               >
-                <ChatActionButton label="Pin chat">
-                  <ChatStarIcon />
-                </ChatActionButton>
-                <ChatActionButton label="Rename chat">
-                  <ChatPencilIcon />
-                </ChatActionButton>
-                <ChatActionButton label="Delete chat">
-                  <ChatTrashIcon />
-                </ChatActionButton>
+                <div
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: `${readableScale(4, 4)}px`,
+                    minWidth: 0,
+                    alignSelf: 'stretch',
+                    justifyContent: 'center',
+                    padding: `${scale(10)}px ${scale(14)}px`,
+                    textAlign: 'left',
+                    borderRadius: `${scale(16)}px`,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: 'Inter, sans-serif',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      lineHeight: '20px',
+                      letterSpacing: '0.14px',
+                      color: '#000000',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {chat.title}
+                  </span>
+                  <span
+                    style={{
+                      ...secondaryTextStyle,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {formatLastMessageLabel(chat.updatedAt)}
+                  </span>
+                </div>
+                <div
+                  className="workspace-chat-actions"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: `${scale(20)}px`,
+                    flexShrink: 0,
+                    marginRight: `${scale(10)}px`,
+                  }}
+                >
+                  <ChatActionButton label="Pin chat">
+                    <ChatStarIcon />
+                  </ChatActionButton>
+                  <ChatActionButton label="Rename chat">
+                    <ChatPencilIcon />
+                  </ChatActionButton>
+                  <ChatActionButton label="Delete chat">
+                    <ChatTrashIcon />
+                  </ChatActionButton>
+                </div>
               </div>
             </div>
           ))}
@@ -351,6 +402,76 @@ export function WorkspaceChats() {
             letter-spacing: 0.14px;
             color: #6b7280;
             opacity: 1;
+          }
+
+          .workspace-chats-list::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e0e7e8;
+            z-index: 0;
+          }
+
+          .workspace-chat-row::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            border-radius: ${scale(16)}px;
+            background: #f5f5f5;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 140ms ease;
+            z-index: 0;
+          }
+
+          .workspace-chat-row::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 1px;
+            background: #e0e7e8;
+            z-index: 0;
+            transition: opacity 140ms ease;
+          }
+
+          .workspace-chat-row:hover::before,
+          .workspace-chat-row:focus-within::before {
+            opacity: 1;
+          }
+
+          .workspace-chat-row:hover::after,
+          .workspace-chat-row:focus-within::after {
+            opacity: 0;
+          }
+
+          .workspace-chat-row:has(+ .workspace-chat-row:hover)::after,
+          .workspace-chat-row:has(+ .workspace-chat-row:focus-within)::after {
+            opacity: 0;
+          }
+
+          .workspace-chats-list:has(> .workspace-chat-row:first-child:hover)::before,
+          .workspace-chats-list:has(> .workspace-chat-row:first-child:focus-within)::before {
+            opacity: 0;
+          }
+
+          .workspace-chat-row:hover .workspace-chat-actions,
+          .workspace-chat-row:focus-within .workspace-chat-actions {
+            opacity: 1;
+            pointer-events: auto;
+          }
+
+          .workspace-chat-actions {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 140ms ease;
           }
         `}</style>
       </div>

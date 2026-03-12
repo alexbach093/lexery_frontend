@@ -173,9 +173,9 @@ export function ChatInput({
             }}
           >
             <EditSquareIcon
-              size={15}
+              size={16}
               color={systemPromptEditorOpen ? '#0070f3' : '#575757'}
-              strokeWidth={11.4}
+              strokeWidth={13.5}
             />
           </button>
           <span
