@@ -1,0 +1,237 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+
+import type { MessageVersion } from '@/types/chat';
+
+const DROPDOWN_WIDTH = 200;
+const SAFE_MARGIN = 12;
+
+/** Viewport-aware dropdown position so it does not overflow right edge on narrow screens. */
+function calculateDropdownPosition(
+  anchorRect: DOMRect,
+  dropdownWidth: number,
+  safeMargin: number = SAFE_MARGIN
+): { top: number; left: number } {
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  let left = anchorRect.left;
+  const wouldOverflow = left + dropdownWidth + safeMargin > viewportWidth;
+  if (wouldOverflow) {
+    left = Math.max(safeMargin, viewportWidth - dropdownWidth - safeMargin);
+  }
+  left = Math.max(safeMargin, left);
+  return {
+    top: anchorRect.bottom + 4,
+    left,
+  };
+}
+
+/** Label for version dropdown: Оригінал / Додано деталі / Коротше / Повторно згенеровано / "уточнення". */
+function getVersionLabel(v: MessageVersion, index: number): string {
+  if (index === 0) return 'Оригінал';
+  const mod = v.modifier?.trim() ?? '';
+  if (!mod) return 'Повторно згенеровано';
+  if (mod === 'Додай більше деталей') return 'Додано деталі';
+  if (mod === 'Зроби відповідь коротшою') return 'Коротше';
+  return `"${mod}"`;
+}
+
+export interface MessageVersionsProps {
+  versions: MessageVersion[];
+  activeVersionIndex: number;
+  onVersionChange: (index: number) => void;
+}
+
+export function MessageVersions({
+  versions,
+  activeVersionIndex,
+  onVersionChange,
+}: MessageVersionsProps) {
+  const [open, setOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
+
+  const openDropdown = () => {
+    if (!anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    setDropdownPos(calculateDropdownPosition(rect, DROPDOWN_WIDTH, SAFE_MARGIN));
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (anchorRef.current?.contains(target) || dropdownRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  // Reposition dropdown on resize/scroll so it stays in viewport and does not "jump"
+  useEffect(() => {
+    if (!open || !anchorRef.current) return;
+    let rafId: number | undefined;
+    const handleReposition = () => {
+      if (rafId !== undefined) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (!anchorRef.current) return;
+        const rect = anchorRef.current.getBoundingClientRect();
+        setDropdownPos(calculateDropdownPosition(rect, DROPDOWN_WIDTH, SAFE_MARGIN));
+      });
+    };
+    window.addEventListener('resize', handleReposition);
+    window.addEventListener('scroll', handleReposition, true);
+    return () => {
+      window.removeEventListener('resize', handleReposition);
+      window.removeEventListener('scroll', handleReposition, true);
+      if (rafId !== undefined) cancelAnimationFrame(rafId);
+    };
+  }, [open]);
+
+  if (versions.length <= 1) return null;
+
+  return (
+    <div ref={anchorRef} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => (open ? setOpen(false) : openDropdown())}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 32,
+          height: 32,
+          padding: 0,
+          border: 'none',
+          borderRadius: 9999,
+          background: 'transparent',
+          color: '#000000',
+          cursor: 'pointer',
+        }}
+        className="chat-action-btn chat-action-btn--circle chat-action-btn--no-highlight hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        aria-label={`Історія версій, ${versions.length} версій`}
+      >
+        <svg
+          width={15}
+          height={15}
+          viewBox="0 0 13 12"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden
+          style={{ display: 'block', flexShrink: 0 }}
+        >
+          <path
+            d="M3.26101 9.73887C5.38341 11.8613 8.82452 11.8613 10.9469 9.73887C13.0693 7.61646 13.0693 4.17536 10.9469 2.05295C8.82452 -0.0694522 5.38341 -0.0694522 3.26101 2.05295C2.19912 3.11484 1.66852 4.50682 1.6692 5.89859L1.66919 7.10363"
+            stroke="currentColor"
+            strokeWidth="0.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M0.461356 5.89591L1.66908 7.10363L2.8768 5.89591"
+            stroke="currentColor"
+            strokeWidth="0.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M6.5 3.48043L6.5 6.49974L9.51931 6.49974"
+            stroke="currentColor"
+            strokeWidth="0.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+      {open &&
+        dropdownPos &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            role="listbox"
+            aria-label="Версії відповіді"
+            style={{
+              position: 'fixed',
+              top: dropdownPos.top,
+              left: dropdownPos.left,
+              width: `${DROPDOWN_WIDTH}px`,
+              padding: '6px',
+              borderRadius: '10px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E0E0E0',
+              boxShadow: 'none',
+              zIndex: 1000,
+              maxHeight: '280px',
+              overflowY: 'auto',
+            }}
+          >
+            {versions.map((v, i) => (
+              <button
+                key={i}
+                type="button"
+                role="option"
+                aria-selected={i === activeVersionIndex}
+                onClick={() => {
+                  onVersionChange(i);
+                  setOpen(false);
+                }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: i === activeVersionIndex ? '#F0F0F0' : 'transparent',
+                  color: '#2A2A2A',
+                  fontSize: '14px',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  minWidth: 0,
+                }}
+                className="chat-regenerate-option-btn"
+              >
+                <span
+                  style={{
+                    fontWeight: i === activeVersionIndex ? 600 : 400,
+                    display: 'block',
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                  title={getVersionLabel(v, i)}
+                >
+                  {getVersionLabel(v, i)}
+                </span>
+                {v.createdAt && (
+                  <span
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      color: '#575757',
+                      marginTop: '2px',
+                    }}
+                  >
+                    {new Date(v.createdAt).toLocaleString('uk-UA', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+}
