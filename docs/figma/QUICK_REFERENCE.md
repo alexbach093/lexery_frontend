@@ -20,7 +20,7 @@ import { BootScreen } from '@/components/BootScreen';
 <BootScreen />
 
 // With options
-<BootScreen 
+<BootScreen
   duration={3000}
   onComplete={() => router.push('/home')}
   showLoading={true}
@@ -29,19 +29,20 @@ import { BootScreen } from '@/components/BootScreen';
 
 ## 🛠️ Commands
 
-| Command | What It Does |
-|---------|--------------|
-| `npm run figma:extract` | Extract design from Figma → JSON |
+| Command                  | What It Does                       |
+| ------------------------ | ---------------------------------- |
+| `npm run figma:extract`  | Extract design from Figma → JSON   |
 | `npm run figma:generate` | Generate component from JSON → TSX |
-| `npm run figma:build` | Extract + Generate (recommended) |
+| `npm run figma:build`    | Extract + Generate (recommended)   |
 
 ## 📊 Extraction Output
 
 After running `npm run figma:extract`, you get:
 
-**File:** `figma-extraction-report.json`
+**File:** `docs/figma/reports/figma-extraction-report.json`
 
 **Contains:**
+
 - ✅ Screenshot URL (high-res PNG)
 - ✅ All colors (hex + RGBA)
 - ✅ Text content + typography
@@ -52,9 +53,9 @@ After running `npm run figma:extract`, you get:
 
 ```typescript
 interface BootScreenProps {
-  onComplete?: () => void;    // Callback when done
-  duration?: number;           // Duration in ms (default: 2000)
-  showLoading?: boolean;       // Show loader (default: true)
+  onComplete?: () => void; // Callback when done
+  duration?: number; // Duration in ms (default: 2000)
+  showLoading?: boolean; // Show loader (default: true)
 }
 ```
 
@@ -67,12 +68,14 @@ interface BootScreenProps {
 ## 🔧 Common Tasks
 
 ### Change Logo
+
 ```tsx
 // In BootScreen.tsx, replace SVG with:
 <Image src="/images/logo.png" alt="Logo" width={120} height={120} />
 ```
 
 ### Change Text
+
 ```tsx
 // In BootScreen.tsx:
 <h1>Your Title</h1>
@@ -80,34 +83,33 @@ interface BootScreenProps {
 ```
 
 ### Change Colors
+
 ```tsx
 // In BootScreen.tsx:
-<div 
-  className="bg-indigo-600" 
-  style={{ backgroundColor: '#4F46E5' }}
-/>
+<div className="bg-indigo-600" style={{ backgroundColor: '#4F46E5' }} />
 ```
 
 ### Adjust Duration
+
 ```tsx
-<BootScreen duration={5000} />  // 5 seconds
+<BootScreen duration={5000} /> // 5 seconds
 ```
 
 ## 🐛 Quick Fixes
 
-| Problem | Solution |
-|---------|----------|
-| `FIGMA_TOKEN not set` | Add to `.env` file |
-| `403 Forbidden` | Check token validity |
-| `Node not found` | Verify node ID in URL |
-| Colors off | Use inline styles |
-| Fonts wrong | Install font family |
+| Problem               | Solution              |
+| --------------------- | --------------------- |
+| `FIGMA_TOKEN not set` | Add to `.env` file    |
+| `403 Forbidden`       | Check token validity  |
+| `Node not found`      | Verify node ID in URL |
+| Colors off            | Use inline styles     |
+| Fonts wrong           | Install font family   |
 
 ## 📚 Documentation
 
-- **Complete Guide:** `FIGMA_TO_REACT_SUMMARY.md`
-- **Getting Started:** `FIGMA_EXTRACTION_GUIDE.md`
-- **Implementation:** `docs/boot-screen-implementation.md`
+- **Complete Guide:** `./FIGMA_TO_REACT_SUMMARY.md`
+- **Getting Started:** `./FIGMA_EXTRACTION_GUIDE.md`
+- **Implementation:** `./boot-screen-implementation.md`
 - **Scripts:** `scripts/README.md`
 
 ## 🚀 Workflow
@@ -147,7 +149,7 @@ scripts/
 src/components/
   └── BootScreen.tsx              ← Your component
 
-figma-extraction-report.json      ← Design data
+docs/figma/reports/figma-extraction-report.json  ← Design data
 ```
 
 ## ⚡ TL;DR
@@ -168,4 +170,4 @@ import { BootScreen } from '@/components/BootScreen';
 
 ---
 
-**Need more details?** See `FIGMA_TO_REACT_SUMMARY.md`
+**Need more details?** See `./FIGMA_TO_REACT_SUMMARY.md`

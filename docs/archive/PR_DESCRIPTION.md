@@ -143,7 +143,7 @@ This will be enforced for all future commits via commitlint.
 
 ## Documentation
 
-See [`docs/BOOTSTRAP.md`](./docs/BOOTSTRAP.md) for detailed setup documentation.
+See [`../project/BOOTSTRAP.md`](../project/BOOTSTRAP.md) for detailed setup documentation.
 
 ---
 

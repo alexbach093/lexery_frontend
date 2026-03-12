@@ -55,7 +55,7 @@ npm run figma:build
            │      • SVG elements
            │
            ├─→ 3. Saves extraction report
-           │      → figma-extraction-report.json
+           │      → docs/figma/reports/figma-extraction-report.json
            │
            ├─→ 4. Generates React component
            │      • Maps colors → Tailwind classes
@@ -73,9 +73,10 @@ npm run figma:build
 
 After running `npm run figma:build`, you'll have:
 
-### 1. Extraction Report (`figma-extraction-report.json`)
+### 1. Extraction Report (`docs/figma/reports/figma-extraction-report.json`)
 
 Contains:
+
 - ✅ Screenshot URL (high-resolution PNG)
 - ✅ All colors used (hex + RGBA with opacity)
 - ✅ Text content with full typography details
@@ -86,6 +87,7 @@ Contains:
 ### 2. React Component (`src/components/BootScreen.tsx`)
 
 Features:
+
 - ✅ TypeScript + Tailwind CSS
 - ✅ Fade in/out animations
 - ✅ Configurable duration
@@ -103,7 +105,7 @@ import { BootScreen } from '@/components/BootScreen';
 <BootScreen />
 
 // With options
-<BootScreen 
+<BootScreen
   duration={3000}
   onComplete={() => console.log('Boot complete!')}
   showLoading={true}
@@ -114,15 +116,15 @@ import { BootScreen } from '@/components/BootScreen';
 
 I've created comprehensive documentation:
 
-| Document | Purpose | Read When |
-|----------|---------|-----------|
-| **START_HERE.md** | Quick overview | ⬅️ You are here |
-| [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) | Commands & examples | Quick lookup |
-| [FIGMA_CHECKLIST.md](./FIGMA_CHECKLIST.md) | Step-by-step checklist | Doing the work |
-| [FIGMA_EXTRACTION_GUIDE.md](./FIGMA_EXTRACTION_GUIDE.md) | Getting started guide | First time |
-| [FIGMA_TO_REACT_SUMMARY.md](./FIGMA_TO_REACT_SUMMARY.md) | Complete overview | Full details |
-| [docs/boot-screen-implementation.md](./docs/boot-screen-implementation.md) | Implementation guide | Integration |
-| [scripts/README.md](./scripts/README.md) | Script documentation | Technical details |
+| Document                                                         | Purpose                | Read When         |
+| ---------------------------------------------------------------- | ---------------------- | ----------------- |
+| **START_HERE.md**                                                | Quick overview         | ⬅️ You are here   |
+| [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)                       | Commands & examples    | Quick lookup      |
+| [FIGMA_CHECKLIST.md](./FIGMA_CHECKLIST.md)                       | Step-by-step checklist | Doing the work    |
+| [FIGMA_EXTRACTION_GUIDE.md](./FIGMA_EXTRACTION_GUIDE.md)         | Getting started guide  | First time        |
+| [FIGMA_TO_REACT_SUMMARY.md](./FIGMA_TO_REACT_SUMMARY.md)         | Complete overview      | Full details      |
+| [boot-screen-implementation.md](./boot-screen-implementation.md) | Implementation guide   | Integration       |
+| [scripts/README.md](../../scripts/README.md)                     | Script documentation   | Technical details |
 
 ## 🛠️ Available Commands
 
@@ -143,6 +145,7 @@ npm run lint                # Lint code
 ## 🎨 Your Figma Design
 
 **File Information:**
+
 - **File ID:** `IO0sKndZpfYlW5OVXoIpuC`
 - **Node ID:** `0-1283` (Boot Screen)
 - **URL:** [View in Figma](https://www.figma.com/design/IO0sKndZpfYlW5OVXoIpuC/Untitled?node-id=0-1283&m=dev)
@@ -217,7 +220,7 @@ Node ID: 0-1283
    Gap: 24px
    Padding: 48px 24px 48px 24px
 
-💾 Full report saved to: ./figma-extraction-report.json
+💾 Full report saved to: docs/figma/reports/figma-extraction-report.json
 
 ✅ Extraction complete!
 ```
@@ -239,12 +242,12 @@ Node ID: 0-1283
 
 ## 🐛 Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `FIGMA_TOKEN not set` | Add token to `.env` file |
-| `403 Forbidden` | Token invalid or no file access |
-| `Node not found` | Check node ID is `0-1283` |
-| Script won't run | Check Node.js version >= 18 |
+| Issue                 | Solution                        |
+| --------------------- | ------------------------------- |
+| `FIGMA_TOKEN not set` | Add token to `.env` file        |
+| `403 Forbidden`       | Token invalid or no file access |
+| `Node not found`      | Check node ID is `0-1283`       |
+| Script won't run      | Check Node.js version >= 18     |
 
 More help: See [Troubleshooting](./FIGMA_EXTRACTION_GUIDE.md#troubleshooting)
 
@@ -253,11 +256,12 @@ More help: See [Troubleshooting](./FIGMA_EXTRACTION_GUIDE.md#troubleshooting)
 1. **Quick answers:** [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
 2. **Step-by-step:** [FIGMA_CHECKLIST.md](./FIGMA_CHECKLIST.md)
 3. **Full guide:** [FIGMA_TO_REACT_SUMMARY.md](./FIGMA_TO_REACT_SUMMARY.md)
-4. **Implementation:** [docs/boot-screen-implementation.md](./docs/boot-screen-implementation.md)
+4. **Implementation:** [boot-screen-implementation.md](./boot-screen-implementation.md)
 
 ## 🎯 Success Checklist
 
 You're ready to proceed if:
+
 - ✅ You understand the workflow
 - ✅ You have Figma file access
 - ✅ Node.js version is >= 18

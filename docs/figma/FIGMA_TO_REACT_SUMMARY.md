@@ -18,17 +18,18 @@ lexery/
 │   └── BootScreen.tsx                 ✅ Template component (will be replaced)
 │
 ├── docs/
-│   └── boot-screen-implementation.md  ✅ Complete implementation guide
+│   └── figma/
+│       └── boot-screen-implementation.md  ✅ Complete implementation guide
 │
-├── FIGMA_EXTRACTION_GUIDE.md         ✅ Quick start guide
-└── FIGMA_TO_REACT_SUMMARY.md         ⬅️ You are here
+├── docs/figma/FIGMA_EXTRACTION_GUIDE.md  ✅ Quick start guide
+└── docs/figma/FIGMA_TO_REACT_SUMMARY.md  ⬅️ You are here
 ```
 
 ### NPM Scripts Added
 
 ```json
 {
-  "figma:extract": "Extract design from Figma → figma-extraction-report.json",
+  "figma:extract": "Extract design from Figma → docs/figma/reports/figma-extraction-report.json",
   "figma:generate": "Generate React component from extraction report",
   "figma:build": "Extract + Generate in one command"
 }
@@ -57,12 +58,13 @@ lexery/
    • SVG elements
    • Node structure
       ↓
-   figma-extraction-report.json
+   docs/figma/reports/figma-extraction-report.json
 ```
 
 ### Step-by-Step Process
 
 **STEP 1: Get Figma Token**
+
 ```bash
 # 1. Visit https://www.figma.com/settings
 # 2. Generate new token
@@ -71,11 +73,13 @@ FIGMA_TOKEN=figd_your_token_here
 ```
 
 **STEP 2: Extract Design**
+
 ```bash
 npm run figma:extract
 ```
 
-This creates `figma-extraction-report.json` with:
+This creates `docs/figma/reports/figma-extraction-report.json` with:
+
 - ✅ Node info (name, type, size)
 - ✅ Screenshot URL (downloadable PNG)
 - ✅ All colors (hex + RGBA with alpha)
@@ -85,11 +89,13 @@ This creates `figma-extraction-report.json` with:
 - ✅ Complete node hierarchy
 
 **STEP 3: Generate Component**
+
 ```bash
 npm run figma:generate
 ```
 
 This creates `src/components/BootScreen.tsx` with:
+
 - ✅ TypeScript interfaces
 - ✅ Tailwind CSS classes (auto-mapped from Figma colors)
 - ✅ Exact typography (fonts, weights, sizes)
@@ -99,37 +105,39 @@ This creates `src/components/BootScreen.tsx` with:
 - ✅ Inline documentation
 
 **STEP 4: Use in App**
+
 ```tsx
 import { BootScreen } from '@/components/BootScreen';
 
-<BootScreen onComplete={() => console.log('Done!')} />
+<BootScreen onComplete={() => console.log('Done!')} />;
 ```
 
 ## 📊 What Gets Extracted
 
 ### Design Properties
 
-| Property | Description | Example |
-|----------|-------------|---------|
-| **Screenshot** | High-res PNG URL | `https://s3-alpha.figma.com/...` |
-| **Background Color** | Hex + RGBA | `#FFFFFF`, `rgba(255,255,255,1)` |
-| **Text Content** | All text layers | `"Welcome to Lexery"` |
-| **Font Family** | Font name | `"Inter"` |
-| **Font Weight** | Weight value | `700` (Bold) |
-| **Font Size** | Size in pixels | `32px` |
-| **Line Height** | Line height | `40px` |
-| **Letter Spacing** | Tracking | `0px` |
-| **Layout Mode** | Flex direction | `VERTICAL` → `flex-col` |
-| **Gap** | Item spacing | `24px` → `gap-6` |
-| **Padding** | Container padding | `48px 24px` |
-| **Alignment** | Flex alignment | `CENTER` → `items-center` |
-| **SVG Elements** | Vector graphics | Identified for export |
+| Property             | Description       | Example                          |
+| -------------------- | ----------------- | -------------------------------- |
+| **Screenshot**       | High-res PNG URL  | `https://s3-alpha.figma.com/...` |
+| **Background Color** | Hex + RGBA        | `#FFFFFF`, `rgba(255,255,255,1)` |
+| **Text Content**     | All text layers   | `"Welcome to Lexery"`            |
+| **Font Family**      | Font name         | `"Inter"`                        |
+| **Font Weight**      | Weight value      | `700` (Bold)                     |
+| **Font Size**        | Size in pixels    | `32px`                           |
+| **Line Height**      | Line height       | `40px`                           |
+| **Letter Spacing**   | Tracking          | `0px`                            |
+| **Layout Mode**      | Flex direction    | `VERTICAL` → `flex-col`          |
+| **Gap**              | Item spacing      | `24px` → `gap-6`                 |
+| **Padding**          | Container padding | `48px 24px`                      |
+| **Alignment**        | Flex alignment    | `CENTER` → `items-center`        |
+| **SVG Elements**     | Vector graphics   | Identified for export            |
 
 ### Automatic Mappings
 
 The generator automatically maps:
 
 **Colors → Tailwind Classes**
+
 ```
 #FFFFFF  →  bg-white
 #1F2937  →  bg-gray-900
@@ -137,6 +145,7 @@ The generator automatically maps:
 ```
 
 **Font Sizes → Tailwind Classes**
+
 ```
 32px  →  text-3xl
 16px  →  text-base
@@ -144,6 +153,7 @@ The generator automatically maps:
 ```
 
 **Font Weights → Tailwind Classes**
+
 ```
 700  →  font-bold
 600  →  font-semibold
@@ -151,6 +161,7 @@ The generator automatically maps:
 ```
 
 **Layout → Tailwind Classes**
+
 ```
 VERTICAL    →  flex-col
 HORIZONTAL  →  flex-row
@@ -165,9 +176,9 @@ The generated `BootScreen` component includes:
 
 ```typescript
 interface BootScreenProps {
-  onComplete?: () => void;    // Callback when animation completes
-  duration?: number;           // Duration in ms (default: 2000)
-  showLoading?: boolean;       // Show loading indicator (default: true)
+  onComplete?: () => void; // Callback when animation completes
+  duration?: number; // Duration in ms (default: 2000)
+  showLoading?: boolean; // Show loading indicator (default: true)
 }
 ```
 
@@ -186,26 +197,31 @@ interface BootScreenProps {
 ### Usage Examples
 
 **Basic:**
+
 ```tsx
 <BootScreen />
 ```
 
 **With Callback:**
+
 ```tsx
 <BootScreen onComplete={() => router.push('/dashboard')} />
 ```
 
 **Custom Duration:**
+
 ```tsx
-<BootScreen duration={5000} />  // 5 seconds
+<BootScreen duration={5000} /> // 5 seconds
 ```
 
 **No Loading Indicator:**
+
 ```tsx
 <BootScreen showLoading={false} />
 ```
 
 **Complete Example:**
+
 ```tsx
 'use client';
 import { useState } from 'react';
@@ -216,12 +232,7 @@ export default function App() {
 
   return (
     <>
-      {showBoot && (
-        <BootScreen 
-          duration={3000}
-          onComplete={() => setShowBoot(false)} 
-        />
-      )}
+      {showBoot && <BootScreen duration={3000} onComplete={() => setShowBoot(false)} />}
       <main>Your app content</main>
     </>
   );
@@ -231,6 +242,7 @@ export default function App() {
 ## 📝 Figma Design Details
 
 **Your Boot Screen:**
+
 - **File ID:** `IO0sKndZpfYlW5OVXoIpuC`
 - **Node ID:** `0-1283`
 - **Full URL:** https://www.figma.com/design/IO0sKndZpfYlW5OVXoIpuC/Untitled?node-id=0-1283&m=dev
@@ -255,12 +267,12 @@ npm run lint             # Lint code
 
 ## 📚 Documentation Reference
 
-| Document | Purpose |
-|----------|---------|
-| **FIGMA_EXTRACTION_GUIDE.md** | Quick start guide with troubleshooting |
-| **docs/boot-screen-implementation.md** | Complete implementation guide with examples |
-| **scripts/README.md** | Script documentation and API details |
-| **FIGMA_TO_REACT_SUMMARY.md** | This overview document |
+| Document                                     | Purpose                                     |
+| -------------------------------------------- | ------------------------------------------- |
+| **FIGMA_EXTRACTION_GUIDE.md**                | Quick start guide with troubleshooting      |
+| **docs/figma/boot-screen-implementation.md** | Complete implementation guide with examples |
+| **scripts/README.md**                        | Script documentation and API details        |
+| **FIGMA_TO_REACT_SUMMARY.md**                | This overview document                      |
 
 ## ⚠️ Important Notes
 
@@ -282,12 +294,14 @@ npm run lint             # Lint code
 ### After Extraction
 
 1. **Download Screenshot** - Save high-res PNG for reference
+
    ```bash
-   # URL will be in figma-extraction-report.json
+   # URL will be in docs/figma/reports/figma-extraction-report.json
    # Download and save to: public/images/boot-screen.png
    ```
 
 2. **Add Logo** - Replace placeholder SVG in component
+
    ```tsx
    // In BootScreen.tsx, replace the SVG with your logo
    <Image src="/images/logo.svg" alt="Logo" width={80} height={80} />
@@ -309,7 +323,7 @@ npm run lint             # Lint code
 
 ```tsx
 // In BootScreen.tsx
-<div 
+<div
   className="bg-indigo-600"     // Tailwind class
   style={{ backgroundColor: '#4F46E5' }}  // Exact color
 >
@@ -327,12 +341,12 @@ npm run lint             # Lint code
 
 ```tsx
 // Replace the placeholder SVG
-<Image 
-  src="/images/logo.png" 
-  alt="Logo" 
-  width={120} 
+<Image
+  src="/images/logo.png"
+  alt="Logo"
+  width={120}
   height={120}
-  priority  // Preload for faster display
+  priority // Preload for faster display
 />
 ```
 
@@ -340,52 +354,57 @@ npm run lint             # Lint code
 
 ```tsx
 // Change duration
-<BootScreen duration={5000} />  // 5 seconds
+<BootScreen duration={5000} />; // 5 seconds
 
 // Modify fade timing in component
 const fadeTimer = setTimeout(() => {
   setFadeOut(true);
-}, duration - 500);  // Change 500 to adjust fade timing
+}, duration - 500); // Change 500 to adjust fade timing
 ```
 
 ## 🐛 Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| `FIGMA_TOKEN not set` | Add token to `.env` file |
-| `Node not found` | Check node ID in Figma URL |
-| `403 Forbidden` | Token invalid or no file access |
-| `404 Not Found` | File ID incorrect or doesn't exist |
-| `Colors don't match` | Use inline styles instead of Tailwind classes |
-| `Fonts look different` | Install the font family (likely Inter) |
-| `Component won't unmount` | Check `onComplete` callback is triggered |
+| Issue                     | Solution                                      |
+| ------------------------- | --------------------------------------------- |
+| `FIGMA_TOKEN not set`     | Add token to `.env` file                      |
+| `Node not found`          | Check node ID in Figma URL                    |
+| `403 Forbidden`           | Token invalid or no file access               |
+| `404 Not Found`           | File ID incorrect or doesn't exist            |
+| `Colors don't match`      | Use inline styles instead of Tailwind classes |
+| `Fonts look different`    | Install the font family (likely Inter)        |
+| `Component won't unmount` | Check `onComplete` callback is triggered      |
 
 ## 🚀 Next Steps
 
 1. **Get Your Figma Token**
+
    ```bash
    # Add to .env:
    FIGMA_TOKEN=figd_your_token_here
    ```
 
 2. **Run the Extraction**
+
    ```bash
    npm run figma:build
    ```
 
 3. **Review the Component**
+
    ```bash
    # Check generated component:
    cat src/components/BootScreen.tsx
    ```
 
 4. **Download Screenshot**
+
    ```bash
-   # URL is in figma-extraction-report.json
+   # URL is in docs/figma/reports/figma-extraction-report.json
    # Save to: public/images/boot-screen.png
    ```
 
 5. **Add Your Logo**
+
    ```bash
    # Export logo from Figma
    # Save to: public/images/logo.svg
@@ -393,6 +412,7 @@ const fadeTimer = setTimeout(() => {
    ```
 
 6. **Test the Component**
+
    ```bash
    npm run dev
    # Visit http://localhost:3000
@@ -414,6 +434,7 @@ const fadeTimer = setTimeout(() => {
 ## ✨ Summary
 
 You now have:
+
 - ✅ Extraction script to pull design from Figma
 - ✅ Generator script to create React component
 - ✅ Template component ready to use
@@ -426,6 +447,6 @@ You now have:
 
 ---
 
-**Questions?** Review the docs in `docs/` folder or check `FIGMA_EXTRACTION_GUIDE.md`.
+**Questions?** Review the docs in `docs/figma/` or check `./FIGMA_EXTRACTION_GUIDE.md`.
 
 **Ready?** Run: `npm run figma:build` 🚀

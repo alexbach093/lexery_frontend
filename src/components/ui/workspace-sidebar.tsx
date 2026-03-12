@@ -1,16 +1,17 @@
 'use client';
 
 import Image from 'next/image';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
 import { useSettingsOpen } from '@/contexts/settings-open';
-import type { RecentChatItem } from '@/entities/chat/model';
 import { WORKSPACE_START_NEW_CHAT_EVENT } from '@/hooks/use-workspace-chat';
 import {
-  getRecentChats,
-  RECENT_CHATS_UPDATED_EVENT,
-  RECENT_CHATS_STORAGE_KEY,
-} from '@/lib/recent-chats';
+  CHAT_STORE_UPDATED_EVENT,
+  DEFAULT_CHAT_USER_ID,
+  fetchChatLibrary,
+  type ChatLibraryItem,
+} from '@/lib/chat-library';
 
 interface WorkspaceSidebarProps {
   className?: string;
@@ -46,17 +47,41 @@ export function WorkspaceSidebar({
   onToggleCollapse,
 }: WorkspaceSidebarProps) {
   const { open: openSettings } = useSettingsOpen();
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const isChatsRoute = pathname === '/workspace/chats';
+  const activeRecentChatId = pathname === '/workspace' ? searchParams.get('chat') : null;
+  const hasSelectedWorkspaceChat = activeRecentChatId != null;
+  const palette = {
+    sidebarBackground: '#FFFFFF',
+    divider: '#E0E7E8',
+    brandText: '#000000',
+    toggleColor: '#6B7280',
+    navText: '#000000',
+    navActiveText: '#000000',
+    navActiveBackground: '#F4F4F6',
+    secondaryText: '#6B7280',
+    menuBackground: '#FFFFFF',
+    menuBorder: '#E0E7E8',
+    menuText: '#000000',
+    avatarBackground: '#E0E0E0',
+    profileSecondaryText: '#5E5E5E',
+    historyActiveBackground: '#F4F4F6',
+  };
 
-  const [recentChats, setRecentChats] = useState<RecentChatItem[]>([]);
+  const [recentChats, setRecentChats] = useState<ChatLibraryItem[]>([]);
   const historyScrollRef = useRef<HTMLDivElement>(null);
   const [historyScrolled, setHistoryScrolled] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [historyClosing, setHistoryClosing] = useState(false);
 
   const refreshRecentChats = useCallback(() => {
-    setRecentChats(getRecentChats());
+    fetchChatLibrary(DEFAULT_CHAT_USER_ID)
+      .then((chats) => setRecentChats(chats))
+      .catch(() => setRecentChats([]));
   }, []);
 
   const handleHistoryScroll = useCallback(() => {
@@ -78,14 +103,9 @@ export function WorkspaceSidebar({
 
   useEffect(() => {
     const onUpdate = () => refreshRecentChats();
-    window.addEventListener(RECENT_CHATS_UPDATED_EVENT, onUpdate);
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === RECENT_CHATS_STORAGE_KEY) refreshRecentChats();
-    };
-    window.addEventListener('storage', onStorage);
+    window.addEventListener(CHAT_STORE_UPDATED_EVENT, onUpdate);
     return () => {
-      window.removeEventListener(RECENT_CHATS_UPDATED_EVENT, onUpdate);
-      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(CHAT_STORE_UPDATED_EVENT, onUpdate);
     };
   }, [refreshRecentChats]);
 
@@ -117,6 +137,32 @@ export function WorkspaceSidebar({
     setIsMenuOpen(false);
     // TODO: wire logout (e.g. clear session, redirect)
   };
+
+  const handleNewChatClick = useCallback(() => {
+    if (pathname === '/' || pathname === '/workspace') {
+      if (pathname === '/workspace' && hasSelectedWorkspaceChat) {
+        router.push('/workspace');
+        return;
+      }
+
+      window.dispatchEvent(new CustomEvent(WORKSPACE_START_NEW_CHAT_EVENT));
+      return;
+    }
+
+    router.push('/workspace');
+  }, [hasSelectedWorkspaceChat, pathname, router]);
+
+  const handleChatsClick = useCallback(() => {
+    if (isChatsRoute) return;
+    router.push('/workspace/chats');
+  }, [isChatsRoute, router]);
+
+  const handleRecentChatClick = useCallback(
+    (chatId: string) => {
+      router.push(`/workspace?chat=${encodeURIComponent(chatId)}`);
+    },
+    [router]
+  );
 
   const sidebarLabelStyle: React.CSSProperties = {
     overflow: 'hidden',
@@ -154,10 +200,14 @@ export function WorkspaceSidebar({
     cursor: 'pointer',
     width: '100%',
     textAlign: 'left',
+    backgroundColor: 'transparent',
   };
 
   const stackedHoverFillClassName =
     'relative isolate transition-colors duration-150 before:pointer-events-none before:absolute before:left-0 before:right-0 before:-top-[2px] before:-bottom-[2px] before:rounded-[8px] before:bg-transparent before:transition-colors before:duration-150 before:-z-10 hover:before:bg-[#F4F4F6] first:before:top-0 last:before:bottom-0 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset';
+
+  const menuItemClassName =
+    'w-full rounded-lg transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset';
 
   const toggleButtonStyle: React.CSSProperties = {
     position: 'absolute',
@@ -173,7 +223,7 @@ export function WorkspaceSidebar({
     borderRadius: '8px',
     cursor: 'pointer',
     flexShrink: 0,
-    color: '#6B7280',
+    color: palette.toggleColor,
     transition: [
       `left ${WORKSPACE_SIDEBAR_TRANSITION}`,
       'background-color 150ms',
@@ -194,11 +244,11 @@ export function WorkspaceSidebar({
           ? `${WORKSPACE_SIDEBAR_COLLAPSED_WIDTH}px`
           : `${WORKSPACE_SIDEBAR_EXPANDED_WIDTH}px`,
         height: '100vh',
-        backgroundColor: '#FFFFFF',
+        background: palette.sidebarBackground,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        borderRight: '1px solid #E0E7E8',
+        borderRight: `1px solid ${palette.divider}`,
         transition: `width ${WORKSPACE_SIDEBAR_TRANSITION}`,
       }}
     >
@@ -238,7 +288,7 @@ export function WorkspaceSidebar({
                   fontSize: '18px',
                   lineHeight: '20px',
                   letterSpacing: '0.02em',
-                  color: '#000000',
+                  color: palette.brandText,
                   margin: 0,
                 }}
               >
@@ -296,11 +346,11 @@ export function WorkspaceSidebar({
           {/* Новий чат — Claude: h-8 py-1.5 px-4 rounded-lg gap-3 */}
           <button
             type="button"
-            onClick={() => window.dispatchEvent(new CustomEvent(WORKSPACE_START_NEW_CHAT_EVENT))}
+            onClick={handleNewChatClick}
             aria-label="Новий чат"
             className={`group ${stackedHoverFillClassName}`}
             title="Новий чат"
-            style={navButtonStyle}
+            style={{ ...navButtonStyle, color: palette.navText }}
           >
             <span
               className="inline-flex items-center gap-3 transition-transform duration-100 group-active:scale-[0.98]"
@@ -348,7 +398,7 @@ export function WorkspaceSidebar({
                     fontSize: '14px',
                     lineHeight: '20px',
                     letterSpacing: '0.14px',
-                    color: '#000000',
+                    color: palette.navText,
                     margin: 0,
                   }}
                 >
@@ -360,10 +410,17 @@ export function WorkspaceSidebar({
 
           {/* Чати — Figma 14:4 (MCP), той самий стиль що інші іконки */}
           <button
+            type="button"
+            onClick={handleChatsClick}
             aria-label="Чати"
             className={stackedHoverFillClassName}
             title="Чати"
-            style={navButtonStyle}
+            aria-current={isChatsRoute ? 'page' : undefined}
+            style={{
+              ...navButtonStyle,
+              color: isChatsRoute ? palette.navActiveText : palette.navText,
+              backgroundColor: isChatsRoute ? palette.navActiveBackground : 'transparent',
+            }}
           >
             <svg
               width={18}
@@ -393,7 +450,7 @@ export function WorkspaceSidebar({
                   fontSize: '14px',
                   lineHeight: '20px',
                   letterSpacing: '0.14px',
-                  color: '#000000',
+                  color: isChatsRoute ? palette.navActiveText : palette.navText,
                   margin: 0,
                 }}
               >
@@ -404,10 +461,11 @@ export function WorkspaceSidebar({
 
           {/* Проєкти — Figma 62:11 */}
           <button
+            type="button"
             aria-label="Проєкти"
             className={stackedHoverFillClassName}
             title="Проєкти"
-            style={navButtonStyle}
+            style={{ ...navButtonStyle, color: palette.navText }}
           >
             <svg
               width={18}
@@ -463,7 +521,7 @@ export function WorkspaceSidebar({
                   fontSize: '14px',
                   lineHeight: '20px',
                   letterSpacing: '0.14px',
-                  color: '#000000',
+                  color: palette.navText,
                   margin: 0,
                 }}
               >
@@ -486,7 +544,7 @@ export function WorkspaceSidebar({
           <div
             style={{
               height: '1px',
-              backgroundColor: '#E0E7E8',
+              backgroundColor: palette.divider,
               marginLeft: '-8px',
               marginRight: '-8px',
             }}
@@ -563,7 +621,7 @@ export function WorkspaceSidebar({
                   fontSize: '13px',
                   lineHeight: '20px',
                   letterSpacing: '0.14px',
-                  color: historyExpanded ? '#6B7280' : '#000000',
+                  color: historyExpanded ? palette.secondaryText : palette.navText,
                   transition: 'color 0.22s ease-out',
                 }}
               >
@@ -603,6 +661,7 @@ export function WorkspaceSidebar({
                         key={chat.id}
                         type="button"
                         className={stackedHoverFillClassName}
+                        onClick={() => handleRecentChatClick(chat.id)}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -613,6 +672,10 @@ export function WorkspaceSidebar({
                           cursor: 'pointer',
                           width: '100%',
                           textAlign: 'left',
+                          backgroundColor:
+                            activeRecentChatId === chat.id
+                              ? palette.historyActiveBackground
+                              : 'transparent',
                         }}
                         title={chat.title}
                       >
@@ -623,7 +686,10 @@ export function WorkspaceSidebar({
                             fontSize: '14px',
                             lineHeight: '20px',
                             letterSpacing: '0.14px',
-                            color: '#000000',
+                            color:
+                              activeRecentChatId === chat.id
+                                ? palette.navActiveText
+                                : palette.navText,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -657,7 +723,7 @@ export function WorkspaceSidebar({
         <div
           style={{
             height: '1px',
-            backgroundColor: '#E0E7E8',
+            backgroundColor: palette.divider,
             marginLeft: '-12px',
             marginRight: '-12px',
           }}
@@ -685,8 +751,8 @@ export function WorkspaceSidebar({
                 right: collapsed ? 'auto' : '-6px',
                 width: collapsed ? '220px' : 'auto',
                 zIndex: 100,
-                backgroundColor: '#FFFFFF',
-                border: '1px solid #E0E7E8',
+                backgroundColor: palette.menuBackground,
+                border: `1px solid ${palette.menuBorder}`,
                 padding: '6px',
               }}
             >
@@ -696,7 +762,7 @@ export function WorkspaceSidebar({
                   type="button"
                   role="menuitem"
                   onClick={handleSettingsClick}
-                  className="w-full rounded-lg transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+                  className={menuItemClassName}
                   style={{
                     display: 'flex',
                     gap: '8px',
@@ -706,6 +772,7 @@ export function WorkspaceSidebar({
                     border: 'none',
                     cursor: 'pointer',
                     textAlign: 'left',
+                    color: palette.menuText,
                   }}
                 >
                   <div
@@ -749,7 +816,7 @@ export function WorkspaceSidebar({
                       fontSize: '14px',
                       lineHeight: '20px',
                       letterSpacing: '0.14px',
-                      color: '#000000',
+                      color: palette.menuText,
                       flex: 1,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -763,7 +830,7 @@ export function WorkspaceSidebar({
                   type="button"
                   role="menuitem"
                   onClick={handleReportErrorClick}
-                  className="w-full rounded-lg transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+                  className={menuItemClassName}
                   style={{
                     display: 'flex',
                     gap: '8px',
@@ -773,6 +840,7 @@ export function WorkspaceSidebar({
                     border: 'none',
                     cursor: 'pointer',
                     textAlign: 'left',
+                    color: palette.menuText,
                   }}
                 >
                   <div
@@ -809,7 +877,7 @@ export function WorkspaceSidebar({
                       fontSize: '14px',
                       lineHeight: '20px',
                       letterSpacing: '0.14px',
-                      color: '#000000',
+                      color: palette.menuText,
                       flex: 1,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -825,7 +893,7 @@ export function WorkspaceSidebar({
               <div
                 style={{
                   height: '1px',
-                  backgroundColor: '#E0E7E8',
+                  backgroundColor: palette.divider,
                   margin: '6px 0',
                 }}
                 aria-hidden
@@ -836,7 +904,7 @@ export function WorkspaceSidebar({
                 type="button"
                 role="menuitem"
                 onClick={handleLogoutClick}
-                className="w-full rounded-lg transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+                className={menuItemClassName}
                 style={{
                   display: 'flex',
                   gap: '8px',
@@ -846,6 +914,7 @@ export function WorkspaceSidebar({
                   border: 'none',
                   cursor: 'pointer',
                   textAlign: 'left',
+                  color: palette.menuText,
                 }}
               >
                 <div
@@ -892,7 +961,7 @@ export function WorkspaceSidebar({
                     fontSize: '14px',
                     lineHeight: '20px',
                     letterSpacing: '0.14px',
-                    color: '#000000',
+                    color: palette.menuText,
                     flex: 1,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -936,7 +1005,7 @@ export function WorkspaceSidebar({
                 borderRadius: '50%',
                 overflow: 'hidden',
                 flexShrink: 0,
-                backgroundColor: '#E0E0E0',
+                backgroundColor: palette.avatarBackground,
               }}
             >
               <Image
@@ -964,7 +1033,7 @@ export function WorkspaceSidebar({
                   fontSize: '14px',
                   lineHeight: '20px',
                   letterSpacing: '0.14px',
-                  color: '#000000',
+                  color: palette.navText,
                 }}
                 title="Олександр"
               >
@@ -977,7 +1046,7 @@ export function WorkspaceSidebar({
                   fontSize: '12px',
                   lineHeight: '1.25',
                   letterSpacing: '0.12px',
-                  color: '#5E5E5E',
+                  color: palette.profileSecondaryText,
                   marginTop: '2px',
                 }}
               >

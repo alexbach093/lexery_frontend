@@ -2,6 +2,8 @@
 
 import React from 'react';
 
+import { EditSquareIcon } from '@/components/ui/edit-square-icon';
+
 export const HOME_TEXTAREA_MIN_HEIGHT = 82;
 export const HOME_TEXTAREA_MAX_HEIGHT = 280;
 export const CHAT_TEXTAREA_MIN_HEIGHT = 30;
@@ -170,22 +172,11 @@ export function ChatInput({
               flexShrink: 0,
             }}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="28.3 0 13.5 13.5"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden
-            >
-              <path
-                d="M35.0366 4.26644L37.4843 6.7141M28.9175 12.8333V9.77368L38.0962 0.594947L41.1558 3.65452L31.9771 12.8333H28.9175Z"
-                stroke={systemPromptEditorOpen ? '#0070f3' : '#575757'}
-                strokeWidth="1.16071"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <EditSquareIcon
+              size={15}
+              color={systemPromptEditorOpen ? '#0070f3' : '#575757'}
+              strokeWidth={11.4}
+            />
           </button>
           <span
             aria-hidden

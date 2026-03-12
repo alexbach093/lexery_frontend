@@ -27,25 +27,29 @@ npm run figma:extract
 ```
 
 This will:
+
 - ✅ Connect to Figma API
 - ✅ Extract the boot screen design (node 0-1283)
 - ✅ Download screenshot URL
 - ✅ Extract colors, fonts, and layout
-- ✅ Generate `figma-extraction-report.json`
+- ✅ Generate `docs/figma/reports/figma-extraction-report.json`
 
 ## 📊 What Gets Extracted
 
 ### 1. Screenshot
+
 - High-resolution PNG (2x scale)
 - Direct download URL
 - Save to: `public/images/boot-screen.png`
 
 ### 2. Colors
+
 - All unique colors in hex format
 - RGBA values with opacity
 - Background colors and fills
 
 Example output:
+
 ```json
 {
   "colors": {
@@ -60,6 +64,7 @@ Example output:
 ```
 
 ### 3. Typography
+
 - All text content
 - Font families
 - Font weights
@@ -68,6 +73,7 @@ Example output:
 - Letter spacing
 
 Example output:
+
 ```json
 {
   "textContent": [
@@ -85,6 +91,7 @@ Example output:
 ```
 
 ### 4. Layout Structure
+
 - Flexbox/Grid settings
 - Spacing (gap)
 - Padding values
@@ -92,6 +99,7 @@ Example output:
 - Sizing modes
 
 Example output:
+
 ```json
 {
   "layout": {
@@ -106,6 +114,7 @@ Example output:
 ```
 
 ### 5. Node Structure
+
 - Complete component hierarchy
 - Layer names and types
 - Sizes and positions
@@ -182,7 +191,7 @@ Node ID: 0-1283
       Size: 327x24px
       Text: "Your AI-powered learning companion"
 
-💾 Full report saved to: ./figma-extraction-report.json
+💾 Full report saved to: docs/figma/reports/figma-extraction-report.json
 
 ═══════════════════════════════════════════════════════════
 ✅ Extraction complete!
@@ -190,7 +199,7 @@ Node ID: 0-1283
 
 📋 Next steps:
    1. Download the screenshot from the URL above
-   2. Review the figma-extraction-report.json file
+   2. Review the docs/figma/reports/figma-extraction-report.json file
    3. Generate the React component based on this data
 ```
 
@@ -199,6 +208,7 @@ Node ID: 0-1283
 After extraction, we'll:
 
 1. **Create the component structure**
+
    ```
    src/components/BootScreen/
    ├── BootScreen.tsx          # Main component
@@ -213,9 +223,10 @@ After extraction, we'll:
    - Add any animations
 
 3. **Add to the app**
+
    ```tsx
    import { BootScreen } from '@/components/BootScreen';
-   
+
    export default function App() {
      return <BootScreen />;
    }
@@ -224,18 +235,23 @@ After extraction, we'll:
 ## 🐛 Troubleshooting
 
 ### "FIGMA_TOKEN environment variable not set"
+
 → Make sure you added the token to `.env` file
 
 ### "Figma API error: 403"
+
 → Your token is invalid or expired. Generate a new one
 
 ### "Figma API error: 404"
+
 → File not found. Check the file ID or your access permissions
 
 ### "Node with ID 0-1283 not found"
+
 → The node might have been deleted or renamed. Check the Figma URL
 
 ### Script doesn't run
+
 → Make sure you're using Node.js >= 18 (which supports native fetch)
 
 ```bash
@@ -247,7 +263,7 @@ node --version  # Should be >= 18.0.0
 - **Figma File URL**: https://www.figma.com/design/IO0sKndZpfYlW5OVXoIpuC/Untitled?node-id=0-1283&m=dev
 - **Figma API Docs**: https://www.figma.com/developers/api
 - **Extraction Script**: `scripts/extract-figma-design.mjs`
-- **Output Report**: `figma-extraction-report.json`
+- **Output Report**: `docs/figma/reports/figma-extraction-report.json`
 
 ## ❓ FAQ
 

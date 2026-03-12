@@ -9,4 +9,6 @@ export interface RecentChatItem {
   id: string;
   title: string;
   createdAt: string;
+  updatedAt?: string;
+  preview?: string;
 }
