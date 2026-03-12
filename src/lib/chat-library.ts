@@ -8,6 +8,7 @@ export interface ChatLibraryItem {
   userId: string;
   title: string;
   preview: string;
+  pinned: boolean;
   createdAt: string;
   updatedAt: string;
   messages: Message[];
@@ -17,6 +18,7 @@ export interface CreateChatInput {
   userId?: string;
   title: string;
   preview: string;
+  pinned?: boolean;
   messages: Message[];
 }
 
@@ -24,7 +26,8 @@ export interface UpdateChatInput {
   userId?: string;
   title?: string;
   preview?: string;
-  messages: Message[];
+  pinned?: boolean;
+  messages?: Message[];
 }
 
 export function getChatSearchText(chat: ChatLibraryItem): string {
@@ -35,31 +38,31 @@ export function getChatSearchText(chat: ChatLibraryItem): string {
 
 export function formatLastMessageLabel(
   updatedAt: string,
-  locale: Intl.LocalesArgument = 'en'
+  locale: Intl.LocalesArgument = 'uk'
 ): string {
   const timestamp = new Date(updatedAt).getTime();
-  if (Number.isNaN(timestamp)) return 'Last message recently';
+  if (Number.isNaN(timestamp)) return 'Останнє повідомлення щойно';
 
   const diffMs = timestamp - Date.now();
   const diffMinutes = Math.round(diffMs / 60_000);
   const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 
   if (Math.abs(diffMinutes) < 60) {
-    return `Last message ${formatter.format(diffMinutes, 'minute')}`;
+    return `Останнє повідомлення ${formatter.format(diffMinutes, 'minute')}`;
   }
 
   const diffHours = Math.round(diffMinutes / 60);
   if (Math.abs(diffHours) < 24) {
-    return `Last message ${formatter.format(diffHours, 'hour')}`;
+    return `Останнє повідомлення ${formatter.format(diffHours, 'hour')}`;
   }
 
   const diffDays = Math.round(diffHours / 24);
   if (Math.abs(diffDays) < 30) {
-    return `Last message ${formatter.format(diffDays, 'day')}`;
+    return `Останнє повідомлення ${formatter.format(diffDays, 'day')}`;
   }
 
   const diffMonths = Math.round(diffDays / 30);
-  return `Last message ${formatter.format(diffMonths, 'month')}`;
+  return `Останнє повідомлення ${formatter.format(diffMonths, 'month')}`;
 }
 
 function getQueryString(userId: string): string {
@@ -109,6 +112,7 @@ export async function createChatLibraryItem(input: CreateChatInput): Promise<Cha
       userId: input.userId ?? DEFAULT_CHAT_USER_ID,
       title: input.title,
       preview: input.preview,
+      pinned: input.pinned,
       messages: input.messages,
     }),
   });
@@ -132,6 +136,7 @@ export async function updateChatLibraryItem(
       userId: input.userId ?? DEFAULT_CHAT_USER_ID,
       title: input.title,
       preview: input.preview,
+      pinned: input.pinned,
       messages: input.messages,
     }),
   });

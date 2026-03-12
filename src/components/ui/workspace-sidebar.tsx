@@ -75,6 +75,8 @@ export function WorkspaceSidebar({
   const [recentChats, setRecentChats] = useState<ChatLibraryItem[]>([]);
   const historyScrollRef = useRef<HTMLDivElement>(null);
   const [historyScrolled, setHistoryScrolled] = useState(false);
+  const [pinnedExpanded, setPinnedExpanded] = useState(true);
+  const [pinnedClosing, setPinnedClosing] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(true);
   const [historyClosing, setHistoryClosing] = useState(false);
 
@@ -163,6 +165,11 @@ export function WorkspaceSidebar({
     },
     [router]
   );
+
+  const pinnedChats = recentChats.filter((chat) => chat.pinned);
+  const historyChats = recentChats.filter((chat) => !chat.pinned);
+  const shouldShowScrollDivider =
+    !collapsed && historyScrolled && (pinnedExpanded || historyExpanded);
 
   const sidebarLabelStyle: React.CSSProperties = {
     overflow: 'hidden',
@@ -533,7 +540,7 @@ export function WorkspaceSidebar({
       </div>
 
       {/* Лінія над історією — з’являється при прокрутці, тільки коли історія розгорнута */}
-      {!collapsed && historyExpanded && historyScrolled && (
+      {shouldShowScrollDivider && (
         <div
           style={{
             flexShrink: 0,
@@ -569,7 +576,7 @@ export function WorkspaceSidebar({
           style={{
             flex: 1,
             minHeight: 0,
-            overflowY: historyExpanded ? 'auto' : 'hidden',
+            overflowY: pinnedExpanded || historyExpanded ? 'auto' : 'hidden',
             overflowX: 'hidden',
             padding: `${SIDEBAR_HISTORY_SECTION_GAP}px ${SIDEBAR_EDGE_PADDING}px ${SIDEBAR_EDGE_PADDING}px`,
             display: 'flex',
@@ -586,6 +593,127 @@ export function WorkspaceSidebar({
               marginTop: 0,
             }}
           >
+            {pinnedChats.length > 0 ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pinnedExpanded) {
+                      setHistoryScrolled(false);
+                      setPinnedClosing(true);
+                      setTimeout(() => {
+                        setPinnedExpanded(false);
+                        setPinnedClosing(false);
+                      }, 220);
+                    } else {
+                      setPinnedExpanded(true);
+                    }
+                  }}
+                  className="focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+                  style={{
+                    display: 'flex',
+                    gap: '12px',
+                    alignItems: 'center',
+                    height: '32px',
+                    padding: '6px 16px 6px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    width: 'fit-content',
+                    textAlign: 'left',
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 500,
+                      fontSize: '13px',
+                      lineHeight: '20px',
+                      letterSpacing: '0.14px',
+                      color: pinnedExpanded ? palette.secondaryText : palette.navText,
+                      transition: 'color 0.22s ease-out',
+                    }}
+                  >
+                    Закріплені
+                  </p>
+                </button>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateRows: pinnedExpanded ? '1fr' : '0fr',
+                    transition: 'grid-template-rows 0s',
+                  }}
+                >
+                  <div
+                    style={{
+                      minHeight: 0,
+                      overflow: 'hidden',
+                      opacity: pinnedExpanded && !pinnedClosing ? 1 : 0,
+                      transform:
+                        pinnedExpanded && !pinnedClosing ? 'translateY(0)' : 'translateY(-10px)',
+                      transition: pinnedClosing
+                        ? 'opacity 0.18s cubic-bezier(0.33, 1, 0.68, 1), transform 0.2s cubic-bezier(0.34, 1.15, 0.64, 1)'
+                        : 'opacity 0.28s cubic-bezier(0.33, 1, 0.68, 1), transform 0.32s cubic-bezier(0.34, 1.15, 0.64, 1)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: `${SIDEBAR_STACK_GAP}px`,
+                        paddingTop: 0,
+                      }}
+                    >
+                      {pinnedChats.map((chat) => (
+                        <button
+                          key={chat.id}
+                          type="button"
+                          className={stackedHoverFillClassName}
+                          onClick={() => handleRecentChatClick(chat.id)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            minHeight: '32px',
+                            padding: '6px 16px 6px 12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            width: '100%',
+                            textAlign: 'left',
+                            backgroundColor:
+                              activeRecentChatId === chat.id
+                                ? palette.historyActiveBackground
+                                : 'transparent',
+                          }}
+                          title={chat.title}
+                        >
+                          <p
+                            style={{
+                              fontFamily: 'Inter, sans-serif',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '20px',
+                              letterSpacing: '0.14px',
+                              color:
+                                activeRecentChatId === chat.id
+                                  ? palette.navActiveText
+                                  : palette.navText,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              minWidth: 0,
+                              flex: 1,
+                            }}
+                          >
+                            {chat.title.length > 40 ? `${chat.title.slice(0, 40)}…` : chat.title}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : null}
             <button
               type="button"
               onClick={() => {
@@ -628,7 +756,7 @@ export function WorkspaceSidebar({
                 Історія
               </p>
             </button>
-            {recentChats.length > 0 ? (
+            {historyChats.length > 0 ? (
               <div
                 style={{
                   display: 'grid',
@@ -656,7 +784,7 @@ export function WorkspaceSidebar({
                       paddingTop: 0,
                     }}
                   >
-                    {recentChats.map((chat) => (
+                    {historyChats.map((chat) => (
                       <button
                         key={chat.id}
                         type="button"

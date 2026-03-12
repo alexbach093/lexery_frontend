@@ -8,10 +8,12 @@ import { EditSquareIcon } from '@/components/ui/edit-square-icon';
 import {
   CHAT_STORE_UPDATED_EVENT,
   DEFAULT_CHAT_USER_ID,
+  dispatchChatStoreUpdated,
   fetchChatLibrary,
   formatLastMessageLabel,
   getChatSearchText,
   type ChatLibraryItem,
+  updateChatLibraryItem,
 } from '@/lib/chat-library';
 
 const UI_SCALE = 0.66;
@@ -45,14 +47,37 @@ function SearchIcon() {
   );
 }
 
+function SearchClearIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden>
+      <path
+        d="M14.5 5.5L5.5 14.5M5.5 5.5l9 9"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const ACTION_ICON_STROKE = 1.75;
 const ACTION_ICON_BOX_SIZE = 24;
 
-function ChatActionButton({ label, children }: { label: string; children: ReactNode }) {
+function ChatActionButton({
+  label,
+  children,
+  onClick,
+}: {
+  label: string;
+  children: ReactNode;
+  onClick?: () => void;
+}) {
   const [isActive, setIsActive] = useState(false);
   const handleActionClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
+    onClick?.();
   };
 
   return (
@@ -96,6 +121,12 @@ function ChatStarIcon({ active = false }: { active?: boolean }) {
       aria-hidden
       style={{ display: 'block' }}
     >
+      {active ? (
+        <path
+          d="M10.0129 2.1438L12.2647 6.59517C12.3809 6.82488 12.6016 6.98469 12.8561 7.02054L17.7091 7.70431C18.3501 7.79462 18.6072 8.58274 18.1428 9.02336L14.6294 12.3572C14.4452 12.5319 14.3619 12.7883 14.4068 13.0379L15.2616 17.7803C15.3753 18.4108 14.7011 18.8923 14.1311 18.6L9.79783 16.3777C9.57029 16.261 9.30042 16.2612 9.07306 16.3783L4.74611 18.6074C4.17651 18.9008 3.50146 18.4205 3.61403 17.7898L4.46077 13.0459C4.50525 12.7962 4.42156 12.5401 4.23709 12.3658L0.718081 9.03777C0.252893 8.59791 0.508772 7.80937 1.14959 7.71804L6.00139 7.02679C6.25589 6.99057 6.47633 6.83044 6.59217 6.60056L8.83734 2.14567C9.1337 1.55735 9.71571 1.55659 10.0129 2.1438Z"
+          fill="currentColor"
+        />
+      ) : null}
       <path
         d="M10.0129 2.1438L12.2647 6.59517C12.3809 6.82488 12.6016 6.98469 12.8561 7.02054L17.7091 7.70431C18.3501 7.79462 18.6072 8.58274 18.1428 9.02336L14.6294 12.3572C14.4452 12.5319 14.3619 12.7883 14.4068 13.0379L15.2616 17.7803C15.3753 18.4108 14.7011 18.8923 14.1311 18.6L9.79783 16.3777C9.57029 16.261 9.30042 16.2612 9.07306 16.3783L4.74611 18.6074C4.17651 18.9008 3.50146 18.4205 3.61403 17.7898L4.46077 13.0459C4.50525 12.7962 4.42156 12.5401 4.23709 12.3658L0.718081 9.03777C0.252893 8.59791 0.508772 7.80937 1.14959 7.71804L6.00139 7.02679C6.25589 6.99057 6.47633 6.83044 6.59217 6.60056L8.83734 2.14567C9.1337 1.55735 9.71571 1.55659 10.0129 2.1438Z"
         stroke="currentColor"
@@ -103,14 +134,6 @@ function ChatStarIcon({ active = false }: { active?: boolean }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      {active ? (
-        <path
-          d="M3.30273 3.30957L16.6974 16.6906"
-          stroke="currentColor"
-          strokeWidth={ACTION_ICON_STROKE}
-          strokeLinecap="round"
-        />
-      ) : null}
     </svg>
   );
 }
@@ -207,6 +230,26 @@ export function WorkspaceChats() {
     router.push(`/workspace?chat=${encodeURIComponent(chatId)}`);
   };
 
+  const handleTogglePinned = async (chat: ChatLibraryItem) => {
+    const nextPinned = !chat.pinned;
+
+    setChatLibrary((prev) =>
+      prev.map((item) => (item.id === chat.id ? { ...item, pinned: nextPinned } : item))
+    );
+
+    try {
+      await updateChatLibraryItem(chat.id, {
+        userId: DEFAULT_CHAT_USER_ID,
+        pinned: nextPinned,
+      });
+      dispatchChatStoreUpdated();
+    } catch {
+      setChatLibrary((prev) =>
+        prev.map((item) => (item.id === chat.id ? { ...item, pinned: chat.pinned } : item))
+      );
+    }
+  };
+
   return (
     <main
       style={{
@@ -260,7 +303,7 @@ export function WorkspaceChats() {
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search your chats..."
+            placeholder="Пошук по чатах..."
             style={{
               flex: 1,
               minWidth: 0,
@@ -275,6 +318,31 @@ export function WorkspaceChats() {
               letterSpacing: '0.14px',
             }}
           />
+          {searchQuery ? (
+            <button
+              type="button"
+              aria-label="Очистити пошук"
+              onClick={(event) => {
+                event.preventDefault();
+                setSearchQuery('');
+              }}
+              style={{
+                width: '20px',
+                height: '20px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: 'none',
+                background: 'transparent',
+                color: '#171717',
+                cursor: 'pointer',
+                padding: 0,
+                flexShrink: 0,
+              }}
+            >
+              <SearchClearIcon />
+            </button>
+          ) : null}
         </label>
 
         <div
@@ -365,13 +433,16 @@ export function WorkspaceChats() {
                     marginRight: `${scale(10)}px`,
                   }}
                 >
-                  <ChatActionButton label="Pin chat">
-                    <ChatStarIcon />
+                  <ChatActionButton
+                    label={chat.pinned ? 'Відкріпити чат' : 'Закріпити чат'}
+                    onClick={() => void handleTogglePinned(chat)}
+                  >
+                    <ChatStarIcon active={chat.pinned} />
                   </ChatActionButton>
-                  <ChatActionButton label="Rename chat">
+                  <ChatActionButton label="Перейменувати чат">
                     <ChatPencilIcon />
                   </ChatActionButton>
-                  <ChatActionButton label="Delete chat">
+                  <ChatActionButton label="Видалити чат">
                     <ChatTrashIcon />
                   </ChatActionButton>
                 </div>
@@ -389,7 +460,7 @@ export function WorkspaceChats() {
                 lineHeight: `${readableScale(20, 20)}px`,
               }}
             >
-              No chats found for this query.
+              За цим запитом чатів не знайдено.
             </div>
           ) : null}
         </div>
@@ -402,6 +473,15 @@ export function WorkspaceChats() {
             letter-spacing: 0.14px;
             color: #6b7280;
             opacity: 1;
+          }
+
+          .workspace-chats-search-input::-webkit-search-cancel-button,
+          .workspace-chats-search-input::-webkit-search-decoration,
+          .workspace-chats-search-input::-webkit-search-results-button,
+          .workspace-chats-search-input::-webkit-search-results-decoration {
+            -webkit-appearance: none;
+            appearance: none;
+            display: none;
           }
 
           .workspace-chats-list::before {

@@ -11,6 +11,8 @@ type ChatStorePayload = {
   chats: ChatLibraryItem[];
 };
 
+type StoredChatLike = Omit<ChatLibraryItem, 'pinned'> & { pinned?: boolean };
+
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
@@ -30,7 +32,12 @@ async function readStore(): Promise<ChatStorePayload> {
     const raw = await readFile(CHAT_STORE_FILE, 'utf8');
     const parsed = JSON.parse(raw) as unknown;
     if (parsed && typeof parsed === 'object' && Array.isArray((parsed as ChatStorePayload).chats)) {
-      return parsed as ChatStorePayload;
+      return {
+        chats: (parsed as { chats: StoredChatLike[] }).chats.map((chat) => ({
+          ...chat,
+          pinned: Boolean(chat.pinned),
+        })),
+      };
     }
   } catch {
     // ignore malformed file and rewrite below
@@ -86,6 +93,7 @@ export async function createChat(input: {
   userId: string;
   title?: string;
   preview?: string;
+  pinned?: boolean;
   messages: Message[];
 }): Promise<ChatLibraryItem> {
   const store = await readStore();
@@ -95,6 +103,7 @@ export async function createChat(input: {
     userId: input.userId,
     title: buildTitle(input.messages, input.title),
     preview: buildPreview(input.messages, input.preview),
+    pinned: Boolean(input.pinned),
     createdAt: timestamp,
     updatedAt: timestamp,
     messages: input.messages,
@@ -110,7 +119,8 @@ export async function updateChat(input: {
   userId: string;
   title?: string;
   preview?: string;
-  messages: Message[];
+  pinned?: boolean;
+  messages?: Message[];
 }): Promise<ChatLibraryItem | null> {
   const store = await readStore();
   const index = store.chats.findIndex(
@@ -119,12 +129,16 @@ export async function updateChat(input: {
   if (index === -1) return null;
 
   const previous = store.chats[index];
+  const nextMessages = input.messages ?? previous.messages;
+  const shouldRefreshUpdatedAt =
+    input.messages != null || input.title != null || input.preview != null;
   const next: ChatLibraryItem = {
     ...previous,
-    title: buildTitle(input.messages, input.title ?? previous.title),
-    preview: buildPreview(input.messages, input.preview ?? previous.preview),
-    updatedAt: new Date().toISOString(),
-    messages: input.messages,
+    title: buildTitle(nextMessages, input.title ?? previous.title),
+    preview: buildPreview(nextMessages, input.preview ?? previous.preview),
+    pinned: input.pinned ?? previous.pinned,
+    updatedAt: shouldRefreshUpdatedAt ? new Date().toISOString() : previous.updatedAt,
+    messages: nextMessages,
   };
 
   store.chats[index] = next;

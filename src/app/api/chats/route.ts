@@ -24,6 +24,7 @@ export async function POST(request: Request) {
       userId?: string;
       title?: string;
       preview?: string;
+      pinned?: boolean;
       messages?: Message[];
     };
 
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
       userId: body.userId?.trim() || DEFAULT_CHAT_USER_ID,
       title: body.title,
       preview: body.preview,
+      pinned: body.pinned,
       messages: body.messages,
     });
 

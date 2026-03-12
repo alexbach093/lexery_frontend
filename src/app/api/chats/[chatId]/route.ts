@@ -30,11 +30,16 @@ export async function PUT(request: Request, context: { params: Promise<{ chatId:
       userId?: string;
       title?: string;
       preview?: string;
+      pinned?: boolean;
       messages?: Message[];
     };
 
-    if (!Array.isArray(body.messages)) {
+    if (body.messages != null && !Array.isArray(body.messages)) {
       return NextResponse.json({ error: 'messages array is required' }, { status: 400 });
+    }
+
+    if (body.pinned != null && typeof body.pinned !== 'boolean') {
+      return NextResponse.json({ error: 'pinned must be a boolean' }, { status: 400 });
     }
 
     const { chatId } = await context.params;
@@ -43,6 +48,7 @@ export async function PUT(request: Request, context: { params: Promise<{ chatId:
       userId: body.userId?.trim() || DEFAULT_CHAT_USER_ID,
       title: body.title,
       preview: body.preview,
+      pinned: body.pinned,
       messages: body.messages,
     });
 
