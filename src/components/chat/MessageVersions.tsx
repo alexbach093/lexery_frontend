@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { cn } from '@/lib/utils';
 import type { MessageVersion } from '@/types/chat';
 
 const DROPDOWN_WIDTH = 200;
@@ -27,7 +28,7 @@ function calculateDropdownPosition(
   };
 }
 
-/** Label for version dropdown: Оригінал / Додано деталі / Коротше / Повторно згенеровано / "уточнення". */
+/** Label for version dropdown: Original / Added details / Shorter / Regenerated / "clarification". */
 function getVersionLabel(v: MessageVersion, index: number): string {
   if (index === 0) return 'Оригінал';
   const mod = v.modifier?.trim() ?? '';
@@ -95,24 +96,14 @@ export function MessageVersions({
   if (versions.length <= 1) return null;
 
   return (
-    <div ref={anchorRef} style={{ position: 'relative' }}>
+    <div ref={anchorRef} className="relative">
       <button
         type="button"
         onClick={() => (open ? setOpen(false) : openDropdown())}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 32,
-          height: 32,
-          padding: 0,
-          border: 'none',
-          borderRadius: 9999,
-          background: 'transparent',
-          color: '#000000',
-          cursor: 'pointer',
-        }}
-        className="chat-action-btn chat-action-btn--circle chat-action-btn--no-highlight hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+        className={cn(
+          'inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-black',
+          'transition-all duration-150 hover:bg-transparent hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset active:scale-[0.92] active:bg-transparent'
+        )}
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={`Історія версій, ${versions.length} версій`}
@@ -124,7 +115,7 @@ export function MessageVersions({
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden
-          style={{ display: 'block', flexShrink: 0 }}
+          className="block shrink-0"
         >
           <path
             d="M3.26101 9.73887C5.38341 11.8613 8.82452 11.8613 10.9469 9.73887C13.0693 7.61646 13.0693 4.17536 10.9469 2.05295C8.82452 -0.0694522 5.38341 -0.0694522 3.26101 2.05295C2.19912 3.11484 1.66852 4.50682 1.6692 5.89859L1.66919 7.10363"
@@ -156,19 +147,10 @@ export function MessageVersions({
             ref={dropdownRef}
             role="listbox"
             aria-label="Версії відповіді"
+            className="fixed z-1000 max-h-70 w-50 overflow-y-auto rounded-[10px] border border-[#E0E0E0] bg-white p-1.5 shadow-none"
             style={{
-              position: 'fixed',
               top: dropdownPos.top,
               left: dropdownPos.left,
-              width: `${DROPDOWN_WIDTH}px`,
-              padding: '6px',
-              borderRadius: '10px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E0E0E0',
-              boxShadow: 'none',
-              zIndex: 1000,
-              maxHeight: '280px',
-              overflowY: 'auto',
             }}
           >
             {versions.map((v, i) => (
@@ -181,43 +163,22 @@ export function MessageVersions({
                   onVersionChange(i);
                   setOpen(false);
                 }}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  padding: '8px 10px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: i === activeVersionIndex ? '#F0F0F0' : 'transparent',
-                  color: '#2A2A2A',
-                  fontSize: '14px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  minWidth: 0,
-                }}
-                className="chat-regenerate-option-btn"
+                className={cn(
+                  'block w-full min-w-0 cursor-pointer rounded-md border-none px-2.5 py-2 text-left text-sm text-[#2A2A2A] transition-colors duration-150 hover:bg-[#f7f7f7]',
+                  i === activeVersionIndex ? 'bg-[#F0F0F0]' : 'bg-transparent'
+                )}
               >
                 <span
-                  style={{
-                    fontWeight: i === activeVersionIndex ? 600 : 400,
-                    display: 'block',
-                    minWidth: 0,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
+                  className={cn(
+                    'block min-w-0 truncate',
+                    i === activeVersionIndex ? 'font-semibold' : 'font-normal'
+                  )}
                   title={getVersionLabel(v, i)}
                 >
                   {getVersionLabel(v, i)}
                 </span>
                 {v.createdAt && (
-                  <span
-                    style={{
-                      display: 'block',
-                      fontSize: '12px',
-                      color: '#575757',
-                      marginTop: '2px',
-                    }}
-                  >
+                  <span className="mt-0.5 block text-xs text-[#575757]">
                     {new Date(v.createdAt).toLocaleString('uk-UA', {
                       day: '2-digit',
                       month: '2-digit',

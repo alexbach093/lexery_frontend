@@ -7,49 +7,35 @@ import { ChatInput } from '@/features/chat-input';
 import { ChatMeta } from '@/features/chat-meta';
 import { MessageList } from '@/features/message-list';
 import { useWorkspaceChat } from '@/hooks/use-workspace-chat';
-
-const CHAT_INPUT_MAX_WIDTH = 738;
+import { cn } from '@/lib/utils';
 
 export interface WorkspaceMainProps {
   className?: string;
   onReady?: () => void;
 }
 
-export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
+export function WorkspaceMain({ className = '', onReady }: WorkspaceMainProps) {
   const chat = useWorkspaceChat(onReady);
   const systemPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const SYSTEM_PROMPT_MIN_H = 88;
-  const SYSTEM_PROMPT_MAX_H = 320;
-
+  // Dynamic height change of textarea while inputting text
   useEffect(() => {
     if (!chat.systemPromptEditorOpen) return;
     const el = systemPromptTextareaRef.current;
     if (!el) return;
+
     el.style.height = 'auto';
-    const h = Math.min(Math.max(el.scrollHeight, SYSTEM_PROMPT_MIN_H), SYSTEM_PROMPT_MAX_H);
+    const h = Math.min(Math.max(el.scrollHeight, 88), 320);
     el.style.height = `${h}px`;
-    el.style.overflowY = el.scrollHeight > SYSTEM_PROMPT_MAX_H ? 'auto' : 'hidden';
+    el.style.overflowY = el.scrollHeight > 320 ? 'auto' : 'hidden';
   }, [chat.systemPromptEditorOpen, chat.systemPrompt]);
 
-  const chatInputBoxStyle = chat.hasMessages
-    ? {
-        minHeight: '103px',
-        backgroundColor: 'rgba(245, 246, 246, 1)',
-        borderRadius: '16px',
-        padding: '13px 13px 8px 13px',
-        boxSizing: 'border-box' as const,
-        display: 'flex',
-        flexDirection: 'column' as const,
-        overflow: 'hidden' as const,
-      }
-    : {
-        display: 'flex',
-        flexDirection: 'column' as const,
-        backgroundColor: '#F7F7F7',
-        borderRadius: '16px',
-        padding: '12px 16px 16px',
-      };
+  const chatInputBoxClasses = cn(
+    'flex flex-col rounded-2xl',
+    chat.hasMessages
+      ? 'box-border min-h-[103px] overflow-hidden bg-[#F5F6F6] px-[13px] pb-2 pt-[13px]'
+      : 'bg-[#F7F7F7] px-4 pb-4 pt-3'
+  );
 
   const attachmentsPanelProps = {
     fileSearchQuery: chat.fileSearchQuery,
@@ -85,49 +71,25 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
 
   return (
     <main
-      className={className}
-      style={{
-        height: '100%',
-        backgroundColor: 'transparent',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        flex: 1,
-        overflow: 'visible',
-      }}
+      className={cn(
+        'relative flex h-full flex-1 flex-col overflow-visible bg-transparent',
+        className
+      )}
     >
       <ChatMeta hasMessages={chat.hasMessages} compact={chat.tipsButtonCompact} />
+
       {!chat.hasMessages ? (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flex: 1,
-            padding: '0 20px 64px',
-          }}
-        >
+        <div className="flex flex-1 flex-col items-center justify-center px-5 pb-16">
           {chat.attachedFiles.length === 0 && (
-            <p
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '22.587px',
-                fontWeight: 700,
-                lineHeight: 'normal',
-                color: '#000',
-                textAlign: 'center',
-                marginBottom: '38px',
-              }}
-            >
+            <p className="mb-9.5 text-center font-sans text-[22.587px] leading-normal font-bold text-black">
               Доброго ранку, Олександре!
             </p>
           )}
-          <div style={{ width: '693px', maxWidth: '100%', position: 'relative' }}>
+          <div className="relative w-full max-w-173.25">
             {chat.attachedFiles.length > 0 && chat.filesExpanded && (
               <AttachmentsPanelExpanded {...attachmentsPanelProps} variant="home" />
             )}
-            <div style={chatInputBoxStyle}>
+            <div className={chatInputBoxClasses}>
               {chat.attachedFiles.length > 0 && !chat.filesExpanded && (
                 <AttachmentsPanelCollapsed
                   attachedFiles={chat.attachedFiles}
@@ -140,22 +102,10 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <div
-            style={{
-              flex: 1,
-              minHeight: 0,
-              overflowY: 'auto',
-              overflowX: 'visible',
-              display: 'flex',
-              flexDirection: 'column',
-              backgroundColor: 'transparent',
-            }}
-          >
-            <div style={{ width: '100%', padding: '0 20px', boxSizing: 'border-box' }}>
-              <div
-                style={{ width: `${CHAT_INPUT_MAX_WIDTH}px`, maxWidth: '100%', margin: '0 auto' }}
-              >
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col overflow-x-visible overflow-y-auto bg-transparent">
+            <div className="box-border w-full px-5">
+              <div className="mx-auto w-full max-w-184.5">
                 <MessageList
                   messages={chat.messages}
                   isAssistantTyping={chat.isAssistantTyping}
@@ -168,23 +118,12 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
               </div>
             </div>
           </div>
-          <div
-            style={{
-              position: 'sticky',
-              bottom: 0,
-              padding: '13px 20px 24px',
-              backgroundColor: 'rgba(0,0,0,0)',
-              borderTopLeftRadius: '20px',
-              borderTopRightRadius: '20px',
-              zIndex: 10,
-              isolation: 'isolate',
-            }}
-          >
-            <div style={{ width: `${CHAT_INPUT_MAX_WIDTH}px`, margin: '-12px auto 0' }}>
+          <div className="sticky bottom-0 isolate z-10 rounded-t-4xl bg-transparent px-5 pt-3.25 pb-6">
+            <div className="mx-auto -mt-3 w-full max-w-184.5">
               {chat.attachedFiles.length > 0 && chat.filesExpanded && (
                 <AttachmentsPanelExpanded {...attachmentsPanelProps} variant="chat" />
               )}
-              <div style={chatInputBoxStyle}>
+              <div className={chatInputBoxClasses}>
                 {chat.attachedFiles.length > 0 && !chat.filesExpanded && (
                   <AttachmentsPanelCollapsed
                     attachedFiles={chat.attachedFiles}
@@ -198,112 +137,49 @@ export function WorkspaceMain({ className, onReady }: WorkspaceMainProps) {
           </div>
         </div>
       )}
+
       {chat.systemPromptEditorOpen && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="system-prompt-editor-title"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 100,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '24px',
-            boxSizing: 'border-box',
-          }}
+          className="fixed inset-0 z-100 box-border flex items-center justify-center p-6"
           onClick={() => chat.setSystemPromptEditorOpen(false)}
         >
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.4)',
-              backdropFilter: 'blur(4px)',
-            }}
-            aria-hidden
-          />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden />
           <div
             id="system-prompt-editor-dialog"
-            style={{
-              position: 'relative',
-              width: '100%',
-              maxWidth: '520px',
-              backgroundColor: '#fff',
-              border: '1px solid #F4F4F6',
-              borderRadius: '26px',
-              padding: '24px',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
-            }}
+            className="relative w-full max-w-130 rounded-[26px] border border-[#F4F4F6] bg-white p-6 shadow-[0_20px_40px_rgba(0,0,0,0.12)]"
             onClick={(e) => e.stopPropagation()}
           >
             <h2
               id="system-prompt-editor-title"
-              style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 600, color: '#2A2A2A' }}
+              className="mb-1 text-lg font-semibold text-[#2A2A2A]"
             >
               Системний промпт
             </h2>
-            <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#575757' }}>
-              Системний промпт для чату (опційно).
-            </p>
+            <p className="mb-4 text-sm text-[#575757]">Системний промпт для чату (опційно).</p>
             <textarea
               ref={systemPromptTextareaRef}
               value={chat.systemPrompt}
               onChange={(e) => chat.setSystemPrompt(e.target.value)}
               placeholder="Твоя задача давати мені повні відповіді..."
               rows={3}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: '12px',
-                borderRadius: '12px',
-                border: '1px solid #E0E0E0',
-                fontSize: '14px',
-                lineHeight: '1.4',
-                color: '#2A2A2A',
-                resize: 'none',
-                minHeight: `${SYSTEM_PROMPT_MIN_H}px`,
-                maxHeight: `${SYSTEM_PROMPT_MAX_H}px`,
-                overflowY: 'hidden',
-              }}
+              className="box-border max-h-80 min-h-22 w-full resize-none rounded-xl border border-[#E0E0E0] p-3 text-sm leading-[1.4] text-[#2A2A2A]"
               aria-label="Системний промпт"
             />
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '10px',
-                marginTop: '16px',
-              }}
-            >
+            <div className="mt-4 flex justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => chat.setSystemPromptEditorOpen(false)}
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  border: '1px solid #E0E0E0',
-                  backgroundColor: '#fff',
-                  fontSize: '14px',
-                  color: '#2A2A2A',
-                  cursor: 'pointer',
-                }}
+                className="cursor-pointer rounded-lg border border-[#E0E0E0] bg-white px-4 py-2.5 text-sm text-[#2A2A2A] transition-colors hover:bg-gray-50"
               >
                 Скасувати
               </button>
               <button
                 type="button"
                 onClick={() => chat.setSystemPromptEditorOpen(false)}
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  backgroundColor: '#2A2A2A',
-                  fontSize: '14px',
-                  color: '#fff',
-                  cursor: 'pointer',
-                }}
+                className="cursor-pointer rounded-lg bg-[#2A2A2A] px-4 py-2.5 text-sm text-white transition-colors hover:bg-black"
               >
                 Застосувати
               </button>

@@ -1,5 +1,7 @@
 'use client';
 
+import { cn } from '@/lib/utils';
+
 export interface MessageContainerProps {
   role: 'user' | 'assistant';
   children: React.ReactNode;
@@ -13,16 +15,7 @@ export function MessageContainer({ role, children, className, innerRef }: Messag
     return (
       <div
         ref={innerRef}
-        className={className}
-        style={{
-          alignSelf: 'flex-end',
-          width: 'max-content',
-          maxWidth: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: '8px',
-        }}
+        className={cn('flex w-max max-w-full flex-col items-end gap-2 self-end', className)}
       >
         {children}
       </div>
@@ -30,16 +23,6 @@ export function MessageContainer({ role, children, className, innerRef }: Messag
   }
 
   return (
-    <div
-      style={{
-        alignSelf: 'flex-start',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-        width: '100%',
-      }}
-    >
-      {children}
-    </div>
+    <div className={cn('flex w-full flex-col items-start self-start', className)}>{children}</div>
   );
 }

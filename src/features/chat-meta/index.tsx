@@ -1,43 +1,28 @@
 'use client';
 
+import { cn } from '@/lib/utils';
+
 export interface ChatMetaProps {
   hasMessages: boolean;
   compact: boolean;
 }
 
-/** Top bar: Поради button (full or compact). */
+/** Top bar: Tips button (full or compact). */
 export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
-  const tipsColor = '#9A9A9A';
+  // Shared base classes for the tips buttons
+  const baseBtnClasses =
+    'box-border flex cursor-default items-center rounded-[5px] border border-[#E0E7E8] bg-white opacity-100';
+  const fullBtnClasses = 'min-h-[33px] min-w-[90px] justify-start gap-2.5 p-2.5 text-[#9A9A9A]';
+  const compactBtnClasses = 'h-10 w-10 justify-center p-0';
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: '29px',
-        right: '28px',
-      }}
-    >
+    <div className="absolute top-7.25 right-7">
       {!hasMessages ? (
         <button
           type="button"
           disabled
           aria-disabled="true"
-          style={{
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            minHeight: '33px',
-            padding: '10px',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E0E7E8',
-            borderRadius: '5px',
-            cursor: 'default',
-            minWidth: '90px',
-            boxSizing: 'border-box',
-            color: tipsColor,
-            opacity: 1,
-          }}
+          className={cn(baseBtnClasses, fullBtnClasses)}
           aria-label="Поради"
         >
           <svg
@@ -46,7 +31,7 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
             viewBox="0 0 12 17"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            style={{ display: 'block', flexShrink: 0 }}
+            className="block shrink-0"
             aria-hidden
           >
             <path
@@ -57,16 +42,7 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
               strokeLinejoin="round"
             />
           </svg>
-          <p
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 500,
-              fontSize: '14px',
-              lineHeight: '20px',
-              letterSpacing: '0.14px',
-              color: tipsColor,
-            }}
-          >
+          <p className="m-0 font-sans text-sm leading-5 font-medium tracking-[0.14px] text-[#9A9A9A]">
             Поради
           </p>
         </button>
@@ -75,20 +51,7 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
           type="button"
           disabled
           aria-disabled="true"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '40px',
-            height: '40px',
-            padding: 0,
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E0E7E8',
-            borderRadius: '5px',
-            cursor: 'default',
-            boxSizing: 'border-box',
-            opacity: 1,
-          }}
+          className={cn(baseBtnClasses, compactBtnClasses)}
           aria-label="Поради"
         >
           <svg
@@ -97,7 +60,7 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
             viewBox="0 0 38 38"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            style={{ display: 'block' }}
+            className="block"
             aria-hidden
           >
             <path
@@ -128,21 +91,7 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
           type="button"
           disabled
           aria-disabled="true"
-          style={{
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            minHeight: '33px',
-            padding: '10px',
-            backgroundColor: '#FFFFFF',
-            border: '1px solid #E0E7E8',
-            borderRadius: '5px',
-            cursor: 'default',
-            minWidth: '90px',
-            boxSizing: 'border-box',
-            opacity: 1,
-          }}
+          className={cn(baseBtnClasses, fullBtnClasses)}
           aria-label="Поради"
         >
           <svg
@@ -151,7 +100,7 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
             viewBox="0 0 38 38"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            style={{ display: 'block' }}
+            className="block"
             aria-hidden
           >
             <path
@@ -176,16 +125,7 @@ export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
               strokeLinejoin="round"
             />
           </svg>
-          <p
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 500,
-              fontSize: '14px',
-              lineHeight: '20px',
-              letterSpacing: '0.14px',
-              color: tipsColor,
-            }}
-          >
+          <p className="m-0 font-sans text-sm leading-5 font-medium tracking-[0.14px] text-[#9A9A9A]">
             Поради
           </p>
         </button>

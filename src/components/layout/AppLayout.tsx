@@ -10,8 +10,7 @@ import {
   WorkspaceSidebar,
 } from '@/components/ui/workspace-sidebar';
 import { SettingsOpenContext } from '@/contexts/settings-open';
-
-const SIDEBAR_FADE_MS = 600;
+import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -21,37 +20,31 @@ interface AppLayoutProps {
 
 /**
  * Shared app layout: sidebar + main content area.
- * Boot — частина головної сторінки (/), не окремий маршрут.
- * Налаштування — оверлей поверх основного екрану, без переходу на окрему сторінку.
+ * Boot is a part of the main page (/), not a separate route.
+ * Settings is an overlay on top of the main screen, without navigating to a separate page.
  */
 export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   const settingsContextValue = {
     isOpen: settingsOpen,
     open: () => setSettingsOpen(true),
     close: () => setSettingsOpen(false),
   };
+
   const sidebarWidth = sidebarCollapsed
     ? WORKSPACE_SIDEBAR_COLLAPSED_WIDTH
     : WORKSPACE_SIDEBAR_EXPANDED_WIDTH;
 
   return (
     <SettingsOpenContext.Provider value={settingsContextValue}>
-      <div
-        style={{
-          width: '100vw',
-          height: '100vh',
-          overflow: 'hidden',
-          backgroundColor: '#FFFFFF',
-        }}
-      >
+      <div className="h-screen w-screen overflow-hidden bg-white">
         <div
-          style={{
-            opacity: bootOverlayVisible ? 0 : 1,
-            pointerEvents: bootOverlayVisible ? 'none' : 'auto',
-            transition: `opacity ${SIDEBAR_FADE_MS}ms ease-out`,
-          }}
+          className={cn(
+            'transition-opacity duration-600 ease-out',
+            bootOverlayVisible ? 'pointer-events-none opacity-0' : 'pointer-events-auto opacity-100'
+          )}
         >
           <WorkspaceSidebar
             collapsed={sidebarCollapsed}
@@ -59,14 +52,9 @@ export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutPro
           />
         </div>
         <div
+          className="relative flex h-screen flex-col overflow-visible bg-white"
           style={{
             marginLeft: `${sidebarWidth}px`,
-            height: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'relative',
-            backgroundColor: '#FFFFFF',
-            overflow: 'visible',
             transition: `margin-left ${WORKSPACE_SIDEBAR_TRANSITION}`,
           }}
         >

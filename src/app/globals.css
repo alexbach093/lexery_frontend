@@ -383,7 +383,7 @@
   transform: scale(0.92);
 }
 
-/* Кнопка розгортання файлів — без scale при hover/active */
+/* Expand files button — no scale on hover/active */
 button.workspace-icon-btn--no-hover-scale:hover,
 button.workspace-icon-btn--no-hover-scale:active {
   transform: none !important;
@@ -409,12 +409,12 @@ button.workspace-icon-btn--no-hover-scale:active {
   outline: none;
 }
 
-/* Панель файлів: без обводки при фокусі */
+/* Files panel: no outline on focus */
 .workspace-files-panel-field:focus {
   outline: none;
 }
 
-/* Кнопка «Видалити все» (смітник): при наведенні іконка червона */
+/* "Remove all" button (trash bin): red icon on hover */
 .workspace-remove-all-btn {
   transition:
     border-color 0.2s ease,
@@ -427,7 +427,7 @@ button.workspace-icon-btn--no-hover-scale:active {
   border-color: #e57373 !important;
   color: #c62828 !important;
 }
-/* Вимикаємо filter з .workspace-icon-btn:hover, щоб була видна червона обводка */
+/* Disable filter from .workspace-icon-btn:hover to show red outline */
 .workspace-remove-all-btn:hover svg {
   filter: none !important;
 }
@@ -435,7 +435,7 @@ button.workspace-icon-btn--no-hover-scale:active {
   stroke: #c62828 !important;
 }
 
-/* Фільтр файлів: обводка при наведенні на пункт меню */
+/* Files filter: outline on menu item hover */
 .workspace-filter-dropdown-option:hover {
   border-color: #e0e0e0 !important;
 }
@@ -462,7 +462,7 @@ body:has([role='status'][aria-label='Loading application']) {
   }
 }
 
-/* Поява іконок по одній зліва направо */
+/* Icons appear one by one from left to right */
 @keyframes chat-action-icon-fade-in {
   from {
     opacity: 0;
@@ -494,136 +494,7 @@ body:has([role='status'][aria-label='Loading application']) {
   animation: chat-action-icon-fade-in 0.4s ease-out forwards;
 }
 
-/* Кнопки чату: квадратна клікабельна область, круг через border-radius на контейнері */
-.chat-action-btn {
-  box-sizing: border-box;
-  border: none;
-  background-color: transparent;
-  border-radius: 6px;
-  transition: background-color 150ms ease;
-}
-.chat-action-btn.chat-action-btn--circle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  transition:
-    transform 0.15s ease,
-    color 150ms ease,
-    background-color 150ms ease,
-    box-shadow 150ms ease;
-  cursor: pointer;
-  color: #575757;
-}
-.chat-action-btn.chat-action-btn--circle:hover,
-.chat-action-btn.chat-action-btn--circle:active {
-  background-color: transparent;
-}
-.chat-action-btn.chat-action-btn--circle:active {
-  transform: scale(0.92);
-}
-.chat-action-btn.chat-action-btn--circle:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px #fff,
-    0 0 0 4px #0070f3;
-}
-.chat-action-icon,
-.chat-action-btn.chat-action-btn--circle img {
-  display: block;
-  flex-shrink: 0;
-  transition: filter 150ms ease;
-}
-.chat-action-btn.chat-action-btn--circle:hover img,
-.chat-action-btn.chat-action-btn--circle:hover .chat-action-icon {
-  filter: brightness(0) saturate(100%) invert(0.45);
-}
-/* Thumbs (inline SVG з currentColor) — не застосовувати filter, колір через color */
-.chat-action-btn--thumbs .chat-action-icon,
-.chat-action-btn--thumbs:hover .chat-action-icon {
-  filter: none;
-}
-.chat-action-btn--thumbs:hover:not(.chat-action-btn--liked):not(.chat-action-btn--disliked) {
-  color: #333;
-}
-/* «Подобається» — зелений, світиться до кліку на «Не подобається»; один клік, без повторів */
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:hover {
-  color: #22c55e !important;
-  background-color: rgba(34, 197, 94, 0.08);
-}
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active {
-  transform: none;
-}
-/* Вимикаємо filter для liked — іконка кольору через currentColor */
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked .chat-action-icon,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:hover .chat-action-icon,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--liked:active .chat-action-icon {
-  filter: none !important;
-}
-/* «Не подобається» — червоний, світиться до кліку на «Подобається»; один клік, без повторів */
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:hover {
-  color: #ef4444 !important;
-  background-color: rgba(239, 68, 68, 0.08);
-}
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active {
-  transform: none;
-}
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked .chat-action-icon,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:hover .chat-action-icon,
-.chat-action-btn.chat-action-btn--circle.chat-action-btn--disliked:active .chat-action-icon {
-  filter: none !important;
-}
-.chat-action-btn:hover {
-  background-color: rgba(0, 0, 0, 0.08);
-}
-.chat-action-btn.chat-action-btn--no-highlight,
-.chat-action-btn.chat-action-btn--no-highlight:hover,
-.chat-action-btn.chat-action-btn--no-highlight:focus,
-.chat-action-btn.chat-action-btn--no-highlight:active {
-  background-color: transparent;
-}
-
-/* Підказка над іконкою (як на скріні): темний скруглений прямокутник, текст по центру, невеликий зазор */
-.chat-action-tooltip-anchor {
-  position: relative;
-  display: inline-flex;
-}
-.chat-action-tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  margin-bottom: 8px;
-  padding: 6px 12px;
-  background-color: var(--muted);
-  color: var(--muted-foreground);
-  font-family: Inter, sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.3;
-  border-radius: 8px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 10;
-  box-shadow: none;
-  transition:
-    opacity 150ms ease,
-    transform 150ms ease,
-    visibility 150ms ease;
-}
-
-/* Попап «Згенерувати знову»: підсвітка кнопок «Спробувати знову», «Додати деталі», «Коротше» при наведенні */
-.chat-regenerate-option-btn {
-  background-color: transparent;
-  transition: background-color 0.15s ease;
-}
-.chat-regenerate-option-btn:hover {
-  background-color: #f7f7f7;
-}
-
-/* Horizontal scroll without visible scrollbar (гортання вправо/вліво без смуги скролу) */
-/* Приховати стандартний хрестик очищення у полі пошуку — використовуємо власну кнопку */
+/* Hide default search input clear cross — using custom button */
 .workspace-search-input::-webkit-search-cancel-button {
   -webkit-appearance: none;
   appearance: none;
@@ -636,216 +507,11 @@ body:has([role='status'][aria-label='Loading application']) {
   -webkit-appearance: none;
 }
 
+/* Horizontal scroll without visible scrollbar */
 .scrollbar-hidden {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 .scrollbar-hidden::-webkit-scrollbar {
   display: none;
-}
-
-/* ========== Chat assistant message: Markdown styling (only for AI output in chat) ========== */
-.chat-assistant-markdown {
-  font-family: var(--font-sans);
-  font-size: 15px;
-  line-height: 1.5;
-  letter-spacing: 0.13px;
-  color: var(--foreground);
-  word-break: break-word;
-  overflow-wrap: break-word;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.chat-assistant-markdown > *:first-child {
-  margin-top: 0;
-}
-.chat-assistant-markdown > *:last-child {
-  margin-bottom: 0;
-}
-
-/* Headings */
-.chat-assistant-markdown h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
-  margin: 1em 0 0.5em;
-  line-height: 1.25;
-}
-.chat-assistant-markdown h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 1em 0 0.5em;
-  line-height: 1.3;
-}
-.chat-assistant-markdown h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0.9em 0 0.4em;
-  line-height: 1.35;
-}
-.chat-assistant-markdown h4 {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0.8em 0 0.4em;
-  line-height: 1.4;
-}
-.chat-assistant-markdown h5 {
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0.75em 0 0.35em;
-  line-height: 1.4;
-}
-.chat-assistant-markdown h6 {
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin: 0.7em 0 0.35em;
-  line-height: 1.45;
-  color: var(--muted-foreground);
-}
-
-/* Paragraphs */
-.chat-assistant-markdown p {
-  margin: 0 0 1em;
-}
-.chat-assistant-markdown p:last-child {
-  margin-bottom: 0;
-}
-
-/* Text formatting */
-.chat-assistant-markdown strong {
-  font-weight: 700;
-}
-.chat-assistant-markdown em {
-  font-style: italic;
-}
-.chat-assistant-markdown del {
-  text-decoration: line-through;
-}
-.chat-assistant-markdown code {
-  font-family: var(--font-mono);
-  font-size: 0.9em;
-  padding: 0.15em 0.4em;
-  border-radius: 4px;
-  background: var(--muted);
-  color: var(--foreground);
-}
-
-/* Code blocks (fenced ```): wrap long lines (e.g. one-line JSON) instead of overflowing */
-.chat-assistant-markdown pre {
-  max-width: 100%;
-  min-width: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-  overflow-wrap: anywhere;
-  margin: 0.75em 0 1em;
-  padding: 0.75em 1em;
-  border-radius: 8px;
-  background: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 0.9em;
-  overflow-x: auto;
-}
-.chat-assistant-markdown pre code {
-  padding: 0;
-  background: transparent;
-  font-size: inherit;
-}
-
-/* Lists (Preflight resets list-style — force bullets and numbers to show) */
-.chat-assistant-markdown ul {
-  list-style-type: disc !important;
-  list-style-position: inside;
-  margin: 0.5em 0 1em;
-  padding-left: 0.5em;
-}
-.chat-assistant-markdown ol {
-  list-style-type: decimal !important;
-  list-style-position: inside;
-  margin: 0.5em 0 1em;
-  padding-left: 0.5em;
-}
-.chat-assistant-markdown li {
-  margin: 0.25em 0;
-  display: list-item !important;
-  padding-left: 0.25em;
-}
-.chat-assistant-markdown ul ul,
-.chat-assistant-markdown ul ol,
-.chat-assistant-markdown ol ul,
-.chat-assistant-markdown ol ol {
-  margin: 0.2em 0;
-}
-
-/* Blockquote */
-.chat-assistant-markdown blockquote {
-  margin: 0.75em 0 1em;
-  padding: 0.25em 0 0.25em 1em;
-  border-left: 4px solid var(--border);
-  color: var(--foreground);
-}
-
-/* Horizontal rule */
-.chat-assistant-markdown hr {
-  border: none;
-  height: 1px;
-  background: var(--border);
-  margin: 1em 0;
-}
-
-/* Table — обгортка з горизонтальним скролом для широких таблиць */
-.chat-markdown-table-wrapper {
-  overflow-x: auto;
-  margin: 0.75em 0 1em;
-  border-radius: 8px;
-  -webkit-overflow-scrolling: touch;
-}
-.chat-markdown-table-wrapper::-webkit-scrollbar {
-  height: 8px;
-}
-.chat-markdown-table-wrapper::-webkit-scrollbar-track {
-  background: var(--muted);
-  border-radius: 4px;
-}
-.chat-markdown-table-wrapper::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
-.chat-markdown-table-wrapper::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
-}
-.chat-assistant-markdown .chat-markdown-table-wrapper table {
-  width: max-content;
-  min-width: 100%;
-  border-collapse: collapse;
-  border-radius: 8px;
-  font-size: 0.95em;
-}
-.chat-assistant-markdown .chat-markdown-table-wrapper th,
-.chat-assistant-markdown .chat-markdown-table-wrapper td {
-  padding: 0.5em 0.75em;
-  border: 1px solid var(--border);
-  text-align: left;
-  background: var(--muted);
-  white-space: nowrap;
-}
-.chat-assistant-markdown .chat-markdown-table-wrapper th {
-  font-weight: 700;
-}
-
-/* Task list (GFM): - [ ] / - [x] */
-.chat-assistant-markdown input[type='checkbox'] {
-  margin-right: 0.5em;
-  vertical-align: middle;
-  accent-color: var(--foreground);
-}
-.chat-assistant-markdown li:has(input[type='checkbox']:checked) {
-  color: var(--muted-foreground);
-  text-decoration: line-through;
-}
-.chat-assistant-markdown li:has(input[type='checkbox']) {
-  list-style: none;
-  margin-left: -1em;
-}
-.chat-assistant-markdown li:has(input[type='checkbox'])::marker {
-  content: none;
 }

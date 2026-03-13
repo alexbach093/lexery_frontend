@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 
 import { ChatMessage } from '@/components/chat/ChatMessage';
+import { cn } from '@/lib/utils';
 import type { Message } from '@/types/chat';
 
 export interface MessageListProps {
@@ -13,8 +14,11 @@ export interface MessageListProps {
   onRegenerate?: (assistantMessageId: string, modifier?: string) => void;
   onEditMessage?: (messageId: string, newContent: string) => void;
   onSetActiveVersion?: (assistantMessageId: string, index: number) => void;
+  /** Optional custom classes for the list container */
+  className?: string;
 }
 
+/** Message list container: renders the sequence of ChatMessages and handles auto-scrolling. */
 export function MessageList({
   messages: messagesProp,
   isAssistantTyping = false,
@@ -23,10 +27,12 @@ export function MessageList({
   onRegenerate,
   onEditMessage,
   onSetActiveVersion,
+  className,
 }: MessageListProps) {
   const messages = messagesProp ?? [];
   const listEndRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to bottom when new messages arrive or assistant starts typing
   useEffect(() => {
     listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, isAssistantTyping]);
@@ -38,16 +44,10 @@ export function MessageList({
 
   return (
     <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '24px',
-        padding: '52px 0 138px 0',
-        maxWidth: '720px',
-        margin: '0 auto',
-        width: '100%',
-        boxSizing: 'border-box',
-      }}
+      className={cn(
+        'mx-auto box-border flex w-full max-w-180 flex-col gap-6 pt-13 pb-34.5',
+        className
+      )}
     >
       {messages.map((msg) => (
         <ChatMessage

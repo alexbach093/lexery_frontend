@@ -1,5 +1,7 @@
 'use client';
 
+import { cn } from '@/lib/utils';
+
 export function FileFormatFilterChips({
   options,
   selectedFormats,
@@ -11,6 +13,7 @@ export function FileFormatFilterChips({
   onChange: (set: Set<string>) => void;
   compact?: boolean;
 }) {
+  // Toggle the selection state of a specific format
   const toggle = (id: string) => {
     onChange(
       (() => {
@@ -22,26 +25,33 @@ export function FileFormatFilterChips({
     );
   };
 
-  const gap = compact ? 6 : 8;
-
+  // Empty state handling
   if (options.length === 0) {
     return (
-      <p style={{ margin: 0, fontSize: '13px', color: '#575757' }}>
-        Додайте файли, щоб фільтрувати за форматом.
-      </p>
+      <p className="m-0 text-[13px] text-[#575757]">Додайте файли, щоб фільтрувати за форматом.</p>
     );
   }
 
+  // Determine the number of columns (max 5)
   const columns = Math.min(5, options.length) || 1;
+
+  // Map columns count to specific Tailwind arbitrary grid classes
+  const gridColsClasses = [
+    'grid-cols-[auto]', // fallback
+    'grid-cols-[auto]', // 1
+    'grid-cols-[repeat(2,auto)]', // 2
+    'grid-cols-[repeat(3,auto)]', // 3
+    'grid-cols-[repeat(4,auto)]', // 4
+    'grid-cols-[repeat(5,auto)]', // 5
+  ];
+
   return (
     <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${columns}, auto)`,
-        alignItems: 'center',
-        justifyContent: 'start',
-        gap,
-      }}
+      className={cn(
+        'grid items-center justify-start',
+        compact ? 'gap-1.5' : 'gap-2',
+        gridColsClasses[columns]
+      )}
       role="group"
       aria-label="Фільтр за форматом файлу"
     >
@@ -53,18 +63,13 @@ export function FileFormatFilterChips({
             type="button"
             onClick={() => toggle(opt.id)}
             aria-pressed={active}
-            style={{
-              padding: compact ? '6px 10px' : '8px 12px',
-              borderRadius: '6px',
-              border: `1px solid ${active ? '#2A2A2A' : '#E0E0E0'}`,
-              backgroundColor: active ? '#2A2A2A' : '#fff',
-              color: active ? '#fff' : '#2A2A2A',
-              fontSize: compact ? '12px' : '13px',
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif',
-              whiteSpace: 'nowrap',
-            }}
+            className={cn(
+              'cursor-pointer rounded-md border font-sans font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none',
+              compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-[13px]',
+              active
+                ? 'border-[#2A2A2A] bg-[#2A2A2A] text-white'
+                : 'border-[#E0E0E0] bg-white text-[#2A2A2A] hover:bg-gray-50'
+            )}
           >
             {opt.label}
           </button>

@@ -9,22 +9,7 @@ import {
   SettingsNavGearIcon,
   SettingsNavShieldIcon,
 } from '@/components/ui/settings-nav-icons';
-
-const MODAL_WIDTH = 752;
-const MODAL_HEIGHT = 564;
-const SIDEBAR_WIDTH = 186;
-const CLOSE_BUTTON_SIZE = 36;
-const CONTROL_HEIGHT = 36;
-const DELETE_CONFIRM_WIDTH = 436;
-const DELETE_CONFIRM_HEIGHT = 152;
-const DELETE_CONFIRM_RADIUS = 28;
-const DELETE_CONFIRM_CANCEL_WIDTH = 102;
-const DELETE_CONFIRM_PRIMARY_MIN_WIDTH = 172;
-const DELETE_CONFIRM_BUTTON_HEIGHT = 42;
-const DELETE_ACCOUNT_CONFIRM_WIDTH = 620;
-const DELETE_ACCOUNT_CONFIRM_RADIUS = 28;
-const DELETE_ACCOUNT_PRIMARY_WIDTH = 156;
-const DELETE_ACCOUNT_PRIMARY_HEIGHT = 44;
+import { cn } from '@/lib/utils';
 
 const THEME_OPTIONS = ['Системна', 'Темна', 'Світла'] as const;
 type ThemeOption = (typeof THEME_OPTIONS)[number];
@@ -157,18 +142,7 @@ function SettingsCloseButton({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       aria-label="Закрити налаштування"
-      style={{
-        width: `${CLOSE_BUTTON_SIZE}px`,
-        height: `${CLOSE_BUTTON_SIZE}px`,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        border: 'none',
-        borderRadius: '10px',
-        backgroundColor: 'transparent',
-        color: '#171717',
-        cursor: 'pointer',
-      }}
+      className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border-none bg-transparent text-[#171717] transition-colors hover:bg-black/5"
     >
       <CloseIcon />
     </button>
@@ -190,45 +164,13 @@ function SettingsTab({
     <button
       type="button"
       onClick={onClick}
-      style={{
-        width: 'calc(100% - 8px)',
-        minHeight: '40px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        padding: '0 12px',
-        border: 'none',
-        borderRadius: '12px',
-        backgroundColor: active ? '#ECECEC' : 'transparent',
-        color: '#171717',
-        cursor: 'pointer',
-        textAlign: 'left',
-        alignSelf: 'center',
-      }}
+      className={cn(
+        'flex min-h-10 w-[calc(100%-8px)] cursor-pointer items-center gap-2.5 self-center rounded-xl border-none px-3 text-left text-[#171717] transition-colors',
+        active ? 'bg-[#ECECEC]' : 'bg-transparent hover:bg-black/5'
+      )}
     >
-      <span
-        style={{
-          width: '20px',
-          height: '20px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        {icon}
-      </span>
-      <span
-        style={{
-          fontFamily: 'Inter, sans-serif',
-          fontWeight: 500,
-          fontSize: '14px',
-          lineHeight: '20px',
-          letterSpacing: '0.14px',
-        }}
-      >
-        {label}
-      </span>
+      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center">{icon}</span>
+      <span className="font-sans text-[14px] leading-5 font-medium tracking-[0.14px]">{label}</span>
     </button>
   );
 }
@@ -249,25 +191,14 @@ function ActionButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      style={{
-        minWidth: '92px',
-        height: `${CONTROL_HEIGHT}px`,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0 12px',
-        borderRadius: '999px',
-        border: `1px solid ${disabled ? '#E4E4E4' : danger ? '#F19A9A' : '#D7D7D7'}`,
-        backgroundColor: disabled ? '#F5F5F5' : '#FFFFFF',
-        color: disabled ? '#AAAAAA' : danger ? '#F25555' : '#3A3A3A',
-        cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled ? 1 : 1,
-        fontFamily: 'var(--font-sans)',
-        fontWeight: 400,
-        fontSize: '14px',
-        lineHeight: '20px',
-        letterSpacing: 0,
-      }}
+      className={cn(
+        'inline-flex h-9 min-w-23 items-center justify-center rounded-full border px-3 font-sans text-[14px] leading-5 font-normal tracking-normal transition-colors',
+        disabled
+          ? 'cursor-default border-[#E4E4E4] bg-[#F5F5F5] text-[#AAAAAA]'
+          : danger
+            ? 'cursor-pointer border-[#F19A9A] bg-white text-[#F25555] hover:bg-[#FFF0F0]'
+            : 'cursor-pointer border-[#D7D7D7] bg-white text-[#3A3A3A] hover:bg-gray-50'
+      )}
     >
       {children}
     </button>
@@ -299,26 +230,10 @@ function SelectLikeControl({
       onMouseLeave={onMouseLeave}
       onFocus={onFocus}
       onBlur={onBlur}
-      style={{
-        height: `${CONTROL_HEIGHT}px`,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '4px',
-        padding: '0 11px',
-        border: '1px solid transparent',
-        borderRadius: '8px',
-        backgroundColor: active ? '#F2F2F2' : 'transparent',
-        color: '#171717',
-        cursor: 'pointer',
-        fontFamily: 'var(--font-sans)',
-        fontWeight: 400,
-        fontSize: '14px',
-        lineHeight: '20px',
-        letterSpacing: 0,
-        whiteSpace: 'nowrap',
-        transition: 'background-color 140ms ease',
-      }}
+      className={cn(
+        'inline-flex h-9 cursor-pointer items-center justify-center gap-1 rounded-lg border border-transparent px-2.75 font-sans text-[14px] leading-5 font-normal tracking-normal whitespace-nowrap text-[#171717] transition-colors duration-140 ease-in-out',
+        active ? 'bg-[#F2F2F2]' : 'bg-transparent hover:bg-[#F2F2F2]/50'
+      )}
     >
       {children}
     </button>
@@ -332,28 +247,16 @@ function ToggleControl({ checked, onClick }: { checked: boolean; onClick: () => 
       role="switch"
       aria-checked={checked}
       onClick={onClick}
-      style={{
-        width: '32px',
-        height: '20px',
-        display: 'inline-flex',
-        alignItems: 'center',
-        padding: '2px',
-        border: 'none',
-        borderRadius: '999px',
-        backgroundColor: checked ? '#1C1C1C' : '#D8D8D8',
-        cursor: 'pointer',
-        transition: 'background-color 150ms ease',
-      }}
+      className={cn(
+        'inline-flex h-5 w-8 cursor-pointer items-center rounded-full border-none p-0.5 transition-colors duration-150 ease-in-out',
+        checked ? 'bg-[#1C1C1C]' : 'bg-[#D8D8D8]'
+      )}
     >
       <span
-        style={{
-          width: '16px',
-          height: '16px',
-          borderRadius: '50%',
-          backgroundColor: '#FFFFFF',
-          transform: checked ? 'translateX(12px)' : 'translateX(0)',
-          transition: 'transform 150ms ease',
-        }}
+        className={cn(
+          'h-4 w-4 rounded-full bg-white transition-transform duration-150 ease-in-out',
+          checked ? 'translate-x-3' : 'translate-x-0'
+        )}
       />
     </button>
   );
@@ -373,62 +276,36 @@ function SettingRowItem({
 
   return (
     <div
-      style={{
-        minHeight: hasDescription ? (centeredInfoRow ? '76px' : '80px') : '54px',
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) auto',
-        gap: '16px',
-        alignItems: hasDescription ? (centeredInfoRow ? 'center' : 'start') : 'center',
-        padding: hasDescription ? (centeredInfoRow ? '10px 0' : '12px 0') : '8px 0',
-        borderBottom: isLast ? 'none' : '1px solid #ECECEC',
-      }}
+      className={cn(
+        'grid grid-cols-[minmax(0,1fr)_auto] gap-4',
+        hasDescription
+          ? centeredInfoRow
+            ? 'min-h-19 items-center py-2.5'
+            : 'min-h-20 items-start py-3'
+          : 'min-h-13.5 items-center py-2',
+        !isLast && 'border-b border-[#ECECEC]'
+      )}
     >
-      <div
-        style={{
-          minWidth: 0,
-          display: centeredInfoRow ? 'flex' : 'block',
-          flexDirection: centeredInfoRow ? 'column' : undefined,
-          justifyContent: centeredInfoRow ? 'center' : undefined,
-        }}
-      >
-        <div
-          style={{
-            fontFamily: 'var(--font-sans)',
-            fontWeight: 400,
-            fontSize: '14px',
-            lineHeight: '20px',
-            letterSpacing: 0,
-            color: '#171717',
-          }}
-        >
+      <div className={cn('min-w-0', centeredInfoRow ? 'flex flex-col justify-center' : 'block')}>
+        <div className="font-sans text-[14px] leading-5 font-normal tracking-normal text-[#171717]">
           {row.label}
         </div>
         {row.description && (
-          <div
-            style={{
-              marginTop: '4px',
-              maxWidth: '390px',
-              fontFamily: 'var(--font-sans)',
-              fontWeight: 400,
-              fontSize: '12px',
-              lineHeight: '17px',
-              letterSpacing: 0,
-              color: '#8C8C8C',
-            }}
-          >
+          <div className="mt-1 max-w-97.5 font-sans text-[12px] leading-4.25 font-normal tracking-normal text-[#8C8C8C]">
             {row.description}
           </div>
         )}
       </div>
 
       <div
-        style={{
-          display: 'flex',
-          alignItems: hasDescription ? (centeredInfoRow ? 'center' : 'flex-start') : 'center',
-          justifyContent: 'flex-end',
-          paddingTop: hasDescription ? (centeredInfoRow ? 0 : '2px') : 0,
-          flexShrink: 0,
-        }}
+        className={cn(
+          'flex shrink-0 justify-end',
+          hasDescription
+            ? centeredInfoRow
+              ? 'items-center pt-0'
+              : 'items-start pt-0.5'
+            : 'items-center pt-0'
+        )}
       >
         {control}
       </div>
@@ -446,16 +323,7 @@ function DeleteChatsConfirmDialog({
   return (
     <div
       onClick={onCancel}
-      style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 40,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
-        boxSizing: 'border-box',
-      }}
+      className="absolute inset-0 z-40 box-border flex items-center justify-center bg-white/50"
     >
       <div
         role="alertdialog"
@@ -463,109 +331,33 @@ function DeleteChatsConfirmDialog({
         aria-labelledby="delete-chats-confirm-title"
         aria-describedby="delete-chats-confirm-description"
         onClick={(event) => event.stopPropagation()}
-        style={{
-          width: `${DELETE_CONFIRM_WIDTH}px`,
-          height: `${DELETE_CONFIRM_HEIGHT}px`,
-          padding: '28px 24px 22px',
-          borderRadius: `${DELETE_CONFIRM_RADIUS}px`,
-          border: '1px solid #D9D9D9',
-          backgroundColor: 'rgba(255, 255, 255, 0.8)',
-          backdropFilter: 'blur(14px)',
-          WebkitBackdropFilter: 'blur(14px)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'flex-start',
-          boxSizing: 'border-box',
-        }}
+        className="box-border flex h-38 w-109 flex-col items-center justify-start rounded-[28px] border border-[#D9D9D9] bg-white/80 pt-7 pr-6 pb-5.5 pl-6 backdrop-blur-[14px]"
       >
         <h3
           id="delete-chats-confirm-title"
-          style={{
-            margin: 0,
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: 700,
-            fontSize: '16px',
-            lineHeight: '22px',
-            letterSpacing: 0,
-            color: '#000000',
-            textAlign: 'center',
-          }}
+          className="m-0 text-center font-sans text-[16px] leading-5.5 font-bold tracking-normal text-black"
         >
           Очистити історію чатів - ви впевнені?
         </h3>
         <p
           id="delete-chats-confirm-description"
-          style={{
-            margin: '6px 0 0',
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: 400,
-            fontSize: '12px',
-            lineHeight: '17px',
-            letterSpacing: 0,
-            color: 'rgba(0, 0, 0, 0.4)',
-            textAlign: 'center',
-          }}
+          className="mt-1.5 text-center font-sans text-[12px] leading-4.25 font-normal tracking-normal text-black/40"
         >
           Щоб очистити пам&apos;ять із чатів, зайдіть у{' '}
-          <span style={{ textDecoration: 'underline' }}>налаштування.</span>
+          <span className="underline">налаштування.</span>
         </p>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            marginTop: '15px',
-          }}
-        >
+        <div className="mt-3.75 flex items-center justify-center gap-2.5">
           <button
             type="button"
             onClick={onCancel}
-            style={{
-              width: `${DELETE_CONFIRM_CANCEL_WIDTH}px`,
-              height: `${DELETE_CONFIRM_BUTTON_HEIGHT}px`,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0 16px',
-              borderRadius: '999px',
-              border: '1px solid rgba(0, 0, 0, 0.1)',
-              backgroundColor: 'rgba(255, 255, 255, 0.72)',
-              color: '#000000',
-              cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 400,
-              fontSize: '15px',
-              lineHeight: '21px',
-              letterSpacing: 0,
-              whiteSpace: 'nowrap',
-            }}
+            className="inline-flex h-10.5 w-25.5 cursor-pointer items-center justify-center rounded-full border border-black/10 bg-white/70 px-4 font-sans text-[15px] leading-5.25 font-normal tracking-normal whitespace-nowrap text-black transition-colors hover:bg-white/90"
           >
             Скасувати
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            style={{
-              minWidth: `${DELETE_CONFIRM_PRIMARY_MIN_WIDTH}px`,
-              height: `${DELETE_CONFIRM_BUTTON_HEIGHT}px`,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0 18px',
-              borderRadius: '999px',
-              border: 'none',
-              backgroundColor: '#FF4747',
-              color: '#FFFFFF',
-              cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 400,
-              fontSize: '15px',
-              lineHeight: '21px',
-              letterSpacing: 0,
-              whiteSpace: 'nowrap',
-            }}
+            className="inline-flex h-10.5 min-w-43 cursor-pointer items-center justify-center rounded-full border-none bg-[#FF4747] px-4.5 font-sans text-[15px] leading-5.25 font-normal tracking-normal whitespace-nowrap text-white transition-colors hover:bg-[#ff3333]"
           >
             Підтвердити видалення
           </button>
@@ -579,19 +371,7 @@ function DeleteAccountConfirmDialog({ onClose }: { onClose: () => void }) {
   return (
     <div
       onClick={onClose}
-      style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 45,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-        backgroundColor: 'rgba(250, 250, 250, 0.68)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        boxSizing: 'border-box',
-      }}
+      className="absolute inset-0 z-45 box-border flex items-center justify-center bg-[rgba(250,250,250,0.68)] p-6 backdrop-blur-sm"
     >
       <div
         role="alertdialog"
@@ -599,38 +379,12 @@ function DeleteAccountConfirmDialog({ onClose }: { onClose: () => void }) {
         aria-labelledby="delete-account-confirm-title"
         aria-describedby="delete-account-confirm-description"
         onClick={(event) => event.stopPropagation()}
-        style={{
-          width: `min(${DELETE_ACCOUNT_CONFIRM_WIDTH}px, calc(100% - 48px))`,
-          maxHeight: 'calc(100% - 48px)',
-          overflowY: 'auto',
-          borderRadius: `${DELETE_ACCOUNT_CONFIRM_RADIUS}px`,
-          border: '1px solid #D9D9D9',
-          backgroundColor: '#FFFFFF',
-          boxSizing: 'border-box',
-        }}
-        className="scrollbar-subtle"
+        className="scrollbar-subtle box-border max-h-[calc(100%-48px)] w-[min(620px,calc(100%-48px))] overflow-y-auto rounded-[28px] border border-[#D9D9D9] bg-white"
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: '16px',
-            padding: '24px 24px 16px',
-            borderBottom: '1px solid #EEEEEE',
-          }}
-        >
+        <div className="flex items-start justify-between gap-4 border-b border-[#EEEEEE] px-6 pt-6 pb-4">
           <h3
             id="delete-account-confirm-title"
-            style={{
-              margin: 0,
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 600,
-              fontSize: '18px',
-              lineHeight: '26px',
-              letterSpacing: 0,
-              color: '#000000',
-            }}
+            className="m-0 font-sans text-[18px] leading-6.5 font-semibold tracking-normal text-black"
           >
             Видалити обліковий запис - ви впевнені?
           </h3>
@@ -638,47 +392,14 @@ function DeleteAccountConfirmDialog({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={onClose}
             aria-label="Закрити підтвердження видалення облікового запису"
-            style={{
-              width: '28px',
-              height: '28px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 0,
-              border: 'none',
-              backgroundColor: 'transparent',
-              color: '#000000',
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
+            className="inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent p-0 text-black transition-colors hover:bg-black/5"
           >
             <CloseIcon />
           </button>
         </div>
 
-        <div
-          id="delete-account-confirm-description"
-          style={{
-            padding: '18px 24px 0',
-          }}
-        >
-          <ul
-            style={{
-              margin: 0,
-              paddingLeft: '22px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              listStyleType: 'disc',
-              listStylePosition: 'outside',
-              color: '#000000',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '20px',
-              letterSpacing: 0,
-            }}
-          >
+        <div id="delete-account-confirm-description" className="px-6 pt-4.5">
+          <ul className="m-0 flex list-outside list-disc flex-col gap-2.5 pl-5.5 font-sans text-[14px] leading-5 font-normal tracking-normal text-black">
             <li>Видалення облікового запису є незворотним і його не можна скасувати.</li>
             <li>Ви не зможете створити новий обліковий запис із цією ж електронною адресою.</li>
             <li>
@@ -687,52 +408,16 @@ function DeleteAccountConfirmDialog({ onClose }: { onClose: () => void }) {
             </li>
           </ul>
 
-          <p
-            style={{
-              margin: '18px 0 0',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '20px',
-              letterSpacing: 0,
-              color: 'rgba(0, 0, 0, 0.34)',
-            }}
-          >
+          <p className="mt-4.5 font-sans text-[14px] leading-5 font-normal tracking-normal text-[rgba(0,0,0,0.34)]">
             Ви зможете видалити обліковий запис лише якщо входили в нього протягом останніх 10
             хвилин. Увійдіть ще раз, а потім поверніться сюди.
           </p>
         </div>
 
-        <div
-          style={{
-            marginTop: '22px',
-            padding: '14px 24px 22px',
-            borderTop: '1px solid #EEEEEE',
-            display: 'flex',
-            justifyContent: 'flex-end',
-          }}
-        >
+        <div className="mt-5.5 flex justify-end border-t border-[#EEEEEE] px-6 pt-3.5 pb-5.5">
           <button
             type="button"
-            style={{
-              width: `${DELETE_ACCOUNT_PRIMARY_WIDTH}px`,
-              height: `${DELETE_ACCOUNT_PRIMARY_HEIGHT}px`,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0 24px',
-              border: 'none',
-              borderRadius: '999px',
-              backgroundColor: '#000000',
-              color: '#FFFFFF',
-              cursor: 'pointer',
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 400,
-              fontSize: '14px',
-              lineHeight: '20px',
-              letterSpacing: 0,
-              whiteSpace: 'nowrap',
-            }}
+            className="inline-flex h-11 w-39 cursor-pointer items-center justify-center rounded-full border-none bg-black px-6 font-sans text-[14px] leading-5 font-normal tracking-normal whitespace-nowrap text-white transition-colors hover:bg-black/80"
           >
             Оновити вхід
           </button>
@@ -804,7 +489,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const renderControl = (row: SettingRow) => {
     if (row.kind === 'theme') {
       return (
-        <div ref={themeMenuRef} style={{ position: 'relative' }}>
+        <div ref={themeMenuRef} className="relative">
           <SelectLikeControl
             active={themeButtonActive}
             onClick={() => setThemeOpen((current) => !current)}
@@ -818,19 +503,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
           </SelectLikeControl>
 
           {themeOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 6px)',
-                right: 0,
-                minWidth: '132px',
-                padding: '5px',
-                border: '1px solid #DEDEDE',
-                borderRadius: '12px',
-                backgroundColor: '#FFFFFF',
-                zIndex: 5,
-              }}
-            >
+            <div className="absolute top-[calc(100%+6px)] right-0 z-10 min-w-33 rounded-xl border border-[#DEDEDE] bg-white p-1.25">
               {THEME_OPTIONS.map((option) => (
                 <button
                   key={option}
@@ -840,24 +513,10 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
                     setThemeOpen(false);
                     setThemeHovered(false);
                   }}
-                  style={{
-                    width: '100%',
-                    height: '32px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    padding: '0 9px',
-                    border: 'none',
-                    borderRadius: '9px',
-                    backgroundColor: option === theme ? '#F4F4F4' : 'transparent',
-                    color: '#171717',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-sans)',
-                    fontWeight: 400,
-                    fontSize: '13px',
-                    lineHeight: '17px',
-                    textAlign: 'left',
-                  }}
+                  className={cn(
+                    'flex h-8 w-full cursor-pointer items-center justify-start rounded-[9px] border-none px-2.25 text-left font-sans text-[13px] leading-4.25 font-normal text-[#171717] transition-colors',
+                    option === theme ? 'bg-[#F4F4F4]' : 'bg-transparent hover:bg-gray-100'
+                  )}
                 >
                   <span>{option}</span>
                 </button>
@@ -914,37 +573,12 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   };
 
   return (
-    <main
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 50,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-        backgroundColor: 'rgba(250, 250, 250, 0.62)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        boxSizing: 'border-box',
-      }}
-    >
+    <main className="fixed inset-0 z-50 box-border flex items-center justify-center bg-[rgba(250,250,250,0.62)] p-6 backdrop-blur-sm">
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Налаштування"
-        style={{
-          width: '100%',
-          maxWidth: `${MODAL_WIDTH}px`,
-          minHeight: `${MODAL_HEIGHT}px`,
-          position: 'relative',
-          display: 'grid',
-          gridTemplateColumns: `${SIDEBAR_WIDTH}px minmax(0, 1fr)`,
-          border: '1px solid #D9D9D9',
-          borderRadius: '22px',
-          overflow: 'hidden',
-          backgroundColor: '#FFFFFF',
-        }}
+        className="relative grid min-h-141 w-full max-w-188 grid-cols-[186px_minmax(0,1fr)] overflow-hidden rounded-[22px] border border-[#D9D9D9] bg-white"
       >
         {deleteAccountConfirmOpen && (
           <DeleteAccountConfirmDialog onClose={() => setDeleteAccountConfirmOpen(false)} />
@@ -955,28 +589,15 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
             onConfirm={handleDeleteChatsConfirm}
           />
         )}
-        <aside
-          style={{
-            minHeight: `${MODAL_HEIGHT}px`,
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#F8F8F8',
-            borderRight: '1px solid #ECECEC',
-          }}
-        >
-          <div style={{ padding: '12px 12px 10px' }}>
+        <aside className="flex min-h-141 flex-col border-r border-[#ECECEC] bg-[#F8F8F8]">
+          <div className="px-3 pt-3 pb-2.5">
             <SettingsCloseButton onClick={handleClose} />
           </div>
 
           <div
             role="tablist"
             aria-orientation="vertical"
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 0,
-              padding: '6px 8px 12px',
-            }}
+            className="flex flex-col px-2 pt-1.5 pb-3"
           >
             {SECTIONS.map((section) => (
               <SettingsTab
@@ -994,42 +615,10 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
           </div>
         </aside>
 
-        <section
-          style={{
-            minHeight: `${MODAL_HEIGHT}px`,
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#FFFFFF',
-          }}
-        >
-          <div
-            style={{
-              padding: '18px 18px 0',
-              flex: 1,
-              minHeight: 0,
-              overflowY: 'auto',
-            }}
-            className="scrollbar-subtle"
-          >
-            <div
-              style={{
-                minHeight: '52px',
-                display: 'flex',
-                alignItems: 'center',
-                borderBottom: '1px solid #ECECEC',
-              }}
-            >
-              <h2
-                style={{
-                  margin: 0,
-                  fontFamily: 'var(--font-sans)',
-                  fontWeight: 400,
-                  fontSize: '17px',
-                  lineHeight: '24px',
-                  letterSpacing: 0,
-                  color: '#171717',
-                }}
-              >
+        <section className="flex min-h-141 flex-col bg-white">
+          <div className="scrollbar-subtle min-h-0 flex-1 overflow-y-auto px-4.5 pt-4.5">
+            <div className="flex min-h-13 items-center border-b border-[#ECECEC]">
+              <h2 className="m-0 font-sans text-[17px] leading-6 font-normal tracking-normal text-[#171717]">
                 {activeSectionData.label}
               </h2>
             </div>

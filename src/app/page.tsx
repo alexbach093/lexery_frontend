@@ -5,21 +5,20 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppLayout } from '@/components/layout';
 import { BootScreen } from '@/components/ui/boot-screen';
 import { WorkspaceMain } from '@/components/ui/workspace-main';
+import { cn } from '@/lib/utils';
 
-/** Ключ sessionStorage: boot уже пройдено в цій сесії. */
+/** sessionStorage key: boot has already been completed in this session. */
 const BOOT_DONE_KEY = 'lexery-boot-done';
 
 /** Boot overlay fade-out duration (ms). */
 const BOOT_FADE_MS = 500;
-/** Workspace fade-in duration (ms) — плавна поява після boot. */
-const WORKSPACE_FADE_MS = 600;
-/** Мінімальний час показу boot (ms) до моменту onReady. */
+/** Minimum boot display time (ms) until onReady is triggered. */
 const MIN_BOOT_MS = 50;
 
 /**
- * Головна сторінка: boot показується до готовності main space,
- * але не менше MIN_BOOT_MS. Після цього — плавний перехід у workspace.
- * При поверненні з інших сторінок (наприклад налаштувань) boot не показується.
+ * Main page: boot is shown until the main space is ready,
+ * but not less than MIN_BOOT_MS. After that — smooth transition to the workspace.
+ * When returning from other pages (e.g., settings), boot is not shown.
  */
 export default function HomePage() {
   const [showBoot, setShowBoot] = useState(true);
@@ -78,33 +77,24 @@ export default function HomePage() {
 
   return (
     <AppLayout bootOverlayVisible={bootOverlayVisible}>
-      {/* Workspace: завжди в DOM, плавна поява через opacity */}
+      {/* Workspace: always in DOM, smooth appearance via opacity */}
       <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          opacity: workspaceVisible ? 1 : 0,
-          pointerEvents: workspaceVisible ? 'auto' : 'none',
-          transition: `opacity ${WORKSPACE_FADE_MS}ms ease-out`,
-        }}
+        className={cn(
+          'flex min-h-0 flex-1 flex-col transition-opacity duration-[600ms] ease-out',
+          workspaceVisible ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        )}
         aria-hidden={!workspaceVisible}
       >
         <WorkspaceMain onReady={handleWorkspaceReady} />
       </div>
 
-      {/* Boot overlay: зникає після готовності workspace (з мінімумом MIN_BOOT_MS) */}
+      {/* Boot overlay: disappears after workspace is ready (with a minimum of MIN_BOOT_MS) */}
       {showBoot && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            pointerEvents: bootFading ? 'none' : 'auto',
-            transition: `opacity ${BOOT_FADE_MS}ms ease-out`,
-            opacity: bootFading ? 0 : 1,
-          }}
+          className={cn(
+            'fixed inset-0 z-[9999] transition-opacity duration-500 ease-out',
+            bootFading ? 'pointer-events-none opacity-0' : 'pointer-events-auto opacity-100'
+          )}
           aria-hidden={bootFading}
         >
           <BootScreen duration={60000} onComplete={() => {}} />
