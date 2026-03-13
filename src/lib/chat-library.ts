@@ -149,6 +149,23 @@ export async function updateChatLibraryItem(
   return data.chat;
 }
 
+export async function deleteChatLibraryItem(
+  chatId: string,
+  userId: string = DEFAULT_CHAT_USER_ID
+): Promise<void> {
+  const response = await fetch(
+    `/api/chats/${encodeURIComponent(chatId)}?${getQueryString(userId)}`,
+    {
+      method: 'DELETE',
+    }
+  );
+
+  if (response.status === 404) return;
+  if (!response.ok) {
+    throw new Error('Failed to delete chat');
+  }
+}
+
 export function dispatchChatStoreUpdated(): void {
   if (typeof window === 'undefined') return;
   try {

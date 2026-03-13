@@ -1,13 +1,19 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import type { CSSProperties, MouseEvent, ReactNode } from 'react';
-import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import type {
+  CSSProperties,
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent,
+  ReactNode,
+} from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { EditSquareIcon } from '@/components/ui/edit-square-icon';
 import {
   CHAT_STORE_UPDATED_EVENT,
   DEFAULT_CHAT_USER_ID,
+  deleteChatLibraryItem,
   dispatchChatStoreUpdated,
   fetchChatLibrary,
   formatLastMessageLabel,
@@ -63,6 +69,12 @@ function SearchClearIcon() {
 
 const ACTION_ICON_STROKE = 1.75;
 const ACTION_ICON_BOX_SIZE = 24;
+const RENAME_CHAT_TITLE_MIN_LENGTH = 2;
+const RENAME_CHAT_TITLE_MAX_LENGTH = 60;
+const RENAME_SUCCESS_CLOSE_DELAY_MS = 250;
+const DELETE_CHAT_CONFIRM_WIDTH = 560;
+const DELETE_CHAT_CONFIRM_RADIUS = 24;
+const DELETE_CHAT_CONFIRM_BUTTON_HEIGHT = 42;
 
 function ChatActionButton({
   label,
@@ -188,7 +200,19 @@ export function WorkspaceChats() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [chatLibrary, setChatLibrary] = useState<ChatLibraryItem[]>([]);
+  const [chatBeingRenamed, setChatBeingRenamed] = useState<ChatLibraryItem | null>(null);
+  const [chatBeingDeleted, setChatBeingDeleted] = useState<ChatLibraryItem | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [isRenameSaving, setIsRenameSaving] = useState(false);
+  const [isDeleteSaving, setIsDeleteSaving] = useState(false);
+  const [renameFeedback, setRenameFeedback] = useState<{
+    message: string;
+    tone: 'error' | 'success';
+  } | null>(null);
+  const [deleteFeedback, setDeleteFeedback] = useState<string | null>(null);
   const deferredSearchQuery = useDeferredValue(searchQuery);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const renameCloseTimeoutRef = useRef<number | null>(null);
 
   const secondaryTextStyle: CSSProperties = {
     fontFamily: 'Inter, sans-serif',
@@ -219,15 +243,81 @@ export function WorkspaceChats() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!chatBeingRenamed) return;
+    const input = renameInputRef.current;
+    if (!input) return;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }, [chatBeingRenamed]);
+
+  useEffect(() => {
+    if (!chatBeingRenamed) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isRenameSaving) {
+        setChatBeingRenamed(null);
+        setRenameValue('');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [chatBeingRenamed, isRenameSaving]);
+
+  useEffect(() => {
+    if (!chatBeingDeleted) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isDeleteSaving) {
+        setChatBeingDeleted(null);
+        setDeleteFeedback(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [chatBeingDeleted, isDeleteSaving]);
+
+  useEffect(
+    () => () => {
+      if (renameCloseTimeoutRef.current !== null) {
+        window.clearTimeout(renameCloseTimeoutRef.current);
+      }
+    },
+    []
+  );
+
   const filteredChats = useMemo(() => {
     const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
     if (!normalizedQuery) return chatLibrary;
 
     return chatLibrary.filter((chat) => getChatSearchText(chat).includes(normalizedQuery));
   }, [chatLibrary, deferredSearchQuery]);
+  const pinnedChats = filteredChats.filter((chat) => chat.pinned);
+  const regularChats = filteredChats.filter((chat) => !chat.pinned);
 
   const openChat = (chatId: string) => {
     router.push(`/workspace?chat=${encodeURIComponent(chatId)}`);
+  };
+
+  const clearRenameCloseTimeout = () => {
+    if (renameCloseTimeoutRef.current !== null) {
+      window.clearTimeout(renameCloseTimeoutRef.current);
+      renameCloseTimeoutRef.current = null;
+    }
+  };
+
+  const closeRenameDialog = () => {
+    clearRenameCloseTimeout();
+    setChatBeingRenamed(null);
+    setRenameValue('');
+    setRenameFeedback(null);
+  };
+
+  const closeDeleteDialog = () => {
+    setChatBeingDeleted(null);
+    setDeleteFeedback(null);
   };
 
   const handleTogglePinned = async (chat: ChatLibraryItem) => {
@@ -249,6 +339,227 @@ export function WorkspaceChats() {
       );
     }
   };
+
+  const handleRenameStart = (chat: ChatLibraryItem) => {
+    clearRenameCloseTimeout();
+    setChatBeingRenamed(chat);
+    setRenameValue(chat.title);
+    setIsRenameSaving(false);
+    setRenameFeedback(null);
+  };
+
+  const handleDeleteStart = (chat: ChatLibraryItem) => {
+    setChatBeingDeleted(chat);
+    setDeleteFeedback(null);
+    setIsDeleteSaving(false);
+  };
+
+  const handleRenameClose = () => {
+    if (isRenameSaving) return;
+    closeRenameDialog();
+  };
+
+  const handleRenameSave = async () => {
+    if (!chatBeingRenamed) return;
+    const nextTitle = renameValue.trim();
+    if (!nextTitle) {
+      setRenameFeedback({ message: 'Введіть назву чату.', tone: 'error' });
+      return;
+    }
+
+    if (nextTitle.length < RENAME_CHAT_TITLE_MIN_LENGTH) {
+      setRenameFeedback({
+        message: `Мінімум ${RENAME_CHAT_TITLE_MIN_LENGTH} символи.`,
+        tone: 'error',
+      });
+      return;
+    }
+
+    if (nextTitle.length > RENAME_CHAT_TITLE_MAX_LENGTH) {
+      setRenameFeedback({
+        message: `Максимум ${RENAME_CHAT_TITLE_MAX_LENGTH} символів.`,
+        tone: 'error',
+      });
+      return;
+    }
+
+    clearRenameCloseTimeout();
+    setRenameFeedback(null);
+    setIsRenameSaving(true);
+    try {
+      const updatedChat = await updateChatLibraryItem(chatBeingRenamed.id, {
+        userId: DEFAULT_CHAT_USER_ID,
+        title: nextTitle,
+      });
+
+      setChatLibrary((prev) =>
+        prev.map((item) =>
+          item.id === updatedChat.id ? { ...item, title: updatedChat.title } : item
+        )
+      );
+      dispatchChatStoreUpdated();
+      setRenameFeedback({ message: 'Назву збережено.', tone: 'success' });
+      renameCloseTimeoutRef.current = window.setTimeout(() => {
+        closeRenameDialog();
+      }, RENAME_SUCCESS_CLOSE_DELAY_MS);
+    } catch {
+      setRenameFeedback({
+        message: 'Не вдалося зберегти назву. Спробуйте ще раз.',
+        tone: 'error',
+      });
+    } finally {
+      setIsRenameSaving(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!chatBeingDeleted) return;
+
+    setIsDeleteSaving(true);
+    setDeleteFeedback(null);
+    try {
+      await deleteChatLibraryItem(chatBeingDeleted.id, DEFAULT_CHAT_USER_ID);
+      setChatLibrary((prev) => prev.filter((item) => item.id !== chatBeingDeleted.id));
+      dispatchChatStoreUpdated();
+      closeDeleteDialog();
+    } catch {
+      setDeleteFeedback('Не вдалося видалити чат. Спробуйте ще раз.');
+    } finally {
+      setIsDeleteSaving(false);
+    }
+  };
+
+  const renameTrimmedLength = renameValue.trim().length;
+  const renameValidationMessage =
+    renameTrimmedLength === 0
+      ? null
+      : renameTrimmedLength < RENAME_CHAT_TITLE_MIN_LENGTH
+        ? `Мінімум ${RENAME_CHAT_TITLE_MIN_LENGTH} символи.`
+        : renameTrimmedLength > RENAME_CHAT_TITLE_MAX_LENGTH
+          ? `Максимум ${RENAME_CHAT_TITLE_MAX_LENGTH} символів.`
+          : null;
+  const renameHelperMessage =
+    renameFeedback?.tone === 'success'
+      ? renameFeedback.message
+      : (renameValidationMessage ??
+        renameFeedback?.message ??
+        `${RENAME_CHAT_TITLE_MIN_LENGTH}-${RENAME_CHAT_TITLE_MAX_LENGTH} символів`);
+  const renameHelperColor =
+    renameFeedback?.tone === 'success'
+      ? '#1E8E5A'
+      : renameValidationMessage || renameFeedback?.tone === 'error'
+        ? '#C03A2B'
+        : '#7A7A7A';
+  const isRenameValid =
+    renameTrimmedLength >= RENAME_CHAT_TITLE_MIN_LENGTH &&
+    renameTrimmedLength <= RENAME_CHAT_TITLE_MAX_LENGTH;
+  const isRenameSaveDisabled = isRenameSaving || !isRenameValid;
+  const handleRenameInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    if (!isRenameSaveDisabled) {
+      void handleRenameSave();
+    }
+  };
+
+  const renderChatRow = (chat: ChatLibraryItem, options?: { hideDivider?: boolean }) => (
+    <div
+      key={chat.id}
+      className={`workspace-chat-row${options?.hideDivider ? 'workspace-chat-row-no-divider' : ''}`}
+      role="button"
+      tabIndex={0}
+      onClick={() => openChat(chat.id)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openChat(chat.id);
+        }
+      }}
+      style={{
+        width: '100%',
+        padding: `${scale(14)}px ${scale(18)}px`,
+        backgroundColor: 'transparent',
+        position: 'relative',
+        cursor: 'pointer',
+      }}
+    >
+      <div
+        className="workspace-chat-row-content"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: `${scale(12)}px`,
+          position: 'relative',
+          zIndex: 1,
+          borderRadius: `${scale(16)}px`,
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: `${readableScale(4, 4)}px`,
+            minWidth: 0,
+            alignSelf: 'stretch',
+            justifyContent: 'center',
+            padding: `${scale(10)}px ${scale(14)}px`,
+            textAlign: 'left',
+            borderRadius: `${scale(16)}px`,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'Inter, sans-serif',
+              fontSize: '14px',
+              fontWeight: 500,
+              lineHeight: '20px',
+              letterSpacing: '0.14px',
+              color: '#000000',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {chat.title}
+          </span>
+          <span
+            style={{
+              ...secondaryTextStyle,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {formatLastMessageLabel(chat.updatedAt)}
+          </span>
+        </div>
+        <div
+          className="workspace-chat-actions"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: `${scale(20)}px`,
+            flexShrink: 0,
+            marginRight: `${scale(10)}px`,
+          }}
+        >
+          <ChatActionButton
+            label={chat.pinned ? 'Відкріпити чат' : 'Закріпити чат'}
+            onClick={() => void handleTogglePinned(chat)}
+          >
+            <ChatStarIcon active={chat.pinned} />
+          </ChatActionButton>
+          <ChatActionButton label="Перейменувати чат" onClick={() => handleRenameStart(chat)}>
+            <ChatPencilIcon />
+          </ChatActionButton>
+          <ChatActionButton label="Видалити чат" onClick={() => handleDeleteStart(chat)}>
+            <ChatTrashIcon />
+          </ChatActionButton>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <main
@@ -351,104 +662,76 @@ export function WorkspaceChats() {
             position: 'relative',
           }}
         >
-          {filteredChats.map((chat) => (
+          {pinnedChats.length > 0 ? (
             <div
-              key={chat.id}
-              className="workspace-chat-row"
-              role="button"
-              tabIndex={0}
-              onClick={() => openChat(chat.id)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  openChat(chat.id);
-                }
-              }}
+              className="workspace-pinned-section"
               style={{
-                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
                 padding: `${scale(14)}px ${scale(18)}px`,
-                backgroundColor: 'transparent',
-                position: 'relative',
-                cursor: 'pointer',
+                color: '#6B7280',
               }}
             >
-              <div
-                className="workspace-chat-row-content"
+              <span
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: `${scale(12)}px`,
-                  position: 'relative',
-                  zIndex: 1,
-                  borderRadius: `${scale(16)}px`,
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 600,
+                  fontSize: `${readableScale(13, 13)}px`,
+                  lineHeight: `${readableScale(18, 18)}px`,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
                 }}
               >
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: `${readableScale(4, 4)}px`,
-                    minWidth: 0,
-                    alignSelf: 'stretch',
-                    justifyContent: 'center',
-                    padding: `${scale(10)}px ${scale(14)}px`,
-                    textAlign: 'left',
-                    borderRadius: `${scale(16)}px`,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: 'Inter, sans-serif',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      lineHeight: '20px',
-                      letterSpacing: '0.14px',
-                      color: '#000000',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {chat.title}
-                  </span>
-                  <span
-                    style={{
-                      ...secondaryTextStyle,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {formatLastMessageLabel(chat.updatedAt)}
-                  </span>
-                </div>
-                <div
-                  className="workspace-chat-actions"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: `${scale(20)}px`,
-                    flexShrink: 0,
-                    marginRight: `${scale(10)}px`,
-                  }}
-                >
-                  <ChatActionButton
-                    label={chat.pinned ? 'Відкріпити чат' : 'Закріпити чат'}
-                    onClick={() => void handleTogglePinned(chat)}
-                  >
-                    <ChatStarIcon active={chat.pinned} />
-                  </ChatActionButton>
-                  <ChatActionButton label="Перейменувати чат">
-                    <ChatPencilIcon />
-                  </ChatActionButton>
-                  <ChatActionButton label="Видалити чат">
-                    <ChatTrashIcon />
-                  </ChatActionButton>
-                </div>
-              </div>
+                Закріплені
+              </span>
             </div>
-          ))}
+          ) : null}
+          {pinnedChats.map((chat, index) =>
+            renderChatRow(chat, { hideDivider: index === pinnedChats.length - 1 })
+          )}
+          {pinnedChats.length > 0 && regularChats.length > 0 ? (
+            <div
+              style={{
+                padding: `${scale(14)}px ${scale(18)}px`,
+                color: '#6B7280',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 600,
+                  fontSize: `${readableScale(13, 13)}px`,
+                  lineHeight: `${readableScale(18, 18)}px`,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Чати
+              </span>
+            </div>
+          ) : null}
+          {pinnedChats.length === 0 && regularChats.length > 0 ? (
+            <div
+              style={{
+                padding: `${scale(14)}px ${scale(18)}px`,
+                color: '#6B7280',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 600,
+                  fontSize: `${readableScale(13, 13)}px`,
+                  lineHeight: `${readableScale(18, 18)}px`,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Чати
+              </span>
+            </div>
+          ) : null}
+          {regularChats.map((chat) => renderChatRow(chat))}
           {filteredChats.length === 0 ? (
             <div
               style={{
@@ -484,17 +767,6 @@ export function WorkspaceChats() {
             display: none;
           }
 
-          .workspace-chats-list::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #e0e7e8;
-            z-index: 0;
-          }
-
           .workspace-chat-row::before {
             content: '';
             position: absolute;
@@ -522,6 +794,10 @@ export function WorkspaceChats() {
             transition: opacity 140ms ease;
           }
 
+          .workspace-chat-row-no-divider::after {
+            opacity: 0;
+          }
+
           .workspace-chat-row:hover::before,
           .workspace-chat-row:focus-within::before {
             opacity: 1;
@@ -534,11 +810,6 @@ export function WorkspaceChats() {
 
           .workspace-chat-row:has(+ .workspace-chat-row:hover)::after,
           .workspace-chat-row:has(+ .workspace-chat-row:focus-within)::after {
-            opacity: 0;
-          }
-
-          .workspace-chats-list:has(> .workspace-chat-row:first-child:hover)::before,
-          .workspace-chats-list:has(> .workspace-chat-row:first-child:focus-within)::before {
             opacity: 0;
           }
 
@@ -555,6 +826,309 @@ export function WorkspaceChats() {
           }
         `}</style>
       </div>
+      {chatBeingRenamed ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="rename-chat-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 120,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            boxSizing: 'border-box',
+          }}
+          onClick={handleRenameClose}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.32)',
+              backdropFilter: 'blur(4px)',
+            }}
+            aria-hidden
+          />
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: '520px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #F1F1F1',
+              borderRadius: '26px',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2
+              id="rename-chat-title"
+              style={{
+                margin: 0,
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 600,
+                fontSize: '20px',
+                lineHeight: '1.2',
+                color: '#2A2A2A',
+              }}
+            >
+              Перейменувати чат
+            </h2>
+            <input
+              ref={renameInputRef}
+              value={renameValue}
+              onChange={(event) => {
+                setRenameValue(event.target.value);
+                if (renameFeedback?.tone === 'error') {
+                  setRenameFeedback(null);
+                }
+              }}
+              onKeyDown={handleRenameInputKeyDown}
+              placeholder="Введіть нову назву чату..."
+              style={{
+                width: '100%',
+                height: '46px',
+                boxSizing: 'border-box',
+                marginTop: '16px',
+                padding: '0 12px',
+                borderRadius: '12px',
+                border: '1px solid #D7D7D7',
+                backgroundColor: '#FFFFFF',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 400,
+                fontSize: '14px',
+                lineHeight: '46px',
+                color: '#2A2A2A',
+                outline: 'none',
+              }}
+              aria-label="Нова назва чату"
+            />
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '12px',
+                marginTop: '8px',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '12px',
+                  lineHeight: '1.4',
+                  color: renameHelperColor,
+                }}
+              >
+                {renameHelperMessage}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '12px',
+                  lineHeight: '1.4',
+                  color: renameTrimmedLength > RENAME_CHAT_TITLE_MAX_LENGTH ? '#C03A2B' : '#9A9A9A',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {renameTrimmedLength}/{RENAME_CHAT_TITLE_MAX_LENGTH}
+              </span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px',
+                marginTop: '16px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={handleRenameClose}
+                disabled={isRenameSaving}
+                style={{
+                  minWidth: '102px',
+                  height: '42px',
+                  borderRadius: '8px',
+                  border: '1px solid #D7D7D7',
+                  backgroundColor: '#FFFFFF',
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '14px',
+                  color: '#2A2A2A',
+                  cursor: isRenameSaving ? 'default' : 'pointer',
+                }}
+              >
+                Скасувати
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRenameSave()}
+                disabled={isRenameSaveDisabled}
+                style={{
+                  minWidth: '124px',
+                  height: '42px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: isRenameSaveDisabled ? '#8A8A8A' : '#2A2A2A',
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  color: '#FFFFFF',
+                  cursor: isRenameSaveDisabled ? 'default' : 'pointer',
+                }}
+              >
+                {isRenameSaving
+                  ? 'Збереження...'
+                  : renameFeedback?.tone === 'success'
+                    ? 'Збережено'
+                    : 'Застосувати'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {chatBeingDeleted ? (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="delete-chat-title"
+          aria-describedby="delete-chat-description"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 125,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            boxSizing: 'border-box',
+          }}
+          onClick={() => {
+            if (!isDeleteSaving) closeDeleteDialog();
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.28)',
+              backdropFilter: 'blur(4px)',
+            }}
+            aria-hidden
+          />
+          <div
+            style={{
+              position: 'relative',
+              width: `min(${DELETE_CHAT_CONFIRM_WIDTH}px, 100%)`,
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E7E7E7',
+              borderRadius: `${DELETE_CHAT_CONFIRM_RADIUS}px`,
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2
+              id="delete-chat-title"
+              style={{
+                margin: 0,
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 600,
+                fontSize: '20px',
+                lineHeight: '1.2',
+                color: '#2A2A2A',
+              }}
+            >
+              Видалити чат
+            </h2>
+            <p
+              id="delete-chat-description"
+              style={{
+                margin: '10px 0 0',
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 400,
+                fontSize: '14px',
+                lineHeight: '1.5',
+                color: '#5F6368',
+              }}
+            >
+              Ви дійсно хочете видалити чат{' '}
+              <span style={{ color: '#2A2A2A', fontWeight: 500 }}>
+                &quot;{chatBeingDeleted.title}&quot;
+              </span>
+              ?
+            </p>
+            {deleteFeedback ? (
+              <p
+                style={{
+                  margin: '10px 0 0',
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '12px',
+                  lineHeight: '1.4',
+                  color: '#C03A2B',
+                }}
+              >
+                {deleteFeedback}
+              </p>
+            ) : null}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px',
+                marginTop: '18px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={closeDeleteDialog}
+                disabled={isDeleteSaving}
+                style={{
+                  minWidth: '102px',
+                  height: `${DELETE_CHAT_CONFIRM_BUTTON_HEIGHT}px`,
+                  borderRadius: '8px',
+                  border: '1px solid #D7D7D7',
+                  backgroundColor: '#FFFFFF',
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 400,
+                  fontSize: '14px',
+                  color: '#2A2A2A',
+                  cursor: isDeleteSaving ? 'default' : 'pointer',
+                }}
+              >
+                Скасувати
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDeleteConfirm()}
+                disabled={isDeleteSaving}
+                style={{
+                  minWidth: '128px',
+                  height: `${DELETE_CHAT_CONFIRM_BUTTON_HEIGHT}px`,
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: isDeleteSaving ? '#F19999' : '#E14D4D',
+                  fontFamily: 'Inter, sans-serif',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  color: '#FFFFFF',
+                  cursor: isDeleteSaving ? 'default' : 'pointer',
+                }}
+              >
+                {isDeleteSaving ? 'Видалення...' : 'Видалити'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

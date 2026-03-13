@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { DEFAULT_CHAT_USER_ID } from '@/lib/chat-library';
-import { getChatById, updateChat } from '@/lib/server/chat-store';
+import { deleteChat, getChatById, updateChat } from '@/lib/server/chat-store';
 import type { Message } from '@/types/chat';
 
 export const dynamic = 'force-dynamic';
@@ -59,6 +59,24 @@ export async function PUT(request: Request, context: { params: Promise<{ chatId:
     return NextResponse.json({ chat });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to update chat';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request, context: { params: Promise<{ chatId: string }> }) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId')?.trim() || DEFAULT_CHAT_USER_ID;
+    const { chatId } = await context.params;
+    const deleted = await deleteChat({ chatId, userId });
+
+    if (!deleted) {
+      return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
+    }
+
+    return new NextResponse(null, { status: 204 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to delete chat';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

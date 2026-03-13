@@ -79,6 +79,12 @@ function buildTitle(messages: Message[], fallbackTitle?: string): string {
   return baseTitle.length > 60 ? `${baseTitle.slice(0, 60)}…` : baseTitle;
 }
 
+function normalizeTitle(title?: string): string | null {
+  const trimmed = title?.trim();
+  if (!trimmed) return null;
+  return trimmed.length > 60 ? `${trimmed.slice(0, 60)}…` : trimmed;
+}
+
 export async function listChatsByUser(userId: string): Promise<ChatLibraryItem[]> {
   const store = await readStore();
   return sortChats(store.chats.filter((chat) => chat.userId === userId));
@@ -101,7 +107,7 @@ export async function createChat(input: {
   const chat: ChatLibraryItem = {
     id: generateId(),
     userId: input.userId,
-    title: buildTitle(input.messages, input.title),
+    title: normalizeTitle(input.title) ?? buildTitle(input.messages, input.title),
     preview: buildPreview(input.messages, input.preview),
     pinned: Boolean(input.pinned),
     createdAt: timestamp,
@@ -134,7 +140,7 @@ export async function updateChat(input: {
     input.messages != null || input.title != null || input.preview != null;
   const next: ChatLibraryItem = {
     ...previous,
-    title: buildTitle(nextMessages, input.title ?? previous.title),
+    title: normalizeTitle(input.title) ?? buildTitle(nextMessages, previous.title),
     preview: buildPreview(nextMessages, input.preview ?? previous.preview),
     pinned: input.pinned ?? previous.pinned,
     updatedAt: shouldRefreshUpdatedAt ? new Date().toISOString() : previous.updatedAt,
@@ -144,4 +150,18 @@ export async function updateChat(input: {
   store.chats[index] = next;
   await writeStore({ chats: sortChats(store.chats) });
   return next;
+}
+
+export async function deleteChat(input: { chatId: string; userId: string }): Promise<boolean> {
+  const store = await readStore();
+  const nextChats = store.chats.filter(
+    (chat) => !(chat.id === input.chatId && chat.userId === input.userId)
+  );
+
+  if (nextChats.length === store.chats.length) {
+    return false;
+  }
+
+  await writeStore({ chats: sortChats(nextChats) });
+  return true;
 }
