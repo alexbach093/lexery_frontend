@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { cn } from '@/lib/utils';
+
 export interface FilePreviewProps {
   /** The file to display (name, size, type). */
   file: File;
@@ -9,18 +11,9 @@ export interface FilePreviewProps {
   previewUrl: string | null;
   /** Called when the user clicks the remove (X) button. */
   onRemove: () => void;
-  /** У розгорнутому файл-менеджері — однакова ширина картки, без пустих місць справа. */
+  /** In expanded file manager - uniform card width, no empty space on the right. */
   uniformWidth?: boolean;
 }
-
-/** Розмір квадратного контейнера (як у базових іконок). */
-const THUMBNAIL_SIZE = 28;
-const THUMBNAIL_RADIUS = 4;
-/** Розмір іконки всередині контейнера — менший за фон. */
-const ICON_SIZE = 16;
-const CARD_RADIUS = 6;
-/** Fixed max width so the pill doesn’t stretch; right side stays clear of AI space edge (Perplexity-style). */
-const CARD_MAX_WIDTH = 240;
 
 /** Map extension (lowercase, with dot) → icon slug. Icons from Figma 238:989 (document+icon). */
 const EXT_TO_ICON: Record<string, string> = {
@@ -73,7 +66,8 @@ function FileTypeIcon({ kind, size = 16 }: { kind: string; size?: number }) {
       ? kind
       : 'document'
   ) as FileTypeIconKind;
-  const style = { width: size, height: size, display: 'block', flexShrink: 0, color: '#737373' };
+
+  const svgClassName = 'block shrink-0 text-[#737373]';
   const stroke = 'currentColor';
   const strokeW = '1.5';
   const commonPath = 'M7 21C5.89543 21 5 20.1046 5 19V3H14L19 8V19C19 20.1046 18.1046 21 17 21H7Z';
@@ -87,7 +81,7 @@ function FileTypeIcon({ kind, size = 16 }: { kind: string; size?: number }) {
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        style={style}
+        className={svgClassName}
         aria-hidden
       >
         <path
@@ -116,7 +110,7 @@ function FileTypeIcon({ kind, size = 16 }: { kind: string; size?: number }) {
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        style={style}
+        className={svgClassName}
         aria-hidden
       >
         <path
@@ -145,7 +139,7 @@ function FileTypeIcon({ kind, size = 16 }: { kind: string; size?: number }) {
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        style={style}
+        className={svgClassName}
         aria-hidden
       >
         <path
@@ -182,7 +176,7 @@ function FileTypeIcon({ kind, size = 16 }: { kind: string; size?: number }) {
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        style={style}
+        className={svgClassName}
         aria-hidden
       >
         <path
@@ -218,7 +212,7 @@ function FileTypeIcon({ kind, size = 16 }: { kind: string; size?: number }) {
       viewBox="0 0 48 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      style={style}
+      className={svgClassName}
       aria-hidden
     >
       <path
@@ -263,7 +257,7 @@ export function FilePreview({ file, previewUrl, onRemove, uniformWidth }: FilePr
     };
   }, [previewUrl]);
 
-  // Скидаємо помилку, коли змінюється файл або previewUrl (асинхронно, щоб уникнути cascading render)
+  // Reset error when file or previewUrl changes (asynchronously to avoid cascading render)
   useEffect(() => {
     const t = setTimeout(() => setImageError(false), 0);
     return () => clearTimeout(t);
@@ -279,114 +273,44 @@ export function FilePreview({ file, previewUrl, onRemove, uniformWidth }: FilePr
 
   return (
     <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        padding: '6px 10px',
-        minHeight: '38px',
-        backgroundColor: '#EBEBEB',
-        borderRadius: CARD_RADIUS,
-        width: uniformWidth ? '100%' : 'fit-content',
-        maxWidth: uniformWidth ? '100%' : CARD_MAX_WIDTH,
-        minWidth: 0,
-        boxSizing: 'border-box',
-      }}
+      className={cn(
+        'box-border flex min-h-9.5 min-w-0 items-center gap-2 rounded-[6px] bg-[#EBEBEB] px-2.5 py-1.5',
+        uniformWidth ? 'w-full max-w-full' : 'w-fit max-w-60'
+      )}
     >
       {/* Left: square container — format-specific icon or image preview */}
-      <div
-        style={{
-          width: THUMBNAIL_SIZE,
-          height: THUMBNAIL_SIZE,
-          borderRadius: THUMBNAIL_RADIUS,
-          overflow: 'hidden',
-          flexShrink: 0,
-          backgroundColor: '#D3D3D3',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded bg-[#D3D3D3]">
         {showImageThumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element -- blob URL for user-uploaded preview
           <img
             src={previewUrl}
             alt=""
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              display: 'block',
-            }}
+            className="block h-full w-full object-cover"
             onError={() => setImageError(true)}
           />
         ) : (
-          <FileTypeIcon kind={getFileTypeIcon(extension)} size={ICON_SIZE} />
+          <FileTypeIcon kind={getFileTypeIcon(extension)} size={16} />
         )}
       </div>
 
       {/* Middle: file name (base + extension) + size */}
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '2px',
-          justifyContent: 'center',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'baseline',
-            minWidth: 0,
-            gap: '2px',
-          }}
-        >
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+        <div className="flex min-w-0 items-baseline gap-0.5">
           <span
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 600,
-              fontSize: '12px',
-              lineHeight: '16px',
-              letterSpacing: '0.12px',
-              color: '#333333',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              minWidth: 0,
-              flex: hasExtension ? 1 : undefined,
-            }}
+            className={cn(
+              'min-w-0 overflow-hidden font-sans text-xs leading-4 font-semibold tracking-[0.12px] text-ellipsis whitespace-nowrap text-[#333333]',
+              hasExtension && 'flex-1'
+            )}
           >
             {baseName}
           </span>
           {hasExtension && (
-            <span
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 600,
-                fontSize: '12px',
-                lineHeight: '16px',
-                letterSpacing: '0.12px',
-                color: '#888888',
-                flexShrink: 0,
-              }}
-            >
+            <span className="shrink-0 font-sans text-xs leading-4 font-semibold tracking-[0.12px] text-[#888888]">
               {extension}
             </span>
           )}
         </div>
-        <span
-          style={{
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: 400,
-            fontSize: '10px',
-            lineHeight: '14px',
-            letterSpacing: '0.1px',
-            color: '#888888',
-          }}
-        >
+        <span className="font-sans text-[10px] leading-3.5 font-normal tracking-[0.1px] text-[#888888]">
           {formatFileSize(file.size)}
         </span>
       </div>
@@ -395,21 +319,8 @@ export function FilePreview({ file, previewUrl, onRemove, uniformWidth }: FilePr
       <button
         type="button"
         onClick={onRemove}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '18px',
-          height: '18px',
-          border: 'none',
-          background: 'transparent',
-          cursor: 'pointer',
-          borderRadius: '4px',
-          padding: 0,
-          flexShrink: 0,
-        }}
-        className="workspace-action-btn hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
-        aria-label="Видалити файл"
+        aria-label="Remove file"
+        className="workspace-action-btn flex h-4.5 w-4.5 shrink-0 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
       >
         <svg
           width="11"

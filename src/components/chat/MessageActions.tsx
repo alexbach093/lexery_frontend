@@ -3,21 +3,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
+import { cn } from '@/lib/utils';
+
 type TooltipId = 'copy' | 'thumbs-up' | 'thumbs-down' | 'refresh' | null;
 
 export interface MessageActionsProps {
   content: string;
   onRegenerate?: (modifier?: string) => void;
-  /** Елемент зліва в рядку. */
+  /** Element on the left in the row. */
   leading?: React.ReactNode;
-  /** Елемент справа в рядку (наприклад кнопка Історія). */
+  /** Element on the right in the row (e.g., History button). */
   trailing?: React.ReactNode;
 }
 
-/** Action icons row below AI response — copy, like, dislike, regenerate, "Переглянути процес". */
+/** Action icons row below AI response — copy, like, dislike, regenerate, "View process". */
 export function MessageActions({ content, onRegenerate, leading, trailing }: MessageActionsProps) {
-  const iconSize = 16;
-  const size = 32;
   const [tooltipVisibleId, setTooltipVisibleId] = useState<TooltipId>(null);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [feedbackLike, setFeedbackLike] = useState<'like' | 'dislike' | null>(null);
@@ -45,10 +45,12 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const popoverHeight = regeneratePopoverRef.current?.offsetHeight ?? POPOVER_APPROX_HEIGHT;
+
     const preferredTop =
       rect.top > popoverHeight + POPOVER_GAP + POPOVER_VIEWPORT_MARGIN
         ? rect.top - popoverHeight - POPOVER_GAP
         : rect.bottom + POPOVER_GAP;
+
     const maxTop = Math.max(
       POPOVER_VIEWPORT_MARGIN,
       viewportHeight - popoverHeight - POPOVER_VIEWPORT_MARGIN
@@ -57,6 +59,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
       POPOVER_VIEWPORT_MARGIN,
       viewportWidth - POPOVER_WIDTH - POPOVER_VIEWPORT_MARGIN
     );
+
     const nextTop = Math.min(Math.max(POPOVER_VIEWPORT_MARGIN, preferredTop), maxTop);
     const nextLeft = Math.min(
       Math.max(POPOVER_VIEWPORT_MARGIN, rect.right - POPOVER_WIDTH),
@@ -196,60 +199,52 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
     setRegeneratePrompt('');
   };
 
-  const btnStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: size,
-    height: size,
-    padding: 0,
-    cursor: 'pointer',
-    border: 'none',
-    borderRadius: 9999,
-    background: 'transparent',
-    transition: 'background-color 150ms ease',
-  };
+  const copyVisible = tooltipVisibleId === 'copy' || copyFeedback;
+  const thumbsUpVisible =
+    tooltipVisibleId === 'thumbs-up' || (feedbackLike === 'like' && showThankYouTooltip);
+  const thumbsDownVisible =
+    tooltipVisibleId === 'thumbs-down' || (feedbackLike === 'dislike' && showThankYouTooltip);
+  const refreshVisible = tooltipVisibleId === 'refresh' && !regeneratePopoverOpen;
+
+  // Base styling properties
+  const baseBtnClasses =
+    'group flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-[#575757] transition-all duration-150 active:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+
+  const defaultIconHoverFilter =
+    'block shrink-0 transition-[filter] duration-150 group-hover:[filter:brightness(0)_saturate(100%)_invert(0.45)]';
+
+  const tooltipClasses =
+    'absolute bottom-full left-1/2 z-10 mb-2 pointer-events-none whitespace-nowrap rounded-lg bg-muted px-3 py-1.5 font-sans text-xs font-medium leading-[1.3] text-muted-foreground shadow-none transition-all duration-150 ease-out';
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginTop: '14px',
-      }}
-      role="group"
-      aria-label="Дії з відповіддю"
-    >
+    <div className="mt-3.5 flex items-center gap-2" role="group" aria-label="Дії з відповіддю">
       {leading}
+
       <div
-        className="chat-action-icons-stagger"
-        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+        className="chat-action-icons-stagger flex items-center gap-2"
         onMouseLeave={hideTooltip}
         onBlurCapture={hideTooltip}
       >
         <div
-          className="chat-action-tooltip-anchor"
+          className="relative inline-flex"
           onMouseEnter={() => showTooltipAfterDelay('copy')}
           onFocusCapture={() => showTooltipAfterDelay('copy')}
         >
           <button
             type="button"
-            style={btnStyle}
-            className="chat-action-btn chat-action-btn--circle"
+            className={cn(baseBtnClasses, 'hover:bg-transparent active:scale-[0.92]')}
             aria-label="Копіювати"
             aria-describedby="chat-action-tooltip-copy"
             onClick={handleCopy}
           >
             <svg
-              width={iconSize}
-              height={iconSize}
+              width={16}
+              height={16}
               viewBox="0 0 16 16"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden
-              className="chat-action-icon"
-              style={{ display: 'block' }}
+              className={defaultIconHoverFilter}
             >
               <g transform="translate(8, 8) scale(1.23077) translate(-5.5, -6.5)">
                 <path
@@ -271,42 +266,43 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
           </button>
           <span
             id="chat-action-tooltip-copy"
-            className="chat-action-tooltip"
             role="tooltip"
-            style={{
-              opacity: tooltipVisibleId === 'copy' || copyFeedback ? 1 : 0,
-              visibility: tooltipVisibleId === 'copy' || copyFeedback ? 'visible' : 'hidden',
-              transform:
-                tooltipVisibleId === 'copy' || copyFeedback
-                  ? 'translateX(-50%) translateY(0)'
-                  : 'translateX(-50%) translateY(4px)',
-            }}
+            className={cn(
+              tooltipClasses,
+              copyVisible
+                ? 'visible -translate-x-1/2 translate-y-0 opacity-100'
+                : 'invisible -translate-x-1/2 translate-y-1 opacity-0'
+            )}
           >
             {copyFeedback ? 'Скопійовано' : 'Копіювати'}
           </span>
         </div>
+
         <div
-          className="chat-action-tooltip-anchor"
+          className="relative inline-flex"
           onMouseEnter={() => showTooltipAfterDelay('thumbs-up')}
           onFocusCapture={() => showTooltipAfterDelay('thumbs-up')}
         >
           <button
             type="button"
-            style={btnStyle}
-            className={`chat-action-btn chat-action-btn--circle chat-action-btn--thumbs ${feedbackLike === 'like' ? 'chat-action-btn--liked' : ''}`}
+            className={cn(
+              baseBtnClasses,
+              feedbackLike === 'like'
+                ? 'bg-[#22c55e]/10 text-[#22c55e] hover:bg-[#22c55e]/10 active:scale-100'
+                : 'hover:bg-transparent hover:text-[#333] active:scale-[0.92]'
+            )}
             aria-label="Подобається"
             aria-describedby="chat-action-tooltip-thumbs-up"
             onClick={() => handleLike('like')}
           >
             <svg
-              width={iconSize}
-              height={iconSize}
+              width={16}
+              height={16}
               viewBox="0 0 12 11"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden
-              className="chat-action-icon"
-              style={{ display: 'block' }}
+              className="block shrink-0"
             >
               <path
                 d="M8.88126 10.5459H1.71581C1.01911 10.5459 0.45433 9.98113 0.45433 9.28444V5.5C0.45433 4.8033 1.01911 4.23852 1.71581 4.23852H2.9329C3.35468 4.23852 3.74856 4.02773 3.98252 3.67678L5.80357 0.945213C6.00812 0.638382 6.35249 0.454083 6.72125 0.454083C7.40279 0.454083 7.92121 1.06606 7.80917 1.73832L7.63728 2.76966C7.50912 3.53857 8.10207 4.23852 8.88159 4.23852H9.63815C10.4342 4.23852 11.0312 4.9668 10.8751 5.7474L10.1182 9.53183C10.0003 10.1215 9.48258 10.5459 8.88126 10.5459Z"
@@ -320,48 +316,43 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
           </button>
           <span
             id="chat-action-tooltip-thumbs-up"
-            className="chat-action-tooltip"
             role="tooltip"
-            style={{
-              opacity:
-                tooltipVisibleId === 'thumbs-up' || (feedbackLike === 'like' && showThankYouTooltip)
-                  ? 1
-                  : 0,
-              visibility:
-                tooltipVisibleId === 'thumbs-up' || (feedbackLike === 'like' && showThankYouTooltip)
-                  ? 'visible'
-                  : 'hidden',
-              transform:
-                tooltipVisibleId === 'thumbs-up' || (feedbackLike === 'like' && showThankYouTooltip)
-                  ? 'translateX(-50%) translateY(0)'
-                  : 'translateX(-50%) translateY(4px)',
-            }}
+            className={cn(
+              tooltipClasses,
+              thumbsUpVisible
+                ? 'visible -translate-x-1/2 translate-y-0 opacity-100'
+                : 'invisible -translate-x-1/2 translate-y-1 opacity-0'
+            )}
           >
             {feedbackLike === 'like' && showThankYouTooltip ? 'Дякуємо за відгук!' : 'Подобається'}
           </span>
         </div>
+
         <div
-          className="chat-action-tooltip-anchor"
+          className="relative inline-flex"
           onMouseEnter={() => showTooltipAfterDelay('thumbs-down')}
           onFocusCapture={() => showTooltipAfterDelay('thumbs-down')}
         >
           <button
             type="button"
-            style={btnStyle}
-            className={`chat-action-btn chat-action-btn--circle chat-action-btn--thumbs ${feedbackLike === 'dislike' ? 'chat-action-btn--disliked' : ''}`}
+            className={cn(
+              baseBtnClasses,
+              feedbackLike === 'dislike'
+                ? 'bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444]/10 active:scale-100'
+                : 'hover:bg-transparent hover:text-[#333] active:scale-[0.92]'
+            )}
             aria-label="Не подобається"
             aria-describedby="chat-action-tooltip-thumbs-down"
             onClick={() => handleLike('dislike')}
           >
             <svg
-              width={iconSize}
-              height={iconSize}
+              width={16}
+              height={16}
               viewBox="0 0 12 11"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden
-              className="chat-action-icon"
-              style={{ display: 'block' }}
+              className="block shrink-0"
             >
               <path
                 d="M2.47304 0.454082L9.63849 0.454083C10.3352 0.454083 10.9 1.01887 10.9 1.71556L10.9 5.5C10.9 6.1967 10.3352 6.76148 9.63849 6.76148L8.42139 6.76148C7.99961 6.76148 7.60574 6.97227 7.37178 7.32321L5.55073 10.0548C5.34618 10.3616 5.00181 10.5459 4.63305 10.5459C3.95151 10.5459 3.43309 9.93394 3.54513 9.26168L3.71702 8.23034C3.84517 7.46143 3.25222 6.76148 2.47271 6.76148L1.71615 6.76148C0.920101 6.76148 0.323052 6.0332 0.47917 5.2526L1.23606 1.46817C1.35399 0.878519 1.87172 0.454082 2.47304 0.454082Z"
@@ -375,42 +366,29 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
           </button>
           <span
             id="chat-action-tooltip-thumbs-down"
-            className="chat-action-tooltip"
             role="tooltip"
-            style={{
-              opacity:
-                tooltipVisibleId === 'thumbs-down' ||
-                (feedbackLike === 'dislike' && showThankYouTooltip)
-                  ? 1
-                  : 0,
-              visibility:
-                tooltipVisibleId === 'thumbs-down' ||
-                (feedbackLike === 'dislike' && showThankYouTooltip)
-                  ? 'visible'
-                  : 'hidden',
-              transform:
-                tooltipVisibleId === 'thumbs-down' ||
-                (feedbackLike === 'dislike' && showThankYouTooltip)
-                  ? 'translateX(-50%) translateY(0)'
-                  : 'translateX(-50%) translateY(4px)',
-            }}
+            className={cn(
+              tooltipClasses,
+              thumbsDownVisible
+                ? 'visible -translate-x-1/2 translate-y-0 opacity-100'
+                : 'invisible -translate-x-1/2 translate-y-1 opacity-0'
+            )}
           >
             {feedbackLike === 'dislike' && showThankYouTooltip
               ? 'Дякуємо за відгук!'
               : 'Не подобається'}
           </span>
         </div>
+
         <div
           ref={regenerateAnchorRef}
-          className="chat-action-tooltip-anchor"
-          style={{ position: 'relative' }}
+          className="relative inline-flex"
           onMouseEnter={() => showTooltipAfterDelay('refresh')}
           onFocusCapture={() => showTooltipAfterDelay('refresh')}
         >
           <button
             type="button"
-            style={btnStyle}
-            className="chat-action-btn chat-action-btn--circle"
+            className={cn(baseBtnClasses, 'hover:bg-transparent active:scale-[0.92]')}
             aria-label="Згенерувати знову"
             aria-expanded={regeneratePopoverOpen}
             aria-haspopup="dialog"
@@ -418,14 +396,13 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
             onClick={toggleRegeneratePopover}
           >
             <svg
-              width={iconSize}
-              height={iconSize}
+              width={16}
+              height={16}
               viewBox="0 0 13 12"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               aria-hidden
-              className="chat-action-icon"
-              style={{ display: 'block' }}
+              className={defaultIconHoverFilter}
             >
               <path
                 d="M3.26939 9.73042C5.38619 11.8472 8.8182 11.8472 10.935 9.73042C13.0518 7.61362 13.0518 4.18161 10.935 2.06481C8.8182 -0.0519925 5.38619 -0.0519925 3.26939 2.06481C2.21031 3.12389 1.68111 4.5122 1.68179 5.90029L1.68178 7.10215"
@@ -445,17 +422,13 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
           </button>
           <span
             id="chat-action-tooltip-refresh"
-            className="chat-action-tooltip"
             role="tooltip"
-            style={{
-              opacity: tooltipVisibleId === 'refresh' && !regeneratePopoverOpen ? 1 : 0,
-              visibility:
-                tooltipVisibleId === 'refresh' && !regeneratePopoverOpen ? 'visible' : 'hidden',
-              transform:
-                tooltipVisibleId === 'refresh' && !regeneratePopoverOpen
-                  ? 'translateX(-50%) translateY(0)'
-                  : 'translateX(-50%) translateY(4px)',
-            }}
+            className={cn(
+              tooltipClasses,
+              refreshVisible
+                ? 'visible -translate-x-1/2 translate-y-0 opacity-100'
+                : 'invisible -translate-x-1/2 translate-y-1 opacity-0'
+            )}
           >
             Згенерувати знову
           </span>
@@ -466,23 +439,13 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
                 ref={regeneratePopoverRef}
                 role="dialog"
                 aria-label="Змінити відповідь"
+                className="fixed z-1000 flex w-52.5 flex-col gap-1 rounded-[10px] border border-[#E0E0E0] bg-white p-2 shadow-none"
                 style={{
-                  position: 'fixed',
                   top: popoverPos.top,
                   left: popoverPos.left,
-                  width: `${POPOVER_WIDTH}px`,
-                  padding: '8px',
-                  borderRadius: '10px',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E0E0E0',
-                  boxShadow: 'none',
-                  zIndex: 1000,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
                 }}
               >
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', minWidth: 0 }}>
+                <div className="flex min-w-0 items-center gap-1.5">
                   <input
                     type="text"
                     value={regeneratePrompt}
@@ -495,17 +458,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
                     }}
                     placeholder="Уточнення"
                     autoFocus
-                    style={{
-                      flex: '1 1 0',
-                      minWidth: 0,
-                      padding: '6px 10px',
-                      borderRadius: '6px',
-                      border: '1px solid #E0E0E0',
-                      backgroundColor: '#F7F7F7',
-                      color: '#2A2A2A',
-                      fontSize: '14px',
-                      outline: 'none',
-                    }}
+                    className="min-w-0 flex-1 rounded-md border border-[#E0E0E0] bg-[#F7F7F7] px-2.5 py-1.5 text-sm text-[#2A2A2A] outline-none"
                     aria-label="Текст зміни відповіді"
                   />
                   <button
@@ -514,23 +467,12 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
                     onClick={() =>
                       regeneratePrompt.trim() && runRegenerate(regeneratePrompt.trim())
                     }
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '32px',
-                      height: '32px',
-                      minWidth: '32px',
-                      minHeight: '32px',
-                      padding: 0,
-                      border: 'none',
-                      borderRadius: '6px',
-                      backgroundColor: regeneratePrompt.trim() ? '#2A2A2A' : '#EDEDED',
-                      color: regeneratePrompt.trim() ? '#FFFFFF' : '#ABABAB',
-                      cursor: regeneratePrompt.trim() ? 'pointer' : 'not-allowed',
-                      transition: 'background-color 0.15s ease, color 0.15s ease',
-                      flexShrink: 0,
-                    }}
+                    className={cn(
+                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-md border-none p-0 transition-colors duration-150',
+                      regeneratePrompt.trim()
+                        ? 'cursor-pointer bg-[#2A2A2A] text-white'
+                        : 'cursor-not-allowed bg-[#EDEDED] text-[#ABABAB]'
+                    )}
                     aria-label="Надіслати"
                   >
                     <svg
@@ -539,7 +481,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
                       viewBox="0 0 37 37"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
-                      style={{ transition: 'fill 0.15s ease' }}
+                      className="transition-colors duration-150"
                     >
                       <path
                         d="M24.8618 13.2114L24.8618 22.2812C24.8618 22.4222 24.8341 22.5618 24.7801 22.692C24.7262 22.8222 24.6471 22.9405 24.5475 23.0402C24.4478 23.1398 24.3295 23.2189 24.1993 23.2728C24.0691 23.3268 23.9295 23.3545 23.7886 23.3545C23.6476 23.3545 23.5081 23.3268 23.3779 23.2728C23.2476 23.2189 23.1293 23.1398 23.0297 23.0402C22.93 22.9405 22.8509 22.8222 22.797 22.692C22.7431 22.5618 22.7153 22.4222 22.7153 22.2812L22.7229 15.7888L13.9629 24.5487C13.7625 24.7492 13.4906 24.8618 13.2071 24.8618C12.9236 24.8618 12.6517 24.7492 12.4513 24.5487C12.2508 24.3482 12.1382 24.0764 12.1382 23.7929C12.1382 23.5094 12.2508 23.2375 12.4513 23.0371L21.2112 14.2771L14.7187 14.2847C14.4341 14.2847 14.1611 14.1716 13.9598 13.9703C13.7586 13.7691 13.6455 13.4961 13.6455 13.2114C13.6455 12.9268 13.7586 12.6538 13.9598 12.4525C14.1611 12.2512 14.4341 12.1382 14.7187 12.1382L23.7886 12.1382C23.9297 12.1376 24.0695 12.165 24.2 12.2187C24.3305 12.2724 24.449 12.3514 24.5488 12.4512C24.6485 12.551 24.7276 12.6695 24.7813 12.8C24.835 12.9305 24.8624 13.0703 24.8618 13.2114Z"
@@ -548,24 +490,11 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
                     </svg>
                   </button>
                 </div>
-                <div style={{ height: 1, backgroundColor: '#E0E0E0', margin: '2px 0' }} />
+                <div className="my-0.5 h-px bg-[#E0E0E0]" />
                 <button
                   type="button"
                   onClick={() => runRegenerate()}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    width: '100%',
-                    padding: '6px 10px',
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: '#2A2A2A',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                  className="chat-regenerate-option-btn"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md border-none bg-transparent px-2.5 py-1.5 text-left text-sm text-[#2A2A2A] transition-colors duration-150 hover:bg-[#f7f7f7]"
                 >
                   <svg
                     width={14}
@@ -573,7 +502,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
                     viewBox="0 0 13 12"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
-                    style={{ opacity: 0.9, display: 'block', flexShrink: 0 }}
+                    className="block shrink-0 opacity-90"
                     aria-hidden
                   >
                     <path
@@ -596,20 +525,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
                 <button
                   type="button"
                   onClick={() => runRegenerate('Додай більше деталей')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    width: '100%',
-                    padding: '6px 10px',
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: '#2A2A2A',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                  className="chat-regenerate-option-btn"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md border-none bg-transparent px-2.5 py-1.5 text-left text-sm text-[#2A2A2A] transition-colors duration-150 hover:bg-[#f7f7f7]"
                 >
                   <svg
                     width="14"
@@ -626,20 +542,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
                 <button
                   type="button"
                   onClick={() => runRegenerate('Зроби відповідь коротшою')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    width: '100%',
-                    padding: '6px 10px',
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: '#2A2A2A',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                  className="chat-regenerate-option-btn"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md border-none bg-transparent px-2.5 py-1.5 text-left text-sm text-[#2A2A2A] transition-colors duration-150 hover:bg-[#f7f7f7]"
                 >
                   <svg
                     width="14"
@@ -658,37 +561,20 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
             )}
         </div>
       </div>
-      <div
-        className="chat-action-item-animate"
-        style={{ display: 'inline-block', animationDelay: '280ms' }}
-      >
+
+      <div className="chat-action-item-animate inline-block" style={{ animationDelay: '280ms' }}>
         <button
           type="button"
-          style={{
-            ...btnStyle,
-            width: 'auto',
-            height: 'auto',
-            padding: '4px 12px',
-            marginLeft: '6px',
-            borderRadius: 6,
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '14px',
-            fontWeight: 400,
-            color: '#9A9A9A',
-            backgroundColor: 'transparent',
-          }}
-          className="chat-action-btn chat-action-btn--no-highlight hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+          className="ml-1.5 h-auto w-auto cursor-pointer rounded-md border-none bg-transparent px-3 py-1 font-sans text-sm font-normal text-[#9A9A9A] transition-colors duration-150 hover:bg-transparent hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
           aria-label="Переглянути процес"
           title="Переглянути процес"
         >
           Переглянути процес
         </button>
       </div>
+
       {trailing ? (
-        <div
-          className="chat-action-item-animate"
-          style={{ marginLeft: 'auto', animationDelay: '350ms' }}
-        >
+        <div className="chat-action-item-animate ml-auto" style={{ animationDelay: '350ms' }}>
           {trailing}
         </div>
       ) : null}

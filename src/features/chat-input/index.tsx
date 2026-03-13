@@ -2,6 +2,8 @@
 
 import React from 'react';
 
+import { cn } from '@/lib/utils';
+
 export const HOME_TEXTAREA_MIN_HEIGHT = 82;
 export const HOME_TEXTAREA_MAX_HEIGHT = 280;
 export const CHAT_TEXTAREA_MIN_HEIGHT = 30;
@@ -47,9 +49,6 @@ export function ChatInput({
   filesExpanded,
   onAttach,
 }: ChatInputProps) {
-  const minH = hasMessages ? CHAT_TEXTAREA_MIN_HEIGHT : HOME_TEXTAREA_MIN_HEIGHT;
-  const maxH = hasMessages ? CHAT_TEXTAREA_MAX_HEIGHT : HOME_TEXTAREA_MAX_HEIGHT;
-
   return (
     <>
       <textarea
@@ -58,48 +57,21 @@ export function ChatInput({
         onChange={onChange}
         onKeyDown={onKeyDown}
         placeholder={placeholder}
-        className="placeholder:text-[#8C8C8C]"
         rows={1}
-        style={{
-          width: '100%',
-          height: `${minH}px`,
-          minHeight: `${minH}px`,
-          maxHeight: `${maxH}px`,
-          backgroundColor: 'transparent',
-          border: 'none',
-          outline: 'none',
-          fontFamily: 'Inter, sans-serif',
-          fontWeight: 400,
-          fontSize: '16px',
-          lineHeight: '24px',
-          letterSpacing: '0.14px',
-          color: '#000000',
-          caretColor: '#000000',
-          resize: 'none',
-          overflowY: hasMessages ? 'auto' : 'hidden',
-        }}
+        className={cn(
+          'w-full resize-none border-none bg-transparent font-sans text-[16px] leading-6 font-normal tracking-[0.14px] text-black caret-black outline-none placeholder:text-[#8C8C8C]',
+          hasMessages
+            ? 'h-7.5 max-h-60 min-h-7.5 overflow-y-auto'
+            : 'h-20.5 max-h-70 min-h-20.5 overflow-y-hidden'
+        )}
       />
       <div
-        style={{
-          marginTop: hasMessages ? '6px' : '12px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexShrink: 0,
-        }}
+        className={cn(
+          'flex shrink-0 items-center justify-between',
+          hasMessages ? 'mt-1.5' : 'mt-3'
+        )}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '2px',
-            backgroundColor: '#EDEDED',
-            borderRadius: '9px',
-            height: '40px',
-            padding: '0 10px',
-            flexShrink: 0,
-          }}
-        >
+        <div className="flex h-10 shrink-0 items-center gap-0.5 rounded-[9px] bg-[#EDEDED] px-2.5">
           <input
             ref={fileInputRef}
             type="file"
@@ -114,24 +86,13 @@ export function ChatInput({
             aria-hidden
             tabIndex={-1}
           />
+
+          {/* File Upload Button */}
           <button
             type="button"
-            className="workspace-action-btn workspace-icon-btn"
+            className="workspace-action-btn workspace-icon-btn flex h-7.5 w-7.5 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent p-0"
             aria-label="Завантажити файл"
             onClick={() => fileInputRef.current?.click()}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '30px',
-              height: '30px',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              borderRadius: '6px',
-              padding: 0,
-              flexShrink: 0,
-            }}
           >
             <svg
               width="16"
@@ -150,25 +111,19 @@ export function ChatInput({
               />
             </svg>
           </button>
+
+          {/* System Prompt Editor Toggle */}
           <button
             type="button"
-            className="workspace-action-btn workspace-icon-btn"
+            className={cn(
+              'workspace-action-btn workspace-icon-btn flex h-7.5 w-7.5 shrink-0 cursor-pointer items-center justify-center rounded-md p-0',
+              systemPromptEditorOpen
+                ? 'border border-[#0070f3] bg-[#E8F0FE]'
+                : 'border-none bg-transparent'
+            )}
             aria-label="Редактор промпту"
             aria-pressed={systemPromptEditorOpen}
             onClick={onSystemPromptEditorToggle}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '30px',
-              height: '30px',
-              border: systemPromptEditorOpen ? '1px solid #0070f3' : 'none',
-              background: systemPromptEditorOpen ? AI_SPACE_EDITOR_ACTIVE_BG : 'transparent',
-              cursor: 'pointer',
-              borderRadius: '6px',
-              padding: 0,
-              flexShrink: 0,
-            }}
           >
             <svg
               width="16"
@@ -187,18 +142,11 @@ export function ChatInput({
               />
             </svg>
           </button>
+
+          {/* Decorative Elements */}
           <span
             aria-hidden
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '30px',
-              height: '30px',
-              flexShrink: 0,
-              pointerEvents: 'none',
-              userSelect: 'none',
-            }}
+            className="pointer-events-none flex h-7.5 w-7.5 shrink-0 items-center justify-center select-none"
           >
             <svg
               width="16"
@@ -225,16 +173,7 @@ export function ChatInput({
           </span>
           <span
             aria-hidden
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '30px',
-              height: '30px',
-              flexShrink: 0,
-              pointerEvents: 'none',
-              userSelect: 'none',
-            }}
+            className="pointer-events-none flex h-7.5 w-7.5 shrink-0 items-center justify-center select-none"
           >
             <svg
               width="16"
@@ -267,34 +206,20 @@ export function ChatInput({
             </svg>
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+
+        <div className="flex shrink-0 items-center gap-2">
           {showExpandButton && (
             <button
               type="button"
               onClick={onExpandToggle}
-              className="workspace-action-btn workspace-icon-btn workspace-icon-btn--no-hover-scale"
-              style={{
-                width: '37px',
-                height: '37px',
-                padding: 0,
-                border: 'none',
-                borderRadius: '8px',
-                backgroundColor: '#EDEDED',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              className="workspace-action-btn workspace-icon-btn workspace-icon-btn--no-hover-scale flex h-9.25 w-9.25 cursor-pointer items-center justify-center rounded-lg border-none bg-[#EDEDED] p-0"
               aria-label={filesExpanded ? 'Згорнути файли' : 'Розгорнути файли'}
             >
               <span
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transform: filesExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1)',
-                }}
+                className={cn(
+                  'flex items-center justify-center transition-transform duration-400 ease-[cubic-bezier(0.34,1.2,0.64,1)]',
+                  filesExpanded ? 'rotate-180' : 'rotate-0'
+                )}
               >
                 <svg
                   width="20"
@@ -312,24 +237,13 @@ export function ChatInput({
               </span>
             </button>
           )}
+
+          {/* Action Button (Stop or Send) */}
           {isGenerationInProgress ? (
             <button
               type="button"
               onClick={onStopGeneration}
-              className="workspace-action-btn animate-pulse-subtle"
-              style={{
-                width: '44px',
-                height: '44px',
-                padding: '3px',
-                border: 'none',
-                cursor: 'pointer',
-                backgroundColor: '#F0F0F0',
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-              }}
+              className="workspace-action-btn animate-pulse-subtle flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-[#F0F0F0] p-0.75"
               aria-label="Stop generation"
             >
               <svg
@@ -347,20 +261,10 @@ export function ChatInput({
             <button
               disabled={!canSend}
               onClick={onSend}
-              className="workspace-action-btn workspace-send-btn"
-              style={{
-                width: '44px',
-                height: '44px',
-                padding: '3px',
-                border: 'none',
-                cursor: canSend ? 'pointer' : 'not-allowed',
-                backgroundColor: 'transparent',
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: '8px',
-              }}
+              className={cn(
+                'workspace-action-btn workspace-send-btn flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border-none bg-transparent p-0.75',
+                canSend ? 'cursor-pointer' : 'cursor-not-allowed'
+              )}
               aria-label="Надіслати повідомлення"
             >
               <svg

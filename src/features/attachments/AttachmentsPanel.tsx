@@ -1,11 +1,10 @@
 'use client';
 
 import { FilePreview } from '@/components/ui/file-preview';
+import { cn } from '@/lib/utils';
 
 import { FileFilterButton } from './FileFilterButton';
 import type { AttachedFile } from './types';
-
-const EXPANDED_ATTACHMENTS_MAX_HEIGHT = '210px';
 
 export interface AttachmentsPanelProps {
   attachedFiles: AttachedFile[];
@@ -38,57 +37,24 @@ export function AttachmentsPanelExpanded({
   onRemove: (originalIndex: number) => void;
   variant?: 'home' | 'chat';
 }) {
-  const panelStyle =
-    variant === 'chat'
-      ? {
-          backgroundColor: '#F5F6F6',
-          borderRadius: '16px',
-          padding: '12px 13px 16px',
-          marginBottom: '10px',
-        }
-      : {
-          backgroundColor: '#F5F6F6',
-          borderRadius: '16px',
-          padding: '12px 16px 16px',
-          marginBottom: '10px',
-        };
-
   return (
-    <div style={panelStyle}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          marginBottom: '12px',
-        }}
-      >
-        <div
-          style={{
-            position: 'relative',
-            display: 'inline-flex',
-            alignItems: 'center',
-            width: '200px',
-            maxWidth: '100%',
-          }}
-        >
+    <div
+      className={cn(
+        'mb-2.5 rounded-2xl bg-[#F5F6F6] pt-3 pb-4',
+        variant === 'chat' ? 'px-3.25' : 'px-4'
+      )}
+    >
+      <div className="mb-3 flex items-center gap-2">
+        <div className="relative inline-flex w-50 max-w-full items-center">
           <input
             type="search"
-            className="workspace-files-panel-field workspace-search-input"
+            className={cn(
+              'workspace-files-panel-field workspace-search-input box-border w-full rounded-md border-none bg-[#F0F0F0] py-1.5 pl-2.5 text-[13px] text-[#2A2A2A] outline-none',
+              fileSearchQuery.trim() ? 'pr-7' : 'pr-2.5'
+            )}
             placeholder="Пошук за назвою..."
             value={fileSearchQuery}
             onChange={(e) => onFileSearchQueryChange(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '6px 10px',
-              paddingRight: fileSearchQuery.trim() ? '28px' : '10px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: '#F0F0F0',
-              fontSize: '13px',
-              color: '#2A2A2A',
-              boxSizing: 'border-box',
-            }}
             aria-label="Пошук файлів"
           />
           {fileSearchQuery.trim() && (
@@ -96,23 +62,7 @@ export function AttachmentsPanelExpanded({
               type="button"
               onClick={() => onFileSearchQueryChange('')}
               aria-label="Очистити пошук"
-              style={{
-                position: 'absolute',
-                right: '6px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '18px',
-                height: '18px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: 'none',
-                background: 'transparent',
-                cursor: 'pointer',
-                padding: 0,
-                borderRadius: '4px',
-              }}
-              className="workspace-action-btn hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+              className="workspace-action-btn absolute top-1/2 right-1.5 flex h-4.5 w-4.5 -translate-y-1/2 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
             >
               <svg
                 width="11"
@@ -133,24 +83,11 @@ export function AttachmentsPanelExpanded({
             </button>
           )}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto' }}>
+        <div className="ml-auto flex items-center gap-1.5">
           <button
             type="button"
             onClick={onRemoveAll}
-            className="workspace-files-panel-field workspace-action-btn workspace-remove-all-btn workspace-icon-btn"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '30px',
-              height: '30px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: 'transparent',
-              cursor: 'pointer',
-              padding: 0,
-              flexShrink: 0,
-            }}
+            className="workspace-files-panel-field workspace-action-btn workspace-remove-all-btn workspace-icon-btn flex h-7.5 w-7.5 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent p-0"
             aria-label="Видалити всі файли"
           >
             <svg
@@ -194,17 +131,10 @@ export function AttachmentsPanelExpanded({
       </div>
       <div
         ref={fileListScrollRef}
-        className="scrollbar-hidden"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '8px',
-          overflowY: 'auto',
-          maxHeight: EXPANDED_ATTACHMENTS_MAX_HEIGHT,
-        }}
+        className="scrollbar-hidden grid max-h-52.5 grid-cols-3 gap-2 overflow-y-auto"
       >
         {filteredAttachedFiles.map(({ item, originalIndex }) => (
-          <div key={`${item.file.name}-${item.file.size}-${originalIndex}`} style={{ minWidth: 0 }}>
+          <div key={`${item.file.name}-${item.file.size}-${originalIndex}`} className="min-w-0">
             <FilePreview
               file={item.file}
               previewUrl={item.previewUrl}
@@ -231,20 +161,10 @@ export function AttachmentsPanelCollapsed({
   return (
     <div
       ref={fileListRef}
-      className="scrollbar-hidden"
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        flexWrap: 'nowrap',
-        alignItems: 'flex-start',
-        gap: '8px',
-        marginBottom: '12px',
-        overflowX: 'auto',
-        overflowY: 'hidden',
-      }}
+      className="scrollbar-hidden mb-3 flex flex-row flex-nowrap items-start gap-2 overflow-x-auto overflow-y-hidden"
     >
       {attachedFiles.map((item, index) => (
-        <div key={`${item.file.name}-${item.file.size}-${index}`} style={{ flexShrink: 0 }}>
+        <div key={`${item.file.name}-${item.file.size}-${index}`} className="shrink-0">
           <FilePreview
             file={item.file}
             previewUrl={item.previewUrl}

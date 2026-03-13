@@ -4,6 +4,7 @@ import Lottie from 'lottie-react';
 import { useEffect } from 'react';
 
 import bootAnimationData from '@/assets/boot-animation.json';
+import { cn } from '@/lib/utils';
 
 interface BootErrorScreenProps {
   /**
@@ -51,85 +52,37 @@ export function BootErrorScreen({
 
   return (
     <div
-      className={className}
+      className={cn(
+        'fixed inset-0 z-9999 m-0 flex h-screen w-screen flex-col items-center justify-center overflow-hidden p-0',
+        className
+      )}
       role="alert"
       aria-live="assertive"
       aria-label="Application error"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        width: '100vw',
-        height: '100vh',
-        margin: 0,
-        padding: 0,
-        overflow: 'hidden',
-        zIndex: 9999,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
     >
-      <div className="boot-background-layer" aria-hidden />
       <div
-        className="boot-screen-content"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'absolute',
-          inset: 0,
-        }}
-      >
+        className="absolute -top-[3%] -left-[3%] z-0 h-[106%] w-[106%] bg-[url('/images/boot-background-clean.png')] bg-cover bg-center bg-no-repeat max-[1680px]:blur-[2px]"
+        aria-hidden
+      />
+      <div className="boot-screen-content absolute inset-0 flex flex-col items-center justify-center">
         {/* Loading Animation - Same as boot screen */}
-        <div
-          style={{
-            marginBottom: '16px',
-          }}
-        >
+        <div className="mb-4">
           <Lottie
             animationData={bootAnimationData}
             loop={true}
             autoplay={true}
-            style={{
-              width: '120px',
-              height: '120px',
-              maxWidth: '90vw',
-            }}
+            className="h-30 w-30 max-w-[90vw]"
           />
         </div>
 
         {/* Error Message */}
-        <div
-          style={{
-            maxWidth: '500px',
-            textAlign: 'center',
-            padding: '0 24px',
-          }}
-        >
-          <h1
-            style={{
-              fontSize: '24px',
-              fontWeight: '600',
-              color: '#000000',
-              marginBottom: '12px',
-              lineHeight: '1.4',
-            }}
-          >
+        <div className="max-w-125 px-6 text-center">
+          <h1 className="mb-3 text-[24px] leading-[1.4] font-semibold text-black">
             {errorMessage}
           </h1>
 
           {errorCode && (
-            <p
-              style={{
-                fontSize: '14px',
-                color: '#6B7280',
-                fontFamily: 'monospace',
-              }}
-            >
-              Код помилки: {errorCode}
-            </p>
+            <p className="font-mono text-sm text-[#6B7280]">Код помилки: {errorCode}</p>
           )}
         </div>
       </div>

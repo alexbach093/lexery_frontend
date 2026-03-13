@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { cn } from '@/lib/utils';
+
 import { FileFormatFilterChips } from './FileFormatFilterChips';
 
 const FILTER_POPOVER_DURATION_MS = 200;
@@ -23,6 +25,7 @@ export function FileFilterButton({
   const containerRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Handle click outside to close the popover
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -47,6 +50,7 @@ export function FileFilterButton({
     };
   }, [open, closing]);
 
+  // Handle visibility states for smooth transitions
   useEffect(() => {
     if (open && !closing) {
       const id = requestAnimationFrame(() => setVisible(true));
@@ -82,10 +86,13 @@ export function FileFilterButton({
   const popoverVisible = open && visible && !closing;
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', flexShrink: 0 }}>
+    <div ref={containerRef} className="relative shrink-0">
       <button
         type="button"
-        className="workspace-files-panel-field workspace-icon-btn"
+        className={cn(
+          'workspace-files-panel-field workspace-icon-btn box-border flex h-7.5 w-7.5 shrink-0 cursor-pointer items-center justify-center rounded-md border-none p-0',
+          inPill ? 'bg-transparent' : 'bg-[#F0F0F0]'
+        )}
         onClick={handleToggle}
         aria-expanded={open}
         aria-haspopup="dialog"
@@ -94,20 +101,6 @@ export function FileFilterButton({
             ? `Фільтр (${selectedFormats.size})`
             : 'Відкрити фільтр за форматом файлу'
         }
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '30px',
-          height: '30px',
-          padding: 0,
-          borderRadius: '6px',
-          border: 'none',
-          backgroundColor: inPill ? 'transparent' : '#F0F0F0',
-          cursor: 'pointer',
-          flexShrink: 0,
-          boxSizing: 'border-box',
-        }}
       >
         <svg
           width="16"
@@ -116,7 +109,7 @@ export function FileFilterButton({
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden
-          style={{ display: 'block' }}
+          className="block"
         >
           <path
             d="M0.75 0.75H16.75M3.75 6.75H13.75M7.75 12.75H9.75"
@@ -127,27 +120,17 @@ export function FileFilterButton({
           />
         </svg>
       </button>
+
       {popoverShown && (
         <div
           role="dialog"
           aria-label="Фільтр за форматом файлу"
-          style={{
-            position: 'absolute',
-            bottom: '100%',
-            right: 0,
-            left: 'auto',
-            marginBottom: '6px',
-            padding: '12px',
-            borderRadius: '12px',
-            backgroundColor: '#fff',
-            border: '1px solid #E8E8E8',
-            zIndex: 50,
-            opacity: popoverVisible ? 1 : 0,
-            transform: popoverVisible ? 'translateY(0)' : 'translateY(6px)',
-            transition: `opacity ${FILTER_POPOVER_DURATION_MS}ms ease, transform ${FILTER_POPOVER_DURATION_MS}ms ease`,
-            pointerEvents: popoverVisible ? 'auto' : 'none',
-            width: 'fit-content',
-          }}
+          className={cn(
+            'absolute right-0 bottom-full z-50 mb-1.5 w-fit rounded-xl border border-[#E8E8E8] bg-white p-3 transition-all duration-200 ease-in-out',
+            popoverVisible
+              ? 'pointer-events-auto translate-y-0 opacity-100'
+              : 'pointer-events-none translate-y-1.5 opacity-0'
+          )}
         >
           <FileFormatFilterChips
             options={formatOptions}

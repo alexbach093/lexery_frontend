@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { cn } from '@/lib/utils';
 import type { MessageAttachment, MessageVersion } from '@/types/chat';
 
 import { MessageActions } from './MessageActions';
@@ -31,45 +32,10 @@ export interface ChatMessageProps {
 /** Typing indicator: pulsing dots. */
 function TypingIndicator() {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0,
-      }}
-      aria-live="polite"
-      aria-label="Набір відповіді"
-    >
-      <span
-        className="chat-typing-dot"
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: '50%',
-          backgroundColor: '#616161',
-          animation: 'chat-typing 1.4s ease-in-out infinite both',
-        }}
-      />
-      <span
-        className="chat-typing-dot"
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: '50%',
-          backgroundColor: '#616161',
-          animation: 'chat-typing 1.4s ease-in-out 0.2s infinite both',
-        }}
-      />
-      <span
-        className="chat-typing-dot"
-        style={{
-          width: 6,
-          height: 6,
-          borderRadius: '50%',
-          backgroundColor: '#616161',
-          animation: 'chat-typing 1.4s ease-in-out 0.4s infinite both',
-        }}
-      />
+    <div className="flex items-center gap-0" aria-live="polite" aria-label="Набір відповіді">
+      <span className="h-1.5 w-1.5 animate-[chat-typing_1.4s_ease-in-out_infinite_both] rounded-full bg-[#616161]" />
+      <span className="h-1.5 w-1.5 animate-[chat-typing_1.4s_ease-in-out_0.2s_infinite_both] rounded-full bg-[#616161]" />
+      <span className="h-1.5 w-1.5 animate-[chat-typing_1.4s_ease-in-out_0.4s_infinite_both] rounded-full bg-[#616161]" />
     </div>
   );
 }
@@ -107,6 +73,7 @@ export function ChatMessage({
   useEffect(() => {
     attachmentsRef.current = attachments;
   }, [attachments]);
+
   useEffect(() => {
     return () => {
       attachmentsRef.current.forEach((a) => {
@@ -114,6 +81,7 @@ export function ChatMessage({
       });
     };
   }, []);
+
   useEffect(
     () => () => {
       if (userTooltipTimeoutRef.current) clearTimeout(userTooltipTimeoutRef.current);
@@ -121,6 +89,7 @@ export function ChatMessage({
     },
     []
   );
+
   useEffect(() => {
     if (!isEditing) return;
     const rafId = requestAnimationFrame(() => {
@@ -159,21 +128,6 @@ export function ChatMessage({
   }, [versions?.length]);
 
   if (role === 'user') {
-    const iconSize = 16;
-    const iconBtnStyle: React.CSSProperties = {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: 32,
-      height: 32,
-      padding: 0,
-      cursor: 'pointer',
-      flexShrink: 0,
-      border: 'none',
-      borderRadius: 9999,
-      background: 'transparent',
-      transition: 'background-color 150ms ease',
-    };
     const USER_TOOLTIP_DELAY_MS = 1250;
 
     const showUserTooltipAfterDelay = (id: UserMessageTooltipId) => {
@@ -200,6 +154,7 @@ export function ChatMessage({
         userHalfSecondTimeoutRef.current = null;
       }, USER_TOOLTIP_DELAY_MS);
     };
+
     const hideUserTooltip = () => {
       if (userTooltipTimeoutRef.current) {
         clearTimeout(userTooltipTimeoutRef.current);
@@ -213,6 +168,7 @@ export function ChatMessage({
       userHoveredIdRef.current = null;
       setUserTooltipVisibleId(null);
     };
+
     const handleUserCopy = () => {
       if (!content.trim()) return;
       navigator.clipboard.writeText(content).then(
@@ -223,6 +179,7 @@ export function ChatMessage({
         () => {}
       );
     };
+
     const handleStartEdit = () => {
       const wrapper = userMessageWrapperRef.current;
       const h = wrapper ? wrapper.offsetHeight : 60;
@@ -231,7 +188,9 @@ export function ChatMessage({
       setEditDraft(content);
       setIsEditing(true);
     };
+
     const handleCancelEdit = () => setIsEditing(false);
+
     const handleDoneEdit = () => {
       if (!messageId || !onEditMessage) return;
       const trimmed = editDraft.trim();
@@ -240,33 +199,24 @@ export function ChatMessage({
       setIsEditing(false);
     };
 
+    // Style variables for repeating user action buttons
+    const userBtnClasses =
+      'group flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-[#575757] transition-all duration-150 hover:bg-transparent active:scale-[0.92] active:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+    const userIconClasses =
+      'block shrink-0 transition-[filter] duration-150 group-hover:[filter:brightness(0)_saturate(100%)_invert(0.45)]';
+
     if (isEditing) {
       return (
         <div
+          className="relative w-full max-w-100 self-end overflow-visible"
           style={{
-            position: 'relative',
-            alignSelf: 'flex-end',
-            width: '100%',
-            maxWidth: '400px',
             height: editSlotHeight,
             minHeight: editSlotHeight,
-            overflow: 'visible',
           }}
         >
           <div
             ref={editBlockRef}
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '100%',
-              maxWidth: '400px',
-              zIndex: 20,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-end',
-              gap: '10px',
-            }}
+            className="absolute top-0 right-0 z-20 flex w-full max-w-100 flex-col items-end gap-2.5"
           >
             <textarea
               ref={editTextareaRef}
@@ -283,50 +233,21 @@ export function ChatMessage({
                 }
               }}
               rows={3}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: '12px 14px',
-                borderRadius: '18px',
-                border: '1px solid #E0E0E0',
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '15px',
-                lineHeight: '20px',
-                color: '#2A2A2A',
-                resize: 'none',
-                minHeight: '80px',
-                outline: 'none',
-              }}
+              className="box-border min-h-20 w-full resize-none rounded-[18px] border border-[#E0E0E0] px-3.5 py-3 font-sans text-[15px] leading-5 text-[#2A2A2A] outline-none"
               aria-label="Редагувати повідомлення"
             />
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <div className="flex justify-end gap-2">
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: '1px solid #E0E0E0',
-                  background: '#fff',
-                  fontSize: '14px',
-                  color: '#2A2A2A',
-                  cursor: 'pointer',
-                }}
+                className="cursor-pointer rounded-md border border-[#E0E0E0] bg-white px-3 py-1.5 text-sm text-[#2A2A2A] transition-colors hover:bg-gray-50"
               >
                 Скасувати
               </button>
               <button
                 type="button"
                 onClick={handleDoneEdit}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: '#2A2A2A',
-                  fontSize: '14px',
-                  color: '#fff',
-                  cursor: 'pointer',
-                }}
+                className="cursor-pointer rounded-md border-none bg-[#2A2A2A] px-3 py-1.5 text-sm text-white transition-colors hover:bg-black"
               >
                 Готово
               </button>
@@ -341,75 +262,50 @@ export function ChatMessage({
         {attachments.length === 1 ? <MessageAttachments attachments={attachments} /> : null}
         {content ? (
           <div
-            style={{
-              display: 'inline-block',
-              width: 'max-content',
-              maxWidth: '600px',
-              background: '#F5F5F5',
-              ...(attachments.length === 1
-                ? {
-                    borderTopLeftRadius: '16px',
-                    borderTopRightRadius: '7px',
-                    borderBottomRightRadius: '16px',
-                    borderBottomLeftRadius: '16px',
-                  }
+            className={cn(
+              'box-border inline-block w-max max-w-150 bg-[#F5F5F5] px-3.5 py-3 font-sans text-[15px] leading-5 font-normal tracking-[0.13px] wrap-break-word text-black',
+              attachments.length === 1
+                ? 'rounded-tl-2xl rounded-tr-[7px] rounded-b-2xl'
                 : attachments.length > 1
-                  ? {
-                      borderTopLeftRadius: '16px',
-                      borderTopRightRadius: '16px',
-                      borderBottomRightRadius: '7px',
-                      borderBottomLeftRadius: '16px',
-                    }
-                  : { borderRadius: '16px' }),
-              padding: '12px 14px',
-              fontFamily: 'Inter, sans-serif',
-              fontSize: '15px',
-              fontWeight: 400,
-              lineHeight: '20px',
-              letterSpacing: '0.13px',
-              color: '#000000',
-              boxSizing: 'border-box',
-              wordBreak: 'break-word',
-              overflowWrap: 'break-word',
-            }}
+                  ? 'rounded-l-2xl rounded-tr-2xl rounded-br-[7px]'
+                  : 'rounded-2xl'
+            )}
           >
             {content}
           </div>
         ) : null}
         {attachments.length > 1 ? <MessageAttachmentsMultiple attachments={attachments} /> : null}
+
         <div
-          className="flex items-center opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-          style={{ flexShrink: 0, marginLeft: '-4px', gap: '8px' }}
+          className="-ml-1 flex shrink-0 items-center gap-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
           role="group"
           aria-label="Дії з повідомленням"
         >
           <div
-            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            className="flex items-center gap-2"
             onMouseLeave={hideUserTooltip}
             onBlurCapture={hideUserTooltip}
           >
             <div
-              className="chat-action-tooltip-anchor"
+              className="relative inline-flex"
               onMouseEnter={() => showUserTooltipAfterDelay('copy')}
               onFocusCapture={() => showUserTooltipAfterDelay('copy')}
             >
               <button
                 type="button"
-                style={iconBtnStyle}
-                className="chat-action-btn chat-action-btn--circle focus-visible:outline-none"
+                className={userBtnClasses}
                 aria-label="Копіювати"
                 aria-describedby="user-msg-tooltip-copy"
                 onClick={handleUserCopy}
               >
                 <svg
-                  width={iconSize}
-                  height={iconSize}
+                  width={16}
+                  height={16}
                   viewBox="0 0 16 16"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                   aria-hidden
-                  className="chat-action-icon"
-                  style={{ display: 'block' }}
+                  className={userIconClasses}
                 >
                   <g transform="translate(8, 8) scale(1.23077) translate(-5.5, -6.5)">
                     <path
@@ -431,43 +327,38 @@ export function ChatMessage({
               </button>
               <span
                 id="user-msg-tooltip-copy"
-                className="chat-action-tooltip"
                 role="tooltip"
-                style={{
-                  opacity: userTooltipVisibleId === 'copy' || userCopyFeedback ? 1 : 0,
-                  visibility:
-                    userTooltipVisibleId === 'copy' || userCopyFeedback ? 'visible' : 'hidden',
-                  transform:
-                    userTooltipVisibleId === 'copy' || userCopyFeedback
-                      ? 'translateX(-50%) translateY(0)'
-                      : 'translateX(-50%) translateY(4px)',
-                }}
+                className={cn(
+                  'bg-muted text-muted-foreground pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 rounded-lg px-3 py-1.5 font-sans text-xs leading-[1.3] font-medium whitespace-nowrap shadow-none transition-all duration-150 ease-out',
+                  userTooltipVisibleId === 'copy' || userCopyFeedback
+                    ? 'visible -translate-x-1/2 translate-y-0 opacity-100'
+                    : 'invisible -translate-x-1/2 translate-y-1 opacity-0'
+                )}
               >
                 {userCopyFeedback ? 'Скопійовано' : 'Копіювати'}
               </span>
             </div>
+
             <div
-              className="chat-action-tooltip-anchor"
+              className="relative inline-flex"
               onMouseEnter={() => showUserTooltipAfterDelay('edit')}
               onFocusCapture={() => showUserTooltipAfterDelay('edit')}
             >
               <button
                 type="button"
-                style={iconBtnStyle}
-                className="chat-action-btn chat-action-btn--circle focus-visible:outline-none"
+                className={userBtnClasses}
                 aria-label="Редагувати"
                 aria-describedby="user-msg-tooltip-edit"
                 onClick={handleStartEdit}
               >
                 <svg
-                  width={iconSize}
-                  height={iconSize}
+                  width={16}
+                  height={16}
                   viewBox="0 0 13 13"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                   aria-hidden
-                  className="chat-action-icon"
-                  style={{ display: 'block' }}
+                  className={userIconClasses}
                 >
                   <path
                     d="M6.71162 3.80806L9.19185 6.28829M3.91069 12.1895L12.1895 3.91072C12.5886 3.51157 12.5886 2.86443 12.1895 2.46528L10.5346 0.810425C10.1355 0.41128 9.48834 0.41128 9.08919 0.810424L0.810395 9.08922C0.618719 9.2809 0.511037 9.54087 0.511037 9.81194V11.4668C0.511037 12.0313 0.968635 12.4889 1.53311 12.4889H3.18797C3.45904 12.4889 3.71901 12.3812 3.91069 12.1895Z"
@@ -480,16 +371,13 @@ export function ChatMessage({
               </button>
               <span
                 id="user-msg-tooltip-edit"
-                className="chat-action-tooltip"
                 role="tooltip"
-                style={{
-                  opacity: userTooltipVisibleId === 'edit' ? 1 : 0,
-                  visibility: userTooltipVisibleId === 'edit' ? 'visible' : 'hidden',
-                  transform:
-                    userTooltipVisibleId === 'edit'
-                      ? 'translateX(-50%) translateY(0)'
-                      : 'translateX(-50%) translateY(4px)',
-                }}
+                className={cn(
+                  'bg-muted text-muted-foreground pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 rounded-lg px-3 py-1.5 font-sans text-xs leading-[1.3] font-medium whitespace-nowrap shadow-none transition-all duration-150 ease-out',
+                  userTooltipVisibleId === 'edit'
+                    ? 'visible -translate-x-1/2 translate-y-0 opacity-100'
+                    : 'invisible -translate-x-1/2 translate-y-1 opacity-0'
+                )}
               >
                 Редагувати
               </span>
@@ -502,20 +390,20 @@ export function ChatMessage({
 
   // Assistant
   const showHistoryButton = versions && versions.length > 1;
+
   return (
     <MessageContainer role="assistant">
       {isTyping ? (
         <TypingIndicator />
       ) : (
-        <div style={{ width: '100%', position: 'relative' }}>
+        <div className="relative w-full">
           <MessageMarkdown content={content} />
           {versions && versions.length > 0 && (
             <div
-              style={{
-                opacity: actionRowVisible ? 1 : 0,
-                transform: actionRowVisible ? 'translateY(0)' : 'translateY(6px)',
-                transition: 'opacity 0.4s ease-out, transform 0.4s ease-out',
-              }}
+              className={cn(
+                'transition-all duration-400 ease-out',
+                actionRowVisible ? 'translate-y-0 opacity-100' : 'translate-y-1.5 opacity-0'
+              )}
             >
               <MessageActions
                 content={content}

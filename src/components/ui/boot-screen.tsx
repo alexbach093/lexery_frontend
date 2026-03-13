@@ -4,6 +4,7 @@ import Lottie from 'lottie-react';
 import { useEffect, useState } from 'react';
 
 import bootAnimationData from '@/assets/boot-animation.json';
+import { cn } from '@/lib/utils';
 
 interface BootScreenProps {
   /**
@@ -73,66 +74,31 @@ export function BootScreen({ duration = 3000, onComplete, className }: BootScree
 
   return (
     <div
-      className={className}
+      className={cn(
+        'fixed inset-0 z-9999 m-0 flex h-screen w-screen items-center justify-center overflow-hidden p-0 transition-opacity duration-500 ease-out',
+        isExiting ? 'opacity-0' : 'opacity-100',
+        className
+      )}
       role="status"
       aria-live="polite"
       aria-label="Loading application"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        width: '100vw',
-        height: '100vh',
-        margin: 0,
-        padding: 0,
-        overflow: 'hidden',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'opacity 500ms ease-out',
-        opacity: isExiting ? 0 : 1,
-      }}
     >
-      <div className="boot-background-layer" aria-hidden />
+      {/* Boot screen background layer – extends past edges so blur never shows white line */}
       <div
-        className="boot-screen-content"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'absolute',
-          inset: 0,
-        }}
-      >
+        className="absolute -top-[3%] -left-[3%] z-0 h-[106%] w-[106%] bg-[url('/images/boot-background-clean.png')] bg-cover bg-center bg-no-repeat max-[1680px]:blur-[2px]"
+        aria-hidden
+      />
+      <div className="absolute inset-0 z-10 flex items-center justify-center">
         {/* Loading Animation - Lottie (Frame 36799 (2).json) */}
         <Lottie
           animationData={bootAnimationData}
           loop
           autoplay
-          style={{
-            width: '120px',
-            height: '120px',
-            maxWidth: '90vw',
-          }}
+          className="h-30 w-30 max-w-[90vw]"
         />
       </div>
       {/* Screen reader progress */}
-      <span
-        className="boot-screen-content"
-        style={{
-          position: 'absolute',
-          width: '1px',
-          height: '1px',
-          padding: 0,
-          margin: '-1px',
-          overflow: 'hidden',
-          clip: 'rect(0, 0, 0, 0)',
-          whiteSpace: 'nowrap',
-          borderWidth: 0,
-        }}
-      >
-        Loading: {Math.round(progress)}% complete
-      </span>
+      <span className="sr-only">Loading: {Math.round(progress)}% complete</span>
     </div>
   );
 }

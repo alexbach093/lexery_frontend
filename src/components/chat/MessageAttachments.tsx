@@ -3,9 +3,10 @@
 import { useState } from 'react';
 
 import { formatFileSize } from '@/components/ui/file-preview';
+import { cn } from '@/lib/utils';
 import type { MessageAttachment } from '@/types/chat';
 
-/** Іконка скріпки для блоку "N вкладень". */
+/** Paperclip icon for the "N attachments" block. */
 function PaperclipIcon() {
   return (
     <svg
@@ -27,75 +28,25 @@ function PaperclipIcon() {
   );
 }
 
-/** User file bubble in chat: світлий блок, thumbnail + filename; розміщений над текстовою бульбашкою. */
+/** User file bubble in chat: light block, thumbnail + filename; placed above the text bubble. */
 function UserFileBubble({ attachment }: { attachment: MessageAttachment }) {
   const { name, size, previewUrl } = attachment;
-  const thumbSize = 20;
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        padding: '4px 7px',
-        backgroundColor: '#F5F5F5',
-        borderTopLeftRadius: '10px',
-        borderTopRightRadius: '7px',
-        borderBottomRightRadius: '7px',
-        borderBottomLeftRadius: '10px',
-        width: 'max-content',
-        maxWidth: '180px',
-        boxSizing: 'border-box',
-        border: '1px solid #E8E8E8',
-      }}
-    >
-      <div
-        style={{
-          width: thumbSize,
-          height: thumbSize,
-          borderRadius: '4px',
-          overflow: 'hidden',
-          flexShrink: 0,
-          backgroundColor: '#E0E0E0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+    <div className="box-border flex w-max max-w-45 items-center gap-1.5 rounded-tl-[10px] rounded-tr-[7px] rounded-br-[7px] rounded-bl-[10px] border border-[#E8E8E8] bg-[#F5F5F5] px-1.75 py-1">
+      <div className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded bg-[#E0E0E0]">
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- blob URL from user upload
-          <img
-            src={previewUrl}
-            alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-          />
+          <img src={previewUrl} alt="" className="block h-full w-full object-cover" />
         ) : (
-          <span style={{ color: '#888', fontSize: 9 }}>?</span>
+          <span className="text-[9px] text-[#888888]">?</span>
         )}
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-        <span
-          style={{
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: 500,
-            fontSize: '12px',
-            lineHeight: '14px',
-            color: '#333333',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
+      <div className="flex min-w-0 flex-col gap-px">
+        <span className="truncate font-sans text-xs leading-3.5 font-medium text-[#333333]">
           {name}
         </span>
-        <span
-          style={{
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: 400,
-            fontSize: '10px',
-            color: '#888888',
-          }}
-        >
+        <span className="font-sans text-[10px] font-normal text-[#888888]">
           {formatFileSize(size)}
         </span>
       </div>
@@ -103,99 +54,43 @@ function UserFileBubble({ attachment }: { attachment: MessageAttachment }) {
   );
 }
 
-/** Кілька вкладень: рядок "N вкладень" + випадаючий список файлів (не зміщує сторінку). */
+/** Multiple attachments: "N attachments" row + dropdown list of files (does not shift the page). */
 function AttachmentsExpandable({ attachments }: { attachments: MessageAttachment[] }) {
   const [expanded, setExpanded] = useState(false);
   const n = attachments.length;
+
   return (
-    <div
-      style={{
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-end',
-      }}
-    >
+    <div className="relative flex flex-col items-end">
       <div
-        style={{
-          position: 'absolute',
-          top: '100%',
-          right: 0,
-          marginTop: '6px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: '6px',
-          zIndex: 20,
-          opacity: expanded ? 1 : 0,
-          visibility: expanded ? 'visible' : 'hidden',
-          transform: expanded ? 'translateY(0)' : 'translateY(-8px)',
-          transition:
-            'opacity 0.2s cubic-bezier(0.33, 0.8, 0.5, 1), transform 0.2s cubic-bezier(0.33, 0.8, 0.5, 1), visibility 0.2s',
-          pointerEvents: expanded ? 'auto' : 'none',
-          ...(n > 4 ? { maxHeight: '170px', overflowY: 'auto' as const } : {}),
-        }}
+        className={cn(
+          'absolute top-full right-0 z-20 mt-1.5 flex flex-col items-end gap-1.5 transition-all duration-200 ease-[cubic-bezier(0.33,0.8,0.5,1)]',
+          expanded
+            ? 'pointer-events-auto visible translate-y-0 opacity-100'
+            : 'pointer-events-none invisible -translate-y-2 opacity-0',
+          n > 4 && 'max-h-42.5 overflow-y-auto'
+        )}
       >
         {attachments.map((att, i) => (
           <div
             key={`${att.name}-${att.size}-${i}`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '6px 10px',
-              backgroundColor: '#F5F5F5',
-              border: '1px solid #E8E8E8',
-              borderRadius: '10px',
-              width: 'max-content',
-              maxWidth: '220px',
-              boxSizing: 'border-box',
-            }}
+            className="box-border flex w-max max-w-55 items-center gap-2 rounded-[10px] border border-[#E8E8E8] bg-[#F5F5F5] px-2.5 py-1.5"
           >
             {att.previewUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- blob URL from user upload
               <img
                 src={att.previewUrl}
                 alt=""
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 4,
-                  objectFit: 'cover',
-                  display: 'block',
-                  flexShrink: 0,
-                }}
+                className="block h-6 w-6 shrink-0 rounded object-cover"
               />
             ) : (
-              <div
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 4,
-                  backgroundColor: '#E0E0E0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#E0E0E0]">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <circle cx="18" cy="6" r="3" fill="#9A9A9A" />
                   <path d="M2 24L10 10h4l8-6v20H2z" fill="#B0B0B0" />
                 </svg>
               </div>
             )}
-            <span
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '14px',
-                fontWeight: 500,
-                color: '#333333',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
+            <span className="truncate font-sans text-sm font-medium text-[#333333]">
               {att.name}
             </span>
           </div>
@@ -204,28 +99,13 @@ function AttachmentsExpandable({ attachments }: { attachments: MessageAttachment
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '6px 12px',
-          backgroundColor: '#F5F5F5',
-          border: '1px solid #E8E8E8',
-          borderRadius: '14px',
-          cursor: 'pointer',
-          fontFamily: 'Inter, sans-serif',
-          fontSize: '14px',
-          fontWeight: 500,
-          color: '#333333',
-          boxSizing: 'border-box',
-        }}
-        className="rounded-xl hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none"
+        className="box-border flex cursor-pointer items-center gap-2 rounded-[14px] border border-[#E8E8E8] bg-[#F5F5F5] px-3 py-1.5 font-sans text-sm font-medium text-[#333333] transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none"
         aria-expanded={expanded}
-        aria-label={expanded ? 'Згорнути вкладення' : 'Розгорнути вкладення'}
+        aria-label={expanded ? 'Collapse attachments' : 'Expand attachments'}
       >
         <PaperclipIcon />
         <span>
-          {n} {n >= 5 ? 'вкладень' : 'вкладення'}
+          {n} {n === 1 ? 'attachment' : 'attachments'}
         </span>
         <svg
           width="12"
@@ -236,7 +116,7 @@ function AttachmentsExpandable({ attachments }: { attachments: MessageAttachment
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+          className={cn('transition-transform duration-200', expanded ? 'rotate-180' : 'rotate-0')}
           aria-hidden
         >
           <path d="M6 9l6 6 6-6" />
