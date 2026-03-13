@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 
 import { SettingsScreen } from '@/components/ui/settings-screen';
 import {
@@ -53,10 +53,12 @@ export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutPro
             transition: `opacity ${SIDEBAR_FADE_MS}ms ease-out`,
           }}
         >
-          <WorkspaceSidebar
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
-          />
+          <Suspense fallback={null}>
+            <WorkspaceSidebar
+              collapsed={sidebarCollapsed}
+              onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+            />
+          </Suspense>
         </div>
         <div
           style={{
@@ -70,7 +72,7 @@ export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutPro
             transition: `margin-left ${WORKSPACE_SIDEBAR_TRANSITION}`,
           }}
         >
-          {children}
+          <Suspense fallback={null}>{children}</Suspense>
         </div>
       </div>
       {settingsOpen && <SettingsScreen onClose={settingsContextValue.close} />}

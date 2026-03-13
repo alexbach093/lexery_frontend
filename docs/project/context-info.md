@@ -89,7 +89,7 @@
   `BootScreen`, `AppLayout`, `WorkspaceSidebar`, `WorkspaceMain`, `ChatMessageList`, `ChatMessage`, `FilePreview`; layout у `src/components/layout/`.
 - **Типи:** `src/types/chat.ts` (Message тощо).
 - **Стилі/ассети:** `src/app/globals.css`, `public/images/` (workspace/, chat/, boot).
-- **Документація:** `docs/` — BOOTSTRAP, LAYOUT_AND_PAGES, CHANGELOG-BOOT-SCREEN, boot-screen-implementation; цей файл — `docs/context-info.md`.
+- **Документація:** `docs/project/` — поточні нотатки про проєкт, `docs/figma/` — Figma workflow, `docs/components/` — документація компонентів, `docs/archive/` — історичні записи; цей файл — `docs/project/context-info.md`.
 
 ---
 

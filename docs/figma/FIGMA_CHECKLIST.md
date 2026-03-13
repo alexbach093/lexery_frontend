@@ -19,10 +19,10 @@ Follow this checklist to extract your boot screen design from Figma and implemen
 - [ ] **2.1** Open terminal in project root
 - [ ] **2.2** Run: `npm run figma:extract`
 - [ ] **2.3** Wait for extraction to complete (should take ~10 seconds)
-- [ ] **2.4** Verify file exists: `figma-extraction-report.json`
+- [ ] **2.4** Verify file exists: `docs/figma/reports/figma-extraction-report.json`
 - [ ] **2.5** Review the extraction report:
   ```bash
-  cat figma-extraction-report.json | head -50
+  cat docs/figma/reports/figma-extraction-report.json | head -50
   ```
 - [ ] **2.6** Check the screenshot URL in the report
 - [ ] **2.7** Open screenshot URL in browser to verify
@@ -40,7 +40,7 @@ Follow this checklist to extract your boot screen design from Figma and implemen
 
 ## Phase 4: Asset Preparation (5 minutes)
 
-- [ ] **4.1** Download screenshot from URL (found in `figma-extraction-report.json`)
+- [ ] **4.1** Download screenshot from URL (found in `docs/figma/reports/figma-extraction-report.json`)
 - [ ] **4.2** Save screenshot to: `public/images/boot-screen-reference.png`
 - [ ] **4.3** Open Figma design in browser
 - [ ] **4.4** Export logo as SVG from Figma:
@@ -55,13 +55,7 @@ Follow this checklist to extract your boot screen design from Figma and implemen
 - [ ] **5.2** Update logo section:
   ```tsx
   // Replace placeholder SVG with your logo
-  <Image 
-    src="/images/logo.svg" 
-    alt="Lexery Logo" 
-    width={120} 
-    height={120}
-    priority
-  />
+  <Image src="/images/logo.svg" alt="Lexery Logo" width={120} height={120} priority />
   ```
 - [ ] **5.3** Review text content matches design
 - [ ] **5.4** Review colors match design
@@ -76,13 +70,15 @@ Follow this checklist to extract your boot screen design from Figma and implemen
 
 - [ ] **6.1** Create test page: `src/app/boot-test/page.tsx`
 - [ ] **6.2** Add code:
+
   ```tsx
   import { BootScreen } from '@/components/BootScreen';
-  
+
   export default function BootTestPage() {
     return <BootScreen />;
   }
   ```
+
 - [ ] **6.3** Start dev server: `npm run dev`
 - [ ] **6.4** Visit: http://localhost:3000/boot-test
 - [ ] **6.5** Verify boot screen displays correctly
@@ -92,14 +88,15 @@ Follow this checklist to extract your boot screen design from Figma and implemen
 
 - [ ] **6.7** Open `src/app/page.tsx`
 - [ ] **6.8** Add state management:
+
   ```tsx
   'use client';
   import { useState } from 'react';
   import { BootScreen } from '@/components/BootScreen';
-  
+
   export default function Home() {
     const [showBoot, setShowBoot] = useState(true);
-    
+
     return (
       <>
         {showBoot && <BootScreen onComplete={() => setShowBoot(false)} />}
@@ -108,6 +105,7 @@ Follow this checklist to extract your boot screen design from Figma and implemen
     );
   }
   ```
+
 - [ ] **6.9** Save the file
 - [ ] **6.10** Test the page in browser
 
@@ -179,7 +177,7 @@ If something goes wrong, check these:
 
 ### Generation Issues
 
-- [ ] `figma-extraction-report.json` exists
+- [ ] `docs/figma/reports/figma-extraction-report.json` exists
 - [ ] JSON file is valid (not corrupted)
 - [ ] `src/components/` directory exists
 - [ ] No file permission issues
@@ -231,25 +229,25 @@ npm run typecheck                # Check types
 npm run build                    # Production build
 
 # View files
-cat figma-extraction-report.json # View extraction data
+cat docs/figma/reports/figma-extraction-report.json # View extraction data
 cat src/components/BootScreen.tsx # View component
 ```
 
 ## Time Estimates
 
-| Phase | Estimated Time |
-|-------|----------------|
-| Setup | 5 minutes |
-| Extraction | 1 minute |
-| Generation | 1 minute |
-| Assets | 5 minutes |
-| Customization | 10 minutes |
-| Integration | 10 minutes |
-| QA | 10 minutes |
-| Fine-tuning | 15 minutes (optional) |
-| Documentation | 5 minutes |
-| Deployment Prep | 5 minutes |
-| **Total** | **42-57 minutes** |
+| Phase           | Estimated Time        |
+| --------------- | --------------------- |
+| Setup           | 5 minutes             |
+| Extraction      | 1 minute              |
+| Generation      | 1 minute              |
+| Assets          | 5 minutes             |
+| Customization   | 10 minutes            |
+| Integration     | 10 minutes            |
+| QA              | 10 minutes            |
+| Fine-tuning     | 15 minutes (optional) |
+| Documentation   | 5 minutes             |
+| Deployment Prep | 5 minutes             |
+| **Total**       | **42-57 minutes**     |
 
 ## Next Steps After Completion
 
@@ -263,8 +261,9 @@ cat src/components/BootScreen.tsx # View component
 ---
 
 **Questions?** Check:
+
 - [Quick Reference](./QUICK_REFERENCE.md)
 - [Full Guide](./FIGMA_TO_REACT_SUMMARY.md)
-- [Implementation Details](./docs/boot-screen-implementation.md)
+- [Implementation Details](./boot-screen-implementation.md)
 
 **Ready to start?** Begin with Phase 1! 🚀

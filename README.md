@@ -61,10 +61,11 @@ import { BootScreen } from '@/components/BootScreen';
 ```
 
 **Documentation:**
-- 📚 [Figma Extraction Guide](./FIGMA_EXTRACTION_GUIDE.md) - Quick start
-- 🚀 [Complete Summary](./FIGMA_TO_REACT_SUMMARY.md) - Full workflow details
-- ⚡ [Quick Reference](./QUICK_REFERENCE.md) - Commands and examples
-- 📖 [Implementation Guide](./docs/boot-screen-implementation.md) - Detailed usage
+
+- 📚 [Figma Extraction Guide](./docs/figma/FIGMA_EXTRACTION_GUIDE.md) - Quick start
+- 🚀 [Complete Summary](./docs/figma/FIGMA_TO_REACT_SUMMARY.md) - Full workflow details
+- ⚡ [Quick Reference](./docs/figma/QUICK_REFERENCE.md) - Commands and examples
+- 📖 [Implementation Guide](./docs/figma/boot-screen-implementation.md) - Detailed usage
 
 ## Tech Stack
 
@@ -82,7 +83,11 @@ import { BootScreen } from '@/components/BootScreen';
 ```
 lexery-frontend/
 ├── .github/          # GitHub workflows and templates
-├── docs/             # Project documentation
+├── docs/
+│   ├── archive/      # Historical PRs and change logs
+│   ├── components/   # Component-level documentation
+│   ├── figma/        # Figma workflow guides and reports
+│   └── project/      # Project setup and architecture notes
 ├── public/           # Static assets
 ├── scripts/          # Build and utility scripts
 │   ├── extract-figma-design.mjs    # Figma API extraction
@@ -97,7 +102,7 @@ lexery-frontend/
 ├── .editorconfig     # Editor configuration
 ├── .env.example      # Environment variables template
 ├── .nvmrc            # Node version
-├── figma-extraction-report.json    # Generated design data
+├── docs/figma/reports/figma-extraction-report.json  # Generated design data
 └── package.json      # Dependencies and scripts
 ```
 
@@ -141,7 +146,8 @@ Commits are validated automatically via git hooks.
 
 ## Documentation
 
-- [Bootstrap Process](./docs/BOOTSTRAP.md) - Detailed setup documentation
+- [Documentation Index](./docs/README.md) - Overview of docs by category
+- [Bootstrap Process](./docs/project/BOOTSTRAP.md) - Detailed setup documentation
 
 ## Environment Variables
 

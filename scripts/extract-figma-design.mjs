@@ -5,12 +5,14 @@
  * Extracts design information from a Figma node
  */
 
-import { writeFileSync, readFileSync, existsSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const REPORTS_DIR = join(__dirname, '..', 'docs', 'figma', 'reports');
+const REPORT_PATH = join(REPORTS_DIR, 'figma-extraction-report.json');
 
 // Simple .env parser
 function loadEnv() {
@@ -383,9 +385,9 @@ async function main() {
     console.log();
 
     // Save to file
-    const outputPath = './figma-extraction-report.json';
-    writeFileSync(outputPath, JSON.stringify(report, null, 2));
-    console.log(`💾 Full report saved to: ${outputPath}`);
+    mkdirSync(REPORTS_DIR, { recursive: true });
+    writeFileSync(REPORT_PATH, JSON.stringify(report, null, 2));
+    console.log('💾 Full report saved to: docs/figma/reports/figma-extraction-report.json');
     console.log();
 
     console.log('═'.repeat(60));
@@ -394,7 +396,7 @@ async function main() {
     console.log();
     console.log('📋 Next steps:');
     console.log('   1. Download the screenshot from the URL above');
-    console.log('   2. Review the figma-extraction-report.json file');
+    console.log('   2. Review the docs/figma/reports/figma-extraction-report.json file');
     console.log('   3. Generate the React component based on this data');
     console.log();
   } catch (error) {

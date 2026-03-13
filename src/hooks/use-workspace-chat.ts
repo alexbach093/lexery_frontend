@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { AttachedFile } from '@/features/attachments';
@@ -10,7 +11,13 @@ import {
   HOME_TEXTAREA_MIN_HEIGHT,
   HOME_TEXTAREA_MAX_HEIGHT,
 } from '@/features/chat-input';
-import { upsertRecentChat } from '@/lib/recent-chats';
+import {
+  DEFAULT_CHAT_USER_ID,
+  createChatLibraryItem,
+  dispatchChatStoreUpdated,
+  fetchChatLibraryItemById,
+  updateChatLibraryItem,
+} from '@/lib/chat-library';
 import type { Message, MessageVersion } from '@/types/chat';
 
 const HISTORY_TITLE_MAX_LENGTH = 60;
@@ -25,6 +32,8 @@ function generateId(): string {
 type ApiMessage = { role: 'user' | 'assistant'; content: string };
 
 export function useWorkspaceChat(onReady?: () => void) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [value, setValue] = useState('');
   const [targetValue, setTargetValue] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -39,6 +48,7 @@ export function useWorkspaceChat(onReady?: () => void) {
   const [fileSearchQuery, setFileSearchQuery] = useState('');
   const [systemPromptEditorOpen, setSystemPromptEditorOpen] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState('');
+  const selectedChatId = searchParams.get('chat');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,11 +56,18 @@ export function useWorkspaceChat(onReady?: () => void) {
   const fileListScrollRef = useRef<HTMLDivElement>(null);
   const streamAbortControllerRef = useRef<AbortController | null>(null);
   const expandCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectedStoredChatRef = useRef<string | null>(null);
+  const messagesRef = useRef<Message[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(selectedChatId);
 
   const isEmpty = targetValue.trim().length === 0;
   const isGenerationInProgress = isAssistantTyping || regeneratingMessageId != null;
   const canSend = (!isEmpty || attachedFiles.length > 0) && !isGenerationInProgress;
   const hasMessages = (messages?.length ?? 0) > 0;
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const availableFormatOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -189,20 +206,81 @@ export function useWorkspaceChat(onReady?: () => void) {
     }
   }, []);
 
+  const resetAttachedFiles = useCallback(() => {
+    setAttachedFiles((prev) => {
+      prev.forEach((item) => {
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+      });
+      return [];
+    });
+  }, []);
+
   const startNewChat = useCallback(() => {
     streamAbortControllerRef.current?.abort();
     streamAbortControllerRef.current = null;
     setIsAssistantTyping(false);
     setRegeneratingMessageId(null);
+    setCurrentChatId(null);
     setMessages([]);
+    resetAttachedFiles();
     resetInput();
-  }, [resetInput]);
+  }, [resetAttachedFiles, resetInput]);
 
   useEffect(() => {
     const handler = () => startNewChat();
     window.addEventListener(WORKSPACE_START_NEW_CHAT_EVENT, handler);
     return () => window.removeEventListener(WORKSPACE_START_NEW_CHAT_EVENT, handler);
   }, [startNewChat]);
+
+  useEffect(() => {
+    if (!selectedChatId) {
+      if (selectedStoredChatRef.current) {
+        selectedStoredChatRef.current = null;
+        startNewChat();
+      }
+      return;
+    }
+
+    let cancelled = false;
+    fetchChatLibraryItemById(selectedChatId, DEFAULT_CHAT_USER_ID)
+      .then((selectedChat) => {
+        if (cancelled || !selectedChat) return;
+        selectedStoredChatRef.current = selectedChatId;
+        setCurrentChatId(selectedChat.id);
+        streamAbortControllerRef.current?.abort();
+        streamAbortControllerRef.current = null;
+        setIsAssistantTyping(false);
+        setRegeneratingMessageId(null);
+        setMessages(selectedChat.messages);
+        resetAttachedFiles();
+        resetInput();
+      })
+      .catch(() => {
+        // ignore load failure, keep current UI state
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedChatId, resetAttachedFiles, resetInput, startNewChat]);
+
+  useEffect(() => {
+    if (!currentChatId || messages.length === 0) return;
+    if (isAssistantTyping || regeneratingMessageId != null) return;
+
+    const timeoutId = setTimeout(() => {
+      updateChatLibraryItem(currentChatId, {
+        userId: DEFAULT_CHAT_USER_ID,
+        messages,
+      })
+        .then(() => dispatchChatStoreUpdated())
+        .catch(() => {
+          // ignore sync failures for stub persistence
+        });
+    }, 180);
+
+    return () => clearTimeout(timeoutId);
+  }, [currentChatId, isAssistantTyping, messages, regeneratingMessageId]);
 
   useEffect(() => {
     if (textareaRef.current) resizeTextarea(textareaRef.current, hasMessages);
@@ -351,7 +429,7 @@ export function useWorkspaceChat(onReady?: () => void) {
   }, []);
 
   const runSend = useCallback(
-    (text: string) => {
+    async (text: string) => {
       const attachments =
         attachedFiles.length > 0
           ? attachedFiles.map((a) => ({
@@ -361,7 +439,22 @@ export function useWorkspaceChat(onReady?: () => void) {
             }))
           : undefined;
       const assistantId = generateId();
-      const isNewChat = messages.length === 0;
+      const userMessage: Message = {
+        id: generateId(),
+        role: 'user',
+        content: text || '',
+        attachments,
+      };
+      const assistantMessage: Message = {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        versions: [],
+        activeVersionIndex: 0,
+      };
+      let chatId = currentChatId;
+      const isNewChat = chatId == null;
+
       if (isNewChat) {
         const raw = text.trim();
         const title =
@@ -369,25 +462,48 @@ export function useWorkspaceChat(onReady?: () => void) {
             ? raw.slice(0, HISTORY_TITLE_MAX_LENGTH) +
               (raw.length > HISTORY_TITLE_MAX_LENGTH ? '…' : '')
             : 'Новий чат';
-        const chatId = generateId();
-        upsertRecentChat({
-          id: chatId,
-          title,
-          createdAt: new Date().toISOString(),
-        });
+
+        try {
+          const createdChat = await createChatLibraryItem({
+            userId: DEFAULT_CHAT_USER_ID,
+            title,
+            preview: raw || 'Новий чат',
+            messages: [userMessage],
+          });
+          chatId = createdChat.id;
+          selectedStoredChatRef.current = createdChat.id;
+          setCurrentChatId(createdChat.id);
+          dispatchChatStoreUpdated();
+          router.replace(`/workspace?chat=${encodeURIComponent(createdChat.id)}`);
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : 'Помилка збереження чату';
+          setMessages((prev) => [
+            ...prev,
+            userMessage,
+            {
+              ...assistantMessage,
+              content: `**Помилка:** ${errorMessage}`,
+              versions: [
+                {
+                  content: `**Помилка:** ${errorMessage}`,
+                  createdAt: new Date().toISOString(),
+                },
+              ],
+              activeVersionIndex: 0,
+            },
+          ]);
+          return;
+        }
       }
-      setMessages((prev) => [
-        ...prev,
-        { id: generateId(), role: 'user', content: text || '', attachments },
-        { id: assistantId, role: 'assistant', content: '', versions: [], activeVersionIndex: 0 },
-      ]);
+
+      setMessages((prev) => [...prev, userMessage, assistantMessage]);
       resetInput();
       setIsAssistantTyping(true);
       streamAbortControllerRef.current?.abort();
       const controller = new AbortController();
       streamAbortControllerRef.current = controller;
       const messagesForApi: ApiMessage[] = [
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        ...messagesRef.current.map((m) => ({ role: m.role, content: m.content })),
         { role: 'user', content: text || '' },
       ];
       streamChatResponse(
@@ -415,7 +531,7 @@ export function useWorkspaceChat(onReady?: () => void) {
         controller.signal
       );
     },
-    [attachedFiles, resetInput, messages, streamChatResponse]
+    [attachedFiles, currentChatId, resetInput, router, streamChatResponse]
   );
 
   const handleSend = useCallback(() => {

@@ -14,12 +14,14 @@ Complete guide for extracting and implementing the boot screen from Figma.
 ## Overview
 
 This guide walks you through:
+
 1. ✅ Extracting design data from Figma using the REST API
 2. ✅ Generating a React + TypeScript + Tailwind component
 3. ✅ Implementing the boot screen in your Next.js app
 4. ✅ Matching the design pixel-perfect
 
 **Figma Design:**
+
 - File ID: `IO0sKndZpfYlW5OVXoIpuC`
 - Node ID: `0-1283`
 - URL: https://www.figma.com/design/IO0sKndZpfYlW5OVXoIpuC/Untitled?node-id=0-1283&m=dev
@@ -74,7 +76,7 @@ This script (`scripts/extract-figma-design.mjs`):
    - Layout structure (flexbox, spacing, padding)
    - SVG/vector elements
    - Complete node tree
-5. Saves to `figma-extraction-report.json`
+5. Saves to `docs/figma/reports/figma-extraction-report.json`
 
 **Output Example:**
 
@@ -117,12 +119,13 @@ This script (`scripts/extract-figma-design.mjs`):
 
 This script (`scripts/generate-boot-screen.mjs`):
 
-1. Reads `figma-extraction-report.json`
+1. Reads `docs/figma/reports/figma-extraction-report.json`
 2. Maps Figma styles to Tailwind classes
 3. Generates React component code
 4. Writes to `src/components/BootScreen.tsx`
 
 **Features:**
+
 - ✅ Automatic Tailwind class mapping
 - ✅ TypeScript types and interfaces
 - ✅ Fade in/out animations
@@ -137,9 +140,9 @@ The generated component is ready to use! It includes:
 
 ```tsx
 interface BootScreenProps {
-  onComplete?: () => void;      // Called when boot animation finishes
-  duration?: number;             // Boot screen duration (default: 2000ms)
-  showLoading?: boolean;         // Show loading indicator (default: true)
+  onComplete?: () => void; // Called when boot animation finishes
+  duration?: number; // Boot screen duration (default: 2000ms)
+  showLoading?: boolean; // Show loading indicator (default: true)
 }
 ```
 
@@ -168,12 +171,7 @@ export default function App() {
 
   return (
     <>
-      {showBoot && (
-        <BootScreen 
-          duration={3000}
-          onComplete={() => setShowBoot(false)} 
-        />
-      )}
+      {showBoot && <BootScreen duration={3000} onComplete={() => setShowBoot(false)} />}
       <main>Your app content</main>
     </>
   );
@@ -204,12 +202,7 @@ export default function App() {
 
   return (
     <>
-      {showBoot && (
-        <BootScreen 
-          duration={2000}
-          onComplete={() => setShowBoot(false)} 
-        />
-      )}
+      {showBoot && <BootScreen duration={2000} onComplete={() => setShowBoot(false)} />}
       {isReady && <main>Your app content</main>}
     </>
   );
@@ -270,15 +263,12 @@ export default function RootLayout({ children }) {
 Edit `src/components/BootScreen.tsx`:
 
 ```tsx
-{/* Logo Container */}
+{
+  /* Logo Container */
+}
 <div className="mb-6 flex items-center justify-center">
-  <Image 
-    src="/images/logo.png" 
-    alt="Logo" 
-    width={120} 
-    height={120}
-  />
-</div>
+  <Image src="/images/logo.png" alt="Logo" width={120} height={120} />
+</div>;
 ```
 
 ### Customize Colors
@@ -304,7 +294,7 @@ import { motion } from 'framer-motion';
   transition={{ duration: 0.5 }}
 >
   {/* Your content */}
-</motion.div>
+</motion.div>;
 ```
 
 ## File Structure
@@ -320,9 +310,9 @@ lexery/
 ├── src/
 │   └── components/
 │       └── BootScreen.tsx             # Generated component
-├── figma-extraction-report.json       # Extracted design data
-├── .env                               # Contains FIGMA_TOKEN
-└── FIGMA_EXTRACTION_GUIDE.md         # This guide
+├── docs/figma/reports/figma-extraction-report.json  # Extracted design data
+├── .env                                            # Contains FIGMA_TOKEN
+└── docs/figma/FIGMA_EXTRACTION_GUIDE.md            # This guide
 ```
 
 ## Troubleshooting
@@ -338,6 +328,7 @@ FIGMA_TOKEN=figd_your_token_here
 ### "Node with ID 0-1283 not found"
 
 **Causes:**
+
 - Node was deleted or renamed in Figma
 - File ID is incorrect
 - You don't have access to the file
@@ -347,6 +338,7 @@ FIGMA_TOKEN=figd_your_token_here
 ### "Figma API error: 403 Forbidden"
 
 **Causes:**
+
 - Invalid or expired token
 - Token doesn't have permission to access this file
 
@@ -431,7 +423,7 @@ See `scripts/README.md` for details.
 ```tsx
 import Image from 'next/image';
 
-<Image src="/images/logo.svg" alt="Logo" width={80} height={80} />
+<Image src="/images/logo.svg" alt="Logo" width={80} height={80} />;
 ```
 
 ### Performance Optimization
@@ -451,9 +443,9 @@ useEffect(() => {
   - Generation: `scripts/generate-boot-screen.mjs`
 - **Documentation:**
   - Script README: `scripts/README.md`
-  - Extraction Guide: `FIGMA_EXTRACTION_GUIDE.md`
+  - Extraction Guide: `docs/figma/FIGMA_EXTRACTION_GUIDE.md`
 - **Component:** `src/components/BootScreen.tsx`
-- **Data:** `figma-extraction-report.json`
+- **Data:** `docs/figma/reports/figma-extraction-report.json`
 
 ## NPM Scripts Reference
 
@@ -470,6 +462,6 @@ npm run figma:build
 
 ---
 
-**Questions?** Check the troubleshooting section or review `FIGMA_EXTRACTION_GUIDE.md` for more details.
+**Questions?** Check the troubleshooting section or review `./FIGMA_EXTRACTION_GUIDE.md` for more details.
 
 **Ready to start?** Run `npm run figma:build` after adding your FIGMA_TOKEN! 🚀

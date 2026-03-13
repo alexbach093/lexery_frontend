@@ -37,7 +37,11 @@ export function getRecentChats(): RecentChatItem[] {
         typeof (x as RecentChatItem).createdAt === 'string'
     );
     // Newest first (assume createdAt ISO order)
-    items.sort((a, b) => (b.createdAt > a.createdAt ? 1 : b.createdAt < a.createdAt ? -1 : 0));
+    items.sort((a, b) => {
+      const left = b.updatedAt ?? b.createdAt;
+      const right = a.updatedAt ?? a.createdAt;
+      return left > right ? 1 : left < right ? -1 : 0;
+    });
     return items.slice(0, MAX_ITEMS);
   } catch {
     return [];
@@ -50,9 +54,11 @@ export function getRecentChats(): RecentChatItem[] {
 export function saveRecentChats(items: RecentChatItem[]): void {
   if (!isStorageAvailable()) return;
   try {
-    const sorted = [...items].sort((a, b) =>
-      b.createdAt > a.createdAt ? 1 : b.createdAt < a.createdAt ? -1 : 0
-    );
+    const sorted = [...items].sort((a, b) => {
+      const left = b.updatedAt ?? b.createdAt;
+      const right = a.updatedAt ?? a.createdAt;
+      return left > right ? 1 : left < right ? -1 : 0;
+    });
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted.slice(0, MAX_ITEMS)));
   } catch {
     // ignore
@@ -67,9 +73,17 @@ export function upsertRecentChat(item: RecentChatItem): void {
   if (!isStorageAvailable()) return;
   const list = getRecentChats();
   const without = list.filter((x) => x.id !== item.id);
-  const next = [item, ...without].sort((a, b) =>
-    b.createdAt > a.createdAt ? 1 : b.createdAt < a.createdAt ? -1 : 0
-  );
+  const next = [
+    {
+      ...item,
+      updatedAt: item.updatedAt ?? item.createdAt,
+    },
+    ...without,
+  ].sort((a, b) => {
+    const left = b.updatedAt ?? b.createdAt;
+    const right = a.updatedAt ?? a.createdAt;
+    return left > right ? 1 : left < right ? -1 : 0;
+  });
   saveRecentChats(next.slice(0, MAX_ITEMS));
   try {
     window.dispatchEvent(new CustomEvent('recent-chats-updated'));

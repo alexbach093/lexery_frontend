@@ -12,7 +12,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const EXTRACTION_FILE = join(__dirname, '..', 'figma-extraction-report.json');
+const EXTRACTION_FILE = join(
+  __dirname,
+  '..',
+  'docs',
+  'figma',
+  'reports',
+  'figma-extraction-report.json'
+);
 const OUTPUT_FILE = join(__dirname, '..', 'src', 'components', 'BootScreen.tsx');
 
 // Utility functions
@@ -78,13 +85,13 @@ function getFontSizeClass(size) {
     36: 'text-4xl',
     48: 'text-5xl',
   };
-  
+
   // Find closest match
   const sizes = Object.keys(sizeMap).map(Number);
   const closest = sizes.reduce((prev, curr) => {
     return Math.abs(curr - size) < Math.abs(prev - size) ? curr : prev;
   });
-  
+
   return sizeMap[closest] || 'text-base';
 }
 
@@ -95,15 +102,17 @@ function getTextColorClass(hex) {
 
 function generateComponent(data) {
   const { node, screenshot, colors, textContent, layout } = data;
-  
+
   // Extract primary colors
   const bgColor = colors.unique[0] || { hex: '#FFFFFF' };
   const bgColorClass = getTailwindColor(bgColor.hex) || 'white';
-  
+
   // Extract text elements
-  const titleText = textContent.find(t => t.fontSize >= 24) || textContent[0] || { text: 'Welcome' };
-  const subtitleText = textContent.find(t => t.fontSize < 24 && t !== titleText) || textContent[1] || { text: 'Loading...' };
-  
+  const titleText = textContent.find((t) => t.fontSize >= 24) ||
+    textContent[0] || { text: 'Welcome' };
+  const subtitleText = textContent.find((t) => t.fontSize < 24 && t !== titleText) ||
+    textContent[1] || { text: 'Loading...' };
+
   // Generate Tailwind classes for layout
   const layoutClasses = [];
   if (layout.direction === 'column') {
@@ -111,16 +120,16 @@ function generateComponent(data) {
   } else if (layout.direction === 'row') {
     layoutClasses.push('flex-row');
   }
-  
+
   if (layout.primaryAxisAlignment === 'CENTER') {
     layoutClasses.push('items-center justify-center');
   }
-  
+
   if (layout.gap) {
     const gapClass = layout.gap <= 8 ? 'gap-2' : layout.gap <= 16 ? 'gap-4' : 'gap-6';
     layoutClasses.push(gapClass);
   }
-  
+
   // Generate component code
   const componentCode = `/**
  * Boot Screen Component
@@ -260,10 +269,14 @@ export default BootScreen;
 ${colors.unique.map((c, i) => ` * ${i + 1}. ${c.hex} (${c.rgba})`).join('\n')}
  * 
  * Typography:
-${textContent.map((t, i) => ` * ${i + 1}. "${t.text}"
+${textContent
+  .map(
+    (t, i) => ` * ${i + 1}. "${t.text}"
  *    Font: ${t.fontFamily || 'Unknown'} ${t.fontWeight || 400}
  *    Size: ${t.fontSize || 'N/A'}px
- *    Line Height: ${t.lineHeight ? Math.round(t.lineHeight) : 'N/A'}px`).join('\n')}
+ *    Line Height: ${t.lineHeight ? Math.round(t.lineHeight) : 'N/A'}px`
+  )
+  .join('\n')}
  * 
  * Layout:
  *    Mode: ${layout.layoutMode || 'Absolute'}
@@ -293,7 +306,7 @@ function main() {
     // Read extraction data
     console.log('📖 Reading extraction data...');
     const data = JSON.parse(readFileSync(EXTRACTION_FILE, 'utf-8'));
-    
+
     console.log(`✅ Found design: ${data.node.name}`);
     console.log();
 
@@ -334,7 +347,6 @@ function main() {
     console.log('═'.repeat(60));
     console.log('✅ Generation complete!');
     console.log('═'.repeat(60));
-
   } catch (error) {
     console.error('❌ Error:', error.message);
     process.exit(1);
