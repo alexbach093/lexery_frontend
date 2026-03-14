@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { FilePreview } from '@/components/ui/file-preview';
 import { cn } from '@/lib/utils';
 
@@ -64,22 +66,7 @@ export function AttachmentsPanelExpanded({
               aria-label="Очистити пошук"
               className="workspace-action-btn absolute top-1/2 right-1.5 flex h-4.5 w-4.5 -translate-y-1/2 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
             >
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden
-              >
-                <path
-                  d="M18 6L6 18M6 6l12 12"
-                  stroke="#575757"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <Image src="/icons/search-clear.svg" alt="" width={11} height={11} aria-hidden />
             </button>
           )}
         </div>
@@ -90,36 +77,7 @@ export function AttachmentsPanelExpanded({
             className="workspace-files-panel-field workspace-action-btn workspace-remove-all-btn workspace-icon-btn flex h-7.5 w-7.5 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent p-0"
             aria-label="Видалити всі файли"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 18 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden
-            >
-              <path
-                d="M2.82051 4.87179V17.1795C2.82051 18.3124 3.7389 19.2308 4.8718 19.2308H13.0769C14.2098 19.2308 15.1282 18.3124 15.1282 17.1795V4.87179"
-                stroke="#575757"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M0.769231 4.87179H17.1795"
-                stroke="#575757"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M3.84615 4.87179L5.89744 0.769231H12.0513L14.1026 4.87179"
-                stroke="#575757"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <Image src="/images/workspace/trash.svg" alt="" width={16} height={16} aria-hidden />
           </button>
           <FileFilterButton
             formatOptions={availableFormatOptions}
