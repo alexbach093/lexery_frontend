@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 
 import { formatFileSize } from '@/components/ui/file-preview';
@@ -8,24 +9,7 @@ import type { MessageAttachment } from '@/types/chat';
 
 /** Paperclip icon for the "N attachments" block. */
 function PaperclipIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"
-        stroke="#666666"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  return <Image src="/icons/paperclip.svg" alt="" width={14} height={14} aria-hidden />;
 }
 
 /** User file bubble in chat: light block, thumbnail + filename; placed above the text bubble. */
@@ -84,10 +68,7 @@ function AttachmentsExpandable({ attachments }: { attachments: MessageAttachment
               />
             ) : (
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#E0E0E0]">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <circle cx="18" cy="6" r="3" fill="#9A9A9A" />
-                  <path d="M2 24L10 10h4l8-6v20H2z" fill="#B0B0B0" />
-                </svg>
+                <Image src="/icons/file-attachment.svg" alt="" width={14} height={14} aria-hidden />
               </div>
             )}
             <span className="truncate font-sans text-sm font-medium text-[#333333]">
@@ -107,20 +88,14 @@ function AttachmentsExpandable({ attachments }: { attachments: MessageAttachment
         <span>
           {n} {n === 1 ? 'attachment' : 'attachments'}
         </span>
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <Image
+          src="/icons/chevron-down.svg"
+          alt=""
+          width={12}
+          height={12}
           className={cn('transition-transform duration-200', expanded ? 'rotate-180' : 'rotate-0')}
           aria-hidden
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+        />
       </button>
     </div>
   );

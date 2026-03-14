@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -109,31 +110,11 @@ const SECTIONS: SettingsSection[] = [
 ];
 
 function ChevronDownIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden>
-      <path
-        d="M5.5 7.75L10 12.25L14.5 7.75"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  return <Image src="/icons/chevron-down.svg" alt="" width={size} height={size} aria-hidden />;
 }
 
 function CloseIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-      <path
-        d="M14.5 5.5L5.5 14.5M5.5 5.5l9 9"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  return <Image src="/icons/close.svg" alt="" width={20} height={20} aria-hidden />;
 }
 
 function SettingsCloseButton({ onClick }: { onClick: () => void }) {

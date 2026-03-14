@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -322,22 +323,7 @@ export function FilePreview({ file, previewUrl, onRemove, uniformWidth }: FilePr
         aria-label="Remove file"
         className="workspace-action-btn flex h-4.5 w-4.5 shrink-0 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
       >
-        <svg
-          width="11"
-          height="11"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            d="M18 6L6 18M6 6l12 12"
-            stroke="#575757"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <Image src="/icons/search-clear.svg" alt="" width={11} height={11} aria-hidden />
       </button>
     </div>
   );
