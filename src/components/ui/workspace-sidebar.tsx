@@ -74,6 +74,7 @@ export function WorkspaceSidebar({
 
   const [recentChats, setRecentChats] = useState<ChatLibraryItem[]>([]);
   const historyScrollRef = useRef<HTMLDivElement>(null);
+  const recentChatsRefreshIdRef = useRef(0);
   const [historyScrolled, setHistoryScrolled] = useState(false);
   const [pinnedExpanded, setPinnedExpanded] = useState(true);
   const [pinnedClosing, setPinnedClosing] = useState(false);
@@ -81,9 +82,19 @@ export function WorkspaceSidebar({
   const [historyClosing, setHistoryClosing] = useState(false);
 
   const refreshRecentChats = useCallback(() => {
+    const refreshId = ++recentChatsRefreshIdRef.current;
+
     fetchChatLibrary(DEFAULT_CHAT_USER_ID)
-      .then((chats) => setRecentChats(chats))
-      .catch(() => setRecentChats([]));
+      .then((chats) => {
+        if (recentChatsRefreshIdRef.current === refreshId) {
+          setRecentChats(chats);
+        }
+      })
+      .catch(() => {
+        if (recentChatsRefreshIdRef.current === refreshId) {
+          setRecentChats([]);
+        }
+      });
   }, []);
 
   const handleHistoryScroll = useCallback(() => {
@@ -107,6 +118,7 @@ export function WorkspaceSidebar({
     const onUpdate = () => refreshRecentChats();
     window.addEventListener(CHAT_STORE_UPDATED_EVENT, onUpdate);
     return () => {
+      recentChatsRefreshIdRef.current += 1;
       window.removeEventListener(CHAT_STORE_UPDATED_EVENT, onUpdate);
     };
   }, [refreshRecentChats]);

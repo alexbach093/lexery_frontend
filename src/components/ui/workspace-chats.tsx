@@ -7,7 +7,7 @@ import type {
   MouseEvent,
   ReactNode,
 } from 'react';
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { EditSquareIcon } from '@/components/ui/edit-square-icon';
 import {
@@ -213,6 +213,7 @@ export function WorkspaceChats() {
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const renameCloseTimeoutRef = useRef<number | null>(null);
+  const chatLibraryRefreshIdRef = useRef(0);
 
   const secondaryTextStyle: CSSProperties = {
     fontFamily: 'Inter, sans-serif',
@@ -223,25 +224,34 @@ export function WorkspaceChats() {
     color: '#6B7280',
   };
 
-  useEffect(() => {
-    let cancelled = false;
-    const refresh = async () => {
-      try {
-        const chats = await fetchChatLibrary(DEFAULT_CHAT_USER_ID);
-        if (!cancelled) setChatLibrary(chats);
-      } catch {
-        if (!cancelled) setChatLibrary([]);
+  const refreshChatLibrary = useCallback(async () => {
+    const refreshId = ++chatLibraryRefreshIdRef.current;
+
+    try {
+      const chats = await fetchChatLibrary(DEFAULT_CHAT_USER_ID);
+      if (chatLibraryRefreshIdRef.current === refreshId) {
+        setChatLibrary(chats);
       }
+    } catch {
+      if (chatLibraryRefreshIdRef.current === refreshId) {
+        setChatLibrary([]);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleStoreUpdated = () => {
+      void refreshChatLibrary();
     };
 
-    refresh();
-    window.addEventListener(CHAT_STORE_UPDATED_EVENT, refresh);
+    void refreshChatLibrary();
+    window.addEventListener(CHAT_STORE_UPDATED_EVENT, handleStoreUpdated);
 
     return () => {
-      cancelled = true;
-      window.removeEventListener(CHAT_STORE_UPDATED_EVENT, refresh);
+      chatLibraryRefreshIdRef.current += 1;
+      window.removeEventListener(CHAT_STORE_UPDATED_EVENT, handleStoreUpdated);
     };
-  }, []);
+  }, [refreshChatLibrary]);
 
   useEffect(() => {
     if (!chatBeingRenamed) return;
@@ -322,6 +332,7 @@ export function WorkspaceChats() {
 
   const handleTogglePinned = async (chat: ChatLibraryItem) => {
     const nextPinned = !chat.pinned;
+    chatLibraryRefreshIdRef.current += 1;
 
     setChatLibrary((prev) =>
       prev.map((item) => (item.id === chat.id ? { ...item, pinned: nextPinned } : item))
@@ -735,15 +746,21 @@ export function WorkspaceChats() {
           {filteredChats.length === 0 ? (
             <div
               style={{
-                padding: `${scale(34)}px ${scale(18)}px`,
-                borderBottom: '1px solid #E0E7E8',
+                width: '100%',
+                minHeight: `${scale(220)}px`,
+                padding: `${scale(18)}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxSizing: 'border-box',
                 color: '#6B7280',
                 fontFamily: 'Inter, sans-serif',
                 fontSize: `${readableScale(16, 14)}px`,
                 lineHeight: `${readableScale(20, 20)}px`,
+                textAlign: 'center',
               }}
             >
-              За цим запитом чатів не знайдено.
+              Тут поки пусто
             </div>
           ) : null}
         </div>
