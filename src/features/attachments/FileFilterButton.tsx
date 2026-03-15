@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { FilterIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
 import { FileFormatFilterChips } from './FileFormatFilterChips';
@@ -102,23 +103,7 @@ export function FileFilterButton({
             : 'Відкрити фільтр за форматом файлу'
         }
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 17.5 13.5"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden
-          className="block"
-        >
-          <path
-            d="M0.75 0.75H16.75M3.75 6.75H13.75M7.75 12.75H9.75"
-            stroke="#575757"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <FilterIcon width={16} height={16} className="block text-[#575757]" aria-hidden="true" />
       </button>
 
       {popoverShown && (

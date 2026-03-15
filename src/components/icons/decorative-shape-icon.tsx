@@ -1,0 +1,29 @@
+import type { SVGProps } from 'react';
+
+export function DecorativeShapeIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="92.2 0 11.9 13.3" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M98.1067 0.585343L103.414 3.64978V8.69714C103.414 9.36638 103.057 9.98478 102.478 10.3194L99.0433 12.3023C98.4637 12.6369 97.7497 12.6369 97.1701 12.3023L93.7355 10.3194C93.156 9.98478 92.7989 9.36638 92.7989 8.69714V3.64978L98.1067 0.585343Z"
+        stroke="currentColor"
+        strokeWidth="1.16071"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M98.1068 3.30915V6.71407L95.158 8.41654"
+        stroke="currentColor"
+        strokeWidth="1.16071"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M98.107 6.71433L101.056 8.4168"
+        stroke="currentColor"
+        strokeWidth="1.16071"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
