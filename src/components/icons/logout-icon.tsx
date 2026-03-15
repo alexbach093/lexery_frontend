@@ -1,0 +1,24 @@
+import type { SVGProps } from 'react';
+
+export function LogoutIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <g transform="rotate(90 10 10)">
+        <path
+          d="M12.915 4.094L9.944 1.124M9.944 1.124L6.973 4.094M9.944 1.124L9.944 13.006"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M4.003 8.054H2.022V16.966C2.022 18.06 2.909 18.946 4.003 18.946H15.885C16.966 18.946 17.865 18.06 17.865 16.966V8.054H15.885"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+    </svg>
+  );
+}

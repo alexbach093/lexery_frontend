@@ -1,0 +1,29 @@
+import type { SVGProps } from 'react';
+
+export function ExternalLinkIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+      <path
+        d="M20.25 17.75L26.5 11.5"
+        stroke="currentColor"
+        strokeWidth="1.66667"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M22.3335 11.5H26.5002V15.6667"
+        stroke="currentColor"
+        strokeWidth="1.66667"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M26.5 20.6667V24.8333C26.5 25.2754 26.3244 25.6993 26.0118 26.0118C25.6993 26.3244 25.2754 26.5 24.8333 26.5H13.1667C12.7246 26.5 12.3007 26.3244 11.9882 26.0118C11.6756 25.6993 11.5 25.2754 11.5 24.8333V13.1667C11.5 12.7246 11.6756 12.3007 11.9882 11.9882C12.3007 11.6756 12.7246 11.5 13.1667 11.5H17.3333"
+        stroke="currentColor"
+        strokeWidth="1.66667"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { CopyIcon, EditIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { MessageAttachment, MessageVersion } from '@/types/chat';
 
@@ -298,32 +299,7 @@ export function ChatMessage({
                 aria-describedby="user-msg-tooltip-copy"
                 onClick={handleUserCopy}
               >
-                <svg
-                  width={16}
-                  height={16}
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden
-                  className={userIconClasses}
-                >
-                  <g transform="translate(8, 8) scale(1.23077) translate(-5.5, -6.5)">
-                    <path
-                      d="M8.02285 0.454063H1.71573C1.01907 0.454063 0.454309 1.01882 0.454309 1.71549V8.65331"
-                      stroke="currentColor"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M2.97715 4.23833C2.97715 3.54167 3.54191 2.97691 4.23858 2.97691H9.28427C9.98093 2.97691 10.5457 3.54167 10.5457 4.23833V10.5454C10.5457 11.2421 9.98093 11.8069 9.28427 11.8069H4.23858C3.54191 11.8069 2.97715 11.2421 2.97715 10.5454V4.23833Z"
-                      stroke="currentColor"
-                      strokeWidth="0.9"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </g>
-                </svg>
+                <CopyIcon width={16} height={16} className={userIconClasses} aria-hidden="true" />
               </button>
               <span
                 id="user-msg-tooltip-copy"
@@ -351,23 +327,7 @@ export function ChatMessage({
                 aria-describedby="user-msg-tooltip-edit"
                 onClick={handleStartEdit}
               >
-                <svg
-                  width={16}
-                  height={16}
-                  viewBox="0 0 13 13"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden
-                  className={userIconClasses}
-                >
-                  <path
-                    d="M6.71162 3.80806L9.19185 6.28829M3.91069 12.1895L12.1895 3.91072C12.5886 3.51157 12.5886 2.86443 12.1895 2.46528L10.5346 0.810425C10.1355 0.41128 9.48834 0.41128 9.08919 0.810424L0.810395 9.08922C0.618719 9.2809 0.511037 9.54087 0.511037 9.81194V11.4668C0.511037 12.0313 0.968635 12.4889 1.53311 12.4889H3.18797C3.45904 12.4889 3.71901 12.3812 3.91069 12.1895Z"
-                    stroke="currentColor"
-                    strokeWidth="1"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <EditIcon width={16} height={16} className={userIconClasses} aria-hidden="true" />
               </button>
               <span
                 id="user-msg-tooltip-edit"

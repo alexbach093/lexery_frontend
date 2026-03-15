@@ -5,10 +5,12 @@ import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
-  SettingsNavDatabaseIcon,
-  SettingsNavGearIcon,
-  SettingsNavShieldIcon,
-} from '@/components/ui/settings-nav-icons';
+  SettingsGearIcon,
+  SettingsDatabaseIcon,
+  SettingsShieldIcon,
+  ChevronDownAltIcon,
+  CloseAltIcon,
+} from '@/components/icons';
 import { cn } from '@/lib/utils';
 
 const THEME_OPTIONS = ['Системна', 'Темна', 'Світла'] as const;
@@ -108,34 +110,6 @@ const SECTIONS: SettingsSection[] = [
   },
 ];
 
-function ChevronDownIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden>
-      <path
-        d="M5.5 7.75L10 12.25L14.5 7.75"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-      <path
-        d="M14.5 5.5L5.5 14.5M5.5 5.5l9 9"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function SettingsCloseButton({ onClick }: { onClick: () => void }) {
   return (
     <button
@@ -144,7 +118,7 @@ function SettingsCloseButton({ onClick }: { onClick: () => void }) {
       aria-label="Закрити налаштування"
       className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border-none bg-transparent text-[#171717] transition-colors hover:bg-black/5"
     >
-      <CloseIcon />
+      <CloseAltIcon width={20} height={20} aria-hidden="true" />
     </button>
   );
 }
@@ -394,7 +368,7 @@ function DeleteAccountConfirmDialog({ onClose }: { onClose: () => void }) {
             aria-label="Закрити підтвердження видалення облікового запису"
             className="inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent p-0 text-black transition-colors hover:bg-black/5"
           >
-            <CloseIcon />
+            <CloseAltIcon width={20} height={20} aria-hidden="true" />
           </button>
         </div>
 
@@ -440,9 +414,9 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
 
   const sectionIcons = useMemo<Record<SectionId, ReactNode>>(
     () => ({
-      general: <SettingsNavGearIcon />,
-      info: <SettingsNavDatabaseIcon />,
-      security: <SettingsNavShieldIcon />,
+      general: <SettingsGearIcon width={18} height={18} aria-hidden="true" />,
+      info: <SettingsDatabaseIcon width={18} height={18} aria-hidden="true" />,
+      security: <SettingsShieldIcon width={18} height={18} aria-hidden="true" />,
     }),
     []
   );
@@ -499,7 +473,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
             onBlur={() => setThemeHovered(false)}
           >
             <span>{theme}</span>
-            <ChevronDownIcon />
+            <ChevronDownAltIcon width={16} height={16} aria-hidden="true" />
           </SelectLikeControl>
 
           {themeOpen && (
@@ -531,7 +505,9 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
       return (
         <SelectLikeControl>
           <span>{row.value}</span>
-          {row.id !== 'language' && <ChevronDownIcon />}
+          {row.id !== 'language' && (
+            <ChevronDownAltIcon width={16} height={16} aria-hidden="true" />
+          )}
         </SelectLikeControl>
       );
     }
