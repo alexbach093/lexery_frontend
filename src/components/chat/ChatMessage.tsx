@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { CopyIcon, EditIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import type { MessageAttachment, MessageVersion } from '@/types/chat';
+import type { MessageAttachment, MessageVersion } from '@/types';
 
 import { MessageActions } from './MessageActions';
 import { MessageAttachments, MessageAttachmentsMultiple } from './MessageAttachments';

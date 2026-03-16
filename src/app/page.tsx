@@ -80,7 +80,7 @@ export default function HomePage() {
       {/* Workspace: always in DOM, smooth appearance via opacity */}
       <div
         className={cn(
-          'flex min-h-0 flex-1 flex-col transition-opacity duration-[600ms] ease-out',
+          'flex min-h-0 flex-1 flex-col transition-opacity duration-600 ease-out',
           workspaceVisible ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
         )}
         aria-hidden={!workspaceVisible}
@@ -92,7 +92,7 @@ export default function HomePage() {
       {showBoot && (
         <div
           className={cn(
-            'fixed inset-0 z-[9999] transition-opacity duration-500 ease-out',
+            'fixed inset-0 z-9999 transition-opacity duration-500 ease-out',
             bootFading ? 'pointer-events-none opacity-0' : 'pointer-events-auto opacity-100'
           )}
           aria-hidden={bootFading}

@@ -1,6 +1,6 @@
 'use client';
 
-import type { RecentChatItem } from '@/entities/chat/model';
+import type { RecentChatItem } from '@/types';
 
 const STORAGE_KEY = 'lexery-recent-chats';
 const MAX_ITEMS = 50;

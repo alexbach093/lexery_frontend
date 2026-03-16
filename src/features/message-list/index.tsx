@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 
 import { ChatMessage } from '@/components/chat/ChatMessage';
 import { cn } from '@/lib/utils';
-import type { Message } from '@/types/chat';
+import type { Message } from '@/types';
 
 export interface MessageListProps {
   messages?: Message[] | null;

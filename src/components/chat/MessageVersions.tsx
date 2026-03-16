@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 
 import { HistoryIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import type { MessageVersion } from '@/types/chat';
+import type { MessageVersion } from '@/types';
 
 const DROPDOWN_WIDTH = 200;
 const SAFE_MARGIN = 12;
