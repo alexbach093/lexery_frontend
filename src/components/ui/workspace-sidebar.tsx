@@ -13,7 +13,6 @@ import {
   LogoutIcon,
 } from '@/components/icons';
 import { useSettingsOpen } from '@/contexts/settings-open';
-import type { RecentChatItem } from '@/entities/chat/model';
 import { WORKSPACE_START_NEW_CHAT_EVENT } from '@/hooks/use-workspace-chat';
 import {
   getRecentChats,
@@ -21,6 +20,7 @@ import {
   RECENT_CHATS_STORAGE_KEY,
 } from '@/lib/recent-chats';
 import { cn } from '@/lib/utils';
+import type { RecentChatItem } from '@/types';
 
 interface WorkspaceSidebarProps {
   className?: string;

@@ -11,7 +11,7 @@ import {
   HOME_TEXTAREA_MAX_HEIGHT,
 } from '@/features/chat-input';
 import { upsertRecentChat } from '@/lib/recent-chats';
-import type { Message, MessageVersion } from '@/types/chat';
+import type { Message, MessageVersion } from '@/types';
 
 const HISTORY_TITLE_MAX_LENGTH = 60;
 

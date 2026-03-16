@@ -2,7 +2,7 @@
 
 import { MessageList } from '@/features/message-list';
 import { cn } from '@/lib/utils'; // Path to your cn utility
-import type { Message } from '@/types/chat';
+import type { Message } from '@/types';
 
 export interface ChatPanelProps {
   messages: Message[];

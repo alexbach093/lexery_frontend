@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { AttachmentIcon, ImagePlaceholderIcon, ChevronDownSmallIcon } from '@/components/icons';
 import { formatFileSize } from '@/components/ui/file-preview';
 import { cn } from '@/lib/utils';
-import type { MessageAttachment } from '@/types/chat';
+import type { MessageAttachment } from '@/types';
 
 /** User file bubble in chat: light block, thumbnail + filename; placed above the text bubble. */
 function UserFileBubble({ attachment }: { attachment: MessageAttachment }) {
