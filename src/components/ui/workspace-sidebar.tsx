@@ -6,11 +6,10 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 
+import { EditSquareIcon } from '@/components/ui/edit-square-icon';
 import { useSearchOpen } from '@/contexts/search-open';
 import { useSettingsOpen } from '@/contexts/settings-open';
 import { WORKSPACE_START_NEW_CHAT_EVENT } from '@/hooks/use-workspace-chat';
-
-import { EditSquareIcon } from '@/components/ui/edit-square-icon';
 import {
   CHAT_STORE_UPDATED_EVENT,
   DEFAULT_CHAT_USER_ID,
@@ -79,7 +78,7 @@ function SidebarChatStarIcon({ filled = false }: { filled?: boolean }) {
       viewBox="0 0 20 20"
       fill="none"
       aria-hidden
-      style={{ display: 'block', flexShrink: 0, overflow: 'visible' }}
+      style={{ display: 'block', flexShrink: 0 }}
     >
       <path
         d="M10.0129 2.1438L12.2647 6.59517C12.3809 6.82488 12.6016 6.98469 12.8561 7.02054L17.7091 7.70431C18.3501 7.79462 18.6072 8.58274 18.1428 9.02336L14.6294 12.3572C14.4452 12.5319 14.3619 12.7883 14.4068 13.0379L15.2616 17.7803C15.3753 18.4108 14.7011 18.8923 14.1311 18.6L9.79783 16.3777C9.57029 16.261 9.30042 16.2612 9.07306 16.3783L4.74611 18.6074C4.17651 18.9008 3.50146 18.4205 3.61403 17.7898L4.46077 13.0459C4.50525 12.7962 4.42156 12.5401 4.23709 12.3658L0.718081 9.03777C0.252893 8.59791 0.508772 7.80937 1.14959 7.71804L6.00139 7.02679C6.25589 6.99057 6.47633 6.83044 6.59217 6.60056L8.83734 2.14567C9.1337 1.55735 9.71571 1.55659 10.0129 2.1438Z"
@@ -656,6 +655,8 @@ export function WorkspaceSidebar({
               flex: 1,
               paddingRight: showMenuButton ? '34px' : '0px',
               transition: 'padding-right 140ms ease',
+              position: 'relative',
+              zIndex: 0,
             }}
           >
             {chat.title}
@@ -675,6 +676,7 @@ export function WorkspaceSidebar({
                 top: '50%',
                 right: '12px',
                 transform: 'translateY(-50%)',
+                zIndex: 2,
               }}
             >
               <button
@@ -719,6 +721,8 @@ export function WorkspaceSidebar({
                   alignItems: 'center',
                   justifyContent: 'center',
                   cursor: 'pointer',
+                  position: 'relative',
+                  zIndex: 3,
                 }}
               >
                 <SidebarChatMoreIcon />

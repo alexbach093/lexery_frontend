@@ -5,7 +5,6 @@ import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useSearchOpen } from '@/contexts/search-open';
-
 import {
   CHAT_STORE_UPDATED_EVENT,
   DEFAULT_CHAT_USER_ID,
