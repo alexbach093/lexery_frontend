@@ -11,16 +11,28 @@ import {
   HOME_TEXTAREA_MIN_HEIGHT,
   HOME_TEXTAREA_MAX_HEIGHT,
 } from '@/features/chat-input';
-import { DEFAULT_CHAT_USER_ID, dispatchChatStoreUpdated } from '@/lib/chat-library';
+import {
+  CHAT_STORE_UPDATED_EVENT,
+  DEFAULT_CHAT_USER_ID,
+  dispatchChatStoreUpdated,
+  isChatStoreStorageEvent,
+} from '@/lib/chat-library';
 import { getChatRepository } from '@/lib/chat-repository';
 import { messagesToStoredMessages, storedMessagesToMessages } from '@/lib/chat-session-mappers';
-import type { Message, MessageAttachment, MessageVersion, StoredChatSession } from '@/types';
+import type {
+  Message,
+  MessageAttachment,
+  MessageVersion,
+  StoredChatSession,
+  StoredMessage,
+} from '@/types';
 
 const HISTORY_TITLE_MAX_LENGTH = 60;
 const ASSISTANT_SUGGESTIONS = ['Детальніше', 'Ще приклад'] as const;
 
 /** Подія для відкриття нового чату (кнопка «Новий чат» у сайдбарі). */
 export const WORKSPACE_START_NEW_CHAT_EVENT = 'workspace-start-new-chat';
+export const WORKSPACE_OPEN_CHAT_EVENT = 'workspace-open-chat';
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -48,6 +60,11 @@ function buildMessageAttachments(files: AttachedFile[]): MessageAttachment[] | u
     type: item.file.type,
     blob: item.file,
   }));
+}
+
+function hasPendingAssistantResponse(messages: Pick<StoredMessage, 'role' | 'content'>[]): boolean {
+  const lastMessage = messages[messages.length - 1];
+  return Boolean(lastMessage?.role === 'assistant' && !lastMessage.content.trim());
 }
 
 function finalizeAssistantMessage(
@@ -97,6 +114,7 @@ export function useWorkspaceChat(onReady?: () => void) {
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isAssistantTyping, setIsAssistantTyping] = useState(false);
+  const [isStoppingGeneration, setIsStoppingGeneration] = useState(false);
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null);
   const [tipsButtonCompact, setTipsButtonCompact] = useState(false);
   const [filesOverflow, setFilesOverflow] = useState(false);
@@ -106,21 +124,29 @@ export function useWorkspaceChat(onReady?: () => void) {
   const [fileSearchQuery, setFileSearchQuery] = useState('');
   const [systemPromptEditorOpen, setSystemPromptEditorOpen] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState('');
+  const [systemPromptDraft, setSystemPromptDraft] = useState('');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileListRef = useRef<HTMLDivElement>(null);
   const fileListScrollRef = useRef<HTMLDivElement>(null);
   const streamAbortControllerRef = useRef<AbortController | null>(null);
+  const streamReaderRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
   const expandCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hydrationRequestIdRef = useRef(0);
   const skipHydrationChatIdRef = useRef<string | null>(null);
+  const dismissedChatIdRef = useRef<string | null>(null);
   const systemPromptRef = useRef(systemPrompt);
   const messagesRef = useRef<Message[]>([]);
+  const currentChatIdRef = useRef<string | null>(currentChatId);
+  const isAssistantTypingRef = useRef(isAssistantTyping);
+  const regeneratingMessageIdRef = useRef<string | null>(regeneratingMessageId);
+  const streamingChatIdRef = useRef<string | null>(null);
 
   const isEmpty = targetValue.trim().length === 0;
-  const isGenerationInProgress = isAssistantTyping || regeneratingMessageId != null;
-  const canSend = (!isEmpty || attachedFiles.length > 0) && !isGenerationInProgress;
+  const isGenerationInProgress =
+    isAssistantTyping || regeneratingMessageId != null || isStoppingGeneration;
+  const canSend = !isEmpty && !isGenerationInProgress;
   const hasMessages = (messages?.length ?? 0) > 0;
 
   useEffect(() => {
@@ -128,8 +154,26 @@ export function useWorkspaceChat(onReady?: () => void) {
   }, [systemPrompt]);
 
   useEffect(() => {
+    if (!systemPromptEditorOpen) {
+      setSystemPromptDraft(systemPrompt);
+    }
+  }, [systemPrompt, systemPromptEditorOpen]);
+
+  useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    currentChatIdRef.current = currentChatId;
+  }, [currentChatId]);
+
+  useEffect(() => {
+    isAssistantTypingRef.current = isAssistantTyping;
+  }, [isAssistantTyping]);
+
+  useEffect(() => {
+    regeneratingMessageIdRef.current = regeneratingMessageId;
+  }, [regeneratingMessageId]);
 
   const availableFormatOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -365,16 +409,34 @@ export function useWorkspaceChat(onReady?: () => void) {
     async (chatId: string | null) => {
       const requestId = ++hydrationRequestIdRef.current;
 
-      if (chatId && skipHydrationChatIdRef.current === chatId) {
+      if (chatId && dismissedChatIdRef.current === chatId) {
+        dismissedChatIdRef.current = null;
         skipHydrationChatIdRef.current = null;
-        setCurrentChatId(chatId);
+        setCurrentChatId(null);
         setIsHydratingChat(false);
+        setIsStoppingGeneration(false);
+        startTransition(() => router.replace('/workspace'));
         return;
       }
 
-      streamAbortControllerRef.current?.abort();
-      streamAbortControllerRef.current = null;
+      if (chatId && skipHydrationChatIdRef.current === chatId) {
+        const hasLocalChatState =
+          currentChatIdRef.current === chatId &&
+          (messagesRef.current.length > 0 ||
+            isAssistantTypingRef.current ||
+            regeneratingMessageIdRef.current != null);
+
+        skipHydrationChatIdRef.current = null;
+
+        if (hasLocalChatState) {
+          setCurrentChatId(chatId);
+          setIsHydratingChat(false);
+          return;
+        }
+      }
+
       setIsAssistantTyping(false);
+      setIsStoppingGeneration(false);
       setRegeneratingMessageId(null);
       setSystemPromptEditorOpen(false);
       resetComposer(false);
@@ -385,6 +447,7 @@ export function useWorkspaceChat(onReady?: () => void) {
         commitMessages([]);
         setSystemPrompt('');
         setIsHydratingChat(false);
+        setIsStoppingGeneration(false);
         return;
       }
 
@@ -409,6 +472,9 @@ export function useWorkspaceChat(onReady?: () => void) {
         setCurrentChatId(session.id);
         commitMessages(storedMessagesToMessages(session.messages));
         setSystemPrompt(session.systemPrompt ?? '');
+        setIsAssistantTyping(
+          streamingChatIdRef.current === session.id || hasPendingAssistantResponse(session.messages)
+        );
         setIsHydratingChat(false);
       } catch {
         if (hydrationRequestIdRef.current !== requestId) return;
@@ -425,25 +491,92 @@ export function useWorkspaceChat(onReady?: () => void) {
     void hydrateChatSession(activeChatIdFromUrl);
   }, [activeChatIdFromUrl, hydrateChatSession]);
 
+  useEffect(() => {
+    const handleChatStoreUpdated = () => {
+      const activeChatId = currentChatIdRef.current;
+      if (!activeChatId) return;
+
+      void repository
+        .getChat(activeChatId)
+        .then((session) => {
+          if (currentChatIdRef.current !== activeChatId) return;
+
+          if (!session) {
+            setCurrentChatId(null);
+            commitMessages([]);
+            setSystemPrompt('');
+            setIsAssistantTyping(false);
+            setIsStoppingGeneration(false);
+            setRegeneratingMessageId(null);
+            setIsHydratingChat(false);
+            startTransition(() => router.replace('/workspace'));
+            return;
+          }
+
+          commitMessages(storedMessagesToMessages(session.messages));
+          setSystemPrompt(session.systemPrompt ?? '');
+          setIsAssistantTyping(
+            streamingChatIdRef.current === session.id ||
+              hasPendingAssistantResponse(session.messages)
+          );
+          setIsHydratingChat(false);
+        })
+        .catch(() => {
+          if (currentChatIdRef.current !== activeChatId) return;
+          setIsAssistantTyping(false);
+        });
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (!isChatStoreStorageEvent(event)) return;
+      handleChatStoreUpdated();
+    };
+
+    window.addEventListener(CHAT_STORE_UPDATED_EVENT, handleChatStoreUpdated);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener(CHAT_STORE_UPDATED_EVENT, handleChatStoreUpdated);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [commitMessages, repository, router]);
+
   const startNewChat = useCallback(() => {
+    dismissedChatIdRef.current = currentChatId ?? skipHydrationChatIdRef.current;
     skipHydrationChatIdRef.current = null;
-    streamAbortControllerRef.current?.abort();
-    streamAbortControllerRef.current = null;
     setCurrentChatId(null);
     setIsHydratingChat(false);
     setIsAssistantTyping(false);
+    setIsStoppingGeneration(false);
     setRegeneratingMessageId(null);
     commitMessages([]);
     setSystemPrompt('');
     setSystemPromptEditorOpen(false);
     resetComposer(false);
-  }, [commitMessages, resetComposer]);
+    const nextPath =
+      typeof window !== 'undefined' && window.location.pathname
+        ? window.location.pathname
+        : '/workspace';
+    startTransition(() => router.replace(nextPath));
+  }, [commitMessages, currentChatId, resetComposer, router]);
 
   useEffect(() => {
     const handler = () => startNewChat();
     window.addEventListener(WORKSPACE_START_NEW_CHAT_EVENT, handler);
     return () => window.removeEventListener(WORKSPACE_START_NEW_CHAT_EVENT, handler);
   }, [startNewChat]);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const chatId = (event as CustomEvent<{ chatId?: string }>).detail?.chatId;
+      if (!chatId) return;
+
+      dismissedChatIdRef.current = null;
+      void hydrateChatSession(chatId);
+    };
+
+    window.addEventListener(WORKSPACE_OPEN_CHAT_EVENT, handler as EventListener);
+    return () => window.removeEventListener(WORKSPACE_OPEN_CHAT_EVENT, handler as EventListener);
+  }, [hydrateChatSession]);
 
   useEffect(() => {
     if (textareaRef.current) resizeTextarea(textareaRef.current, hasMessages);
@@ -454,9 +587,90 @@ export function useWorkspaceChat(onReady?: () => void) {
       chatId: string,
       messagesForApi: ApiMessage[],
       assistantMessageId: string,
+      initialMessages: Message[],
+      controller: AbortController,
       signal?: AbortSignal,
       options?: { modifier?: string; appendVersion?: boolean; onComplete?: () => void }
     ) => {
+      let streamMessages = initialMessages;
+      const isCurrentController = () => streamAbortControllerRef.current === controller;
+
+      const clearCurrentStream = () => {
+        if (!isCurrentController()) return false;
+        streamAbortControllerRef.current = null;
+        streamReaderRef.current = null;
+        if (streamingChatIdRef.current === chatId) {
+          streamingChatIdRef.current = null;
+        }
+        setIsStoppingGeneration(false);
+        return true;
+      };
+
+      const completeVisibleStream = () => {
+        if (currentChatIdRef.current === chatId) {
+          setIsAssistantTyping(false);
+          options?.onComplete?.();
+        }
+      };
+
+      const syncActiveChatMessages = (nextMessages: Message[]) => {
+        streamMessages = nextMessages;
+        if (currentChatIdRef.current === chatId && isCurrentController()) {
+          commitMessages(nextMessages);
+        }
+      };
+
+      const finalizeVisibleMessages = (nextMessages: Message[]) => {
+        if (!clearCurrentStream()) return;
+
+        if (currentChatIdRef.current === chatId) {
+          commitMessages(nextMessages);
+        }
+
+        completeVisibleStream();
+        void persistExistingChat(chatId, nextMessages);
+      };
+
+      const buildInterruptedMessages = (errorContent?: string | null) =>
+        streamMessages.flatMap((message) => {
+          if (message.id !== assistantMessageId || message.role !== 'assistant') {
+            return [message];
+          }
+
+          const trimmedContent = (message.content ?? '').trim();
+
+          if (errorContent == null && trimmedContent.length === 0) {
+            if (options?.appendVersion && (message.versions?.length ?? 0) > 0) {
+              const versionIndex = Math.max(
+                0,
+                Math.min(
+                  message.activeVersionIndex ?? message.versions!.length - 1,
+                  message.versions!.length - 1
+                )
+              );
+
+              return [
+                {
+                  ...message,
+                  content: message.versions![versionIndex].content,
+                  activeVersionIndex: versionIndex,
+                },
+              ];
+            }
+
+            return [];
+          }
+
+          return [
+            finalizeAssistantMessage(message, {
+              content: trimmedContent || errorContent || 'Немає відповіді.',
+              modifier: options?.modifier,
+              appendVersion: options?.appendVersion,
+              includeSuggestions: false,
+            }),
+          ];
+        });
+
       fetch('/api/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -471,6 +685,9 @@ export function useWorkspaceChat(onReady?: () => void) {
 
           const reader = response.body?.getReader();
           if (!reader) throw new Error('Немає потоку відповіді');
+          if (isCurrentController()) {
+            streamReaderRef.current = reader;
+          }
 
           const decoder = new TextDecoder();
           let buffer = '';
@@ -478,10 +695,7 @@ export function useWorkspaceChat(onReady?: () => void) {
           let pendingContent = '';
 
           const finalize = () => {
-            streamAbortControllerRef.current = null;
-            setIsAssistantTyping(false);
-            options?.onComplete?.();
-            const nextMessages = messagesRef.current.map((message) => {
+            const nextMessages = streamMessages.map((message) => {
               if (message.id !== assistantMessageId || message.role !== 'assistant') {
                 return message;
               }
@@ -495,8 +709,7 @@ export function useWorkspaceChat(onReady?: () => void) {
               });
             });
 
-            commitMessages(nextMessages);
-            void persistExistingChat(chatId, nextMessages);
+            finalizeVisibleMessages(nextMessages);
           };
 
           const flushPendingContent = () => {
@@ -505,8 +718,8 @@ export function useWorkspaceChat(onReady?: () => void) {
             const chunkToAppend = pendingContent;
             pendingContent = '';
 
-            commitMessages(
-              messagesRef.current.map((message) =>
+            syncActiveChatMessages(
+              streamMessages.map((message) =>
                 message.id === assistantMessageId
                   ? { ...message, content: (message.content ?? '') + chunkToAppend }
                   : message
@@ -551,47 +764,27 @@ export function useWorkspaceChat(onReady?: () => void) {
           if (streamDone && pendingContent.length === 0) {
             finalize();
           } else if (!streamDone) {
-            streamAbortControllerRef.current = null;
-            setIsAssistantTyping(false);
-            options?.onComplete?.();
+            finalizeVisibleMessages(buildInterruptedMessages(null));
           }
         })
         .catch((error) => {
-          streamAbortControllerRef.current = null;
-          setIsAssistantTyping(false);
-          options?.onComplete?.();
-
           const isAbortError = error instanceof Error && error.name === 'AbortError';
           const nextContent = isAbortError
             ? null
             : `**Помилка:** ${error instanceof Error ? error.message : 'Помилка отримання відповіді'}`;
-          const nextMessages = messagesRef.current.map((message) => {
-            if (message.id !== assistantMessageId || message.role !== 'assistant') {
-              return message;
-            }
-
-            const content = isAbortError
-              ? (message.content ?? '').trim() || 'Немає відповіді.'
-              : (nextContent ?? 'Немає відповіді.');
-
-            return finalizeAssistantMessage(message, {
-              content,
-              modifier: options?.modifier,
-              appendVersion: options?.appendVersion,
-              includeSuggestions: false,
-            });
-          });
-
-          commitMessages(nextMessages);
-          void persistExistingChat(chatId, nextMessages);
+          finalizeVisibleMessages(buildInterruptedMessages(nextContent));
         });
     },
     [commitMessages, persistExistingChat]
   );
 
   const handleStopGeneration = useCallback(() => {
+    setIsStoppingGeneration(true);
+    streamingChatIdRef.current = null;
+    const activeReader = streamReaderRef.current;
+    streamReaderRef.current = null;
+    void activeReader?.cancel().catch(() => undefined);
     streamAbortControllerRef.current?.abort();
-    streamAbortControllerRef.current = null;
     setIsAssistantTyping(false);
     setRegeneratingMessageId(null);
   }, []);
@@ -637,18 +830,27 @@ export function useWorkspaceChat(onReady?: () => void) {
 
       commitMessages(nextMessages);
       resetComposer(true);
+      setIsStoppingGeneration(false);
       setIsAssistantTyping(true);
       streamAbortControllerRef.current?.abort();
 
       const controller = new AbortController();
       streamAbortControllerRef.current = controller;
+      streamingChatIdRef.current = chatId;
 
       const messagesForApi: ApiMessage[] = [
         ...messages.map((message) => ({ role: message.role, content: message.content })),
         { role: 'user', content: text || '' },
       ];
 
-      streamChatResponse(chatId, messagesForApi, assistantId, controller.signal);
+      streamChatResponse(
+        chatId,
+        messagesForApi,
+        assistantId,
+        nextMessages,
+        controller,
+        controller.signal
+      );
     },
     [
       attachedFiles,
@@ -665,9 +867,9 @@ export function useWorkspaceChat(onReady?: () => void) {
 
   const handleSend = useCallback(() => {
     const text = targetValue.trim();
-    if (!text && attachedFiles.length === 0) return;
+    if (!text) return;
     void runSend(text);
-  }, [attachedFiles.length, runSend, targetValue]);
+  }, [runSend, targetValue]);
 
   const handleSuggestionClick = useCallback(
     (suggestionText: string) => {
@@ -698,18 +900,28 @@ export function useWorkspaceChat(onReady?: () => void) {
       );
 
       commitMessages(nextMessages);
+      setIsStoppingGeneration(false);
       setRegeneratingMessageId(assistantMessageId);
       void persistExistingChat(currentChatId, nextMessages);
 
       streamAbortControllerRef.current?.abort();
       const controller = new AbortController();
       streamAbortControllerRef.current = controller;
+      streamingChatIdRef.current = currentChatId;
 
-      streamChatResponse(currentChatId, messagesForApi, assistantMessageId, controller.signal, {
-        modifier,
-        appendVersion: true,
-        onComplete: () => setRegeneratingMessageId(null),
-      });
+      streamChatResponse(
+        currentChatId,
+        messagesForApi,
+        assistantMessageId,
+        nextMessages,
+        controller,
+        controller.signal,
+        {
+          modifier,
+          appendVersion: true,
+          onComplete: () => setRegeneratingMessageId(null),
+        }
+      );
     },
     [commitMessages, currentChatId, messages, persistExistingChat, streamChatResponse]
   );
@@ -780,14 +992,23 @@ export function useWorkspaceChat(onReady?: () => void) {
       ];
 
       commitMessages(nextMessages);
+      setIsStoppingGeneration(false);
       setIsAssistantTyping(true);
       void persistExistingChat(currentChatId, nextMessages);
 
       streamAbortControllerRef.current?.abort();
       const controller = new AbortController();
       streamAbortControllerRef.current = controller;
+      streamingChatIdRef.current = currentChatId;
 
-      streamChatResponse(currentChatId, messagesForApi, assistantId, controller.signal);
+      streamChatResponse(
+        currentChatId,
+        messagesForApi,
+        assistantId,
+        nextMessages,
+        controller,
+        controller.signal
+      );
     },
     [commitMessages, currentChatId, messages, persistExistingChat, streamChatResponse]
   );
@@ -825,11 +1046,23 @@ export function useWorkspaceChat(onReady?: () => void) {
     setAttachedFiles((prev) => [...prev, ...nextItems]);
   }, []);
 
+  const openSystemPromptEditor = useCallback(() => {
+    setSystemPromptDraft(systemPromptRef.current);
+    setSystemPromptEditorOpen(true);
+  }, []);
+
+  const handleSystemPromptCancel = useCallback(() => {
+    setSystemPromptDraft('');
+    setSystemPromptEditorOpen(false);
+  }, []);
+
   const handleSystemPromptApply = useCallback(() => {
+    const nextSystemPrompt = systemPromptDraft;
+    setSystemPrompt(nextSystemPrompt);
     setSystemPromptEditorOpen(false);
     if (!currentChatId) return;
-    void persistExistingChat(currentChatId, messages, { systemPrompt });
-  }, [currentChatId, messages, persistExistingChat, systemPrompt]);
+    void persistExistingChat(currentChatId, messages, { systemPrompt: nextSystemPrompt });
+  }, [currentChatId, messages, persistExistingChat, systemPromptDraft]);
 
   const showExpandButton = filesOverflow || filesExpanded || expandButtonClosing;
 
@@ -839,6 +1072,7 @@ export function useWorkspaceChat(onReady?: () => void) {
     attachedFiles,
     messages,
     isAssistantTyping,
+    isStoppingGeneration,
     regeneratingMessageId,
     tipsButtonCompact,
     selectedFormats,
@@ -849,6 +1083,10 @@ export function useWorkspaceChat(onReady?: () => void) {
     setSystemPromptEditorOpen,
     systemPrompt,
     setSystemPrompt,
+    systemPromptDraft,
+    setSystemPromptDraft,
+    openSystemPromptEditor,
+    handleSystemPromptCancel,
     handleSystemPromptApply,
     currentChatId,
     isHydratingChat,

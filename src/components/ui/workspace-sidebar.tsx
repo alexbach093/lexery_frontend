@@ -13,8 +13,8 @@ import {
   CHAT_STORE_UPDATED_EVENT,
   DEFAULT_CHAT_USER_ID,
   deleteChatLibraryItem,
-  dispatchChatStoreUpdated,
   fetchChatLibrary,
+  isChatStoreStorageEvent,
   type ChatLibraryItem,
   updateChatLibraryItem,
 } from '@/lib/chat-library';
@@ -23,6 +23,7 @@ interface WorkspaceSidebarProps {
   className?: string;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  overlayActive?: boolean;
 }
 
 export const WORKSPACE_SIDEBAR_EXPANDED_WIDTH = 250;
@@ -33,6 +34,7 @@ const SIDEBAR_EDGE_PADDING = 8;
 const SIDEBAR_STACK_GAP = 2;
 const SIDEBAR_BRAND_SECTION_GAP = 9;
 const SIDEBAR_HISTORY_SECTION_GAP = 6;
+const SIDEBAR_HISTORY_FADE_HEIGHT = 24;
 const SIDEBAR_PRIMARY_NAV_OFFSET = 5;
 const SIDEBAR_NAV_ICON_SIZE = 18;
 const SIDEBAR_TOGGLE_SIZE = 32;
@@ -60,6 +62,11 @@ const SIDEBAR_CHAT_MENU_PENCIL_STROKE = 11.8;
 const SIDEBAR_DELETE_CHAT_CONFIRM_WIDTH = 436;
 const SIDEBAR_DELETE_CHAT_CONFIRM_RADIUS = 28;
 const SIDEBAR_DELETE_CHAT_CONFIRM_BUTTON_HEIGHT = 42;
+const SIDEBAR_DIALOG_OVERLAY_STYLE = {
+  backgroundColor: 'rgba(0, 0, 0, 0.32)',
+  backdropFilter: 'blur(4px)',
+  WebkitBackdropFilter: 'blur(4px)',
+} as const;
 
 function SidebarChatMoreIcon() {
   return (
@@ -174,6 +181,7 @@ export function WorkspaceSidebar({
   className,
   collapsed = false,
   onToggleCollapse,
+  overlayActive = false,
 }: WorkspaceSidebarProps) {
   const { open: openSettings } = useSettingsOpen();
   const { isOpen: isSearchOpen, toggle: toggleSearchOpen } = useSearchOpen();
@@ -183,7 +191,6 @@ export function WorkspaceSidebar({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const activeRecentChatId = pathname === '/workspace' ? searchParams.get('chat') : null;
-  const hasSelectedWorkspaceChat = activeRecentChatId != null;
   const palette = {
     sidebarBackground: '#FFFFFF',
     divider: '#E0E7E8',
@@ -206,7 +213,7 @@ export function WorkspaceSidebar({
   const recentChatsRefreshIdRef = useRef(0);
   const historyChatMenuRef = useRef<HTMLDivElement>(null);
   const openChatMenuTriggerRef = useRef<HTMLButtonElement>(null);
-  const [historyScrolled, setHistoryScrolled] = useState(false);
+  const [historyFadeState, setHistoryFadeState] = useState({ top: false, bottom: false });
   const [pinnedExpanded, setPinnedExpanded] = useState(true);
   const [pinnedClosing, setPinnedClosing] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(true);
@@ -273,29 +280,59 @@ export function WorkspaceSidebar({
       });
   }, []);
 
-  const handleHistoryScroll = useCallback(() => {
+  const updateHistoryFadeState = useCallback(() => {
     const el = historyScrollRef.current;
-    if (!el) return;
-    const scrolled = el.scrollTop > 0;
-    requestAnimationFrame(() => setHistoryScrolled(scrolled));
-  }, []);
+    if (!el || collapsed) {
+      setHistoryFadeState((prev) =>
+        prev.top || prev.bottom ? { top: false, bottom: false } : prev
+      );
+      return;
+    }
+
+    const maxScrollTop = Math.max(0, el.scrollHeight - el.clientHeight);
+    const nextState = {
+      top: el.scrollTop > 4,
+      bottom: maxScrollTop - el.scrollTop > 4,
+    };
+
+    setHistoryFadeState((prev) =>
+      prev.top === nextState.top && prev.bottom === nextState.bottom ? prev : nextState
+    );
+  }, [collapsed]);
+
+  const handleHistoryScroll = useCallback(() => {
+    requestAnimationFrame(updateHistoryFadeState);
+  }, [updateHistoryFadeState]);
 
   useEffect(() => {
     queueMicrotask(() => refreshRecentChats());
   }, [refreshRecentChats]);
 
   useEffect(() => {
-    const el = historyScrollRef.current;
-    if (!el) return;
-    queueMicrotask(() => setHistoryScrolled(el.scrollTop > 0));
-  }, [recentChats]);
+    const frameId = window.requestAnimationFrame(updateHistoryFadeState);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [recentChats, pinnedExpanded, historyExpanded, collapsed, updateHistoryFadeState]);
+
+  useEffect(() => {
+    const handleResize = () => updateHistoryFadeState();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [updateHistoryFadeState]);
 
   useEffect(() => {
     const onUpdate = () => refreshRecentChats();
+    const handleStorage = (event: StorageEvent) => {
+      if (!isChatStoreStorageEvent(event)) return;
+      onUpdate();
+    };
+
     window.addEventListener(CHAT_STORE_UPDATED_EVENT, onUpdate);
+    window.addEventListener('storage', handleStorage);
     return () => {
       recentChatsRefreshIdRef.current += 1;
       window.removeEventListener(CHAT_STORE_UPDATED_EVENT, onUpdate);
+      window.removeEventListener('storage', handleStorage);
     };
   }, [refreshRecentChats]);
 
@@ -440,29 +477,28 @@ export function WorkspaceSidebar({
 
   const handleLogoutClick = () => {
     setIsMenuOpen(false);
-    // TODO: wire logout (e.g. clear session, redirect)
   };
 
   const handleNewChatClick = useCallback(() => {
     if (pathname === '/' || pathname === '/workspace') {
-      if (pathname === '/workspace' && hasSelectedWorkspaceChat) {
-        router.push('/workspace');
-        return;
-      }
-
       window.dispatchEvent(new CustomEvent(WORKSPACE_START_NEW_CHAT_EVENT));
       return;
     }
 
     router.push('/workspace');
-  }, [hasSelectedWorkspaceChat, pathname, router]);
+  }, [pathname, router]);
 
   const handleRecentChatClick = useCallback(
     (chatId: string) => {
       closeChatMenu();
+
+      if (pathname === '/workspace' && activeRecentChatId === chatId) {
+        return;
+      }
+
       router.push(`/workspace?chat=${encodeURIComponent(chatId)}`);
     },
-    [closeChatMenu, router]
+    [activeRecentChatId, closeChatMenu, pathname, router]
   );
 
   const handleTogglePinned = useCallback(
@@ -478,7 +514,6 @@ export function WorkspaceSidebar({
           userId: DEFAULT_CHAT_USER_ID,
           pinned: nextPinned,
         });
-        dispatchChatStoreUpdated();
       } catch {
         setRecentChats((prev) =>
           prev.map((item) => (item.id === chat.id ? { ...item, pinned: chat.pinned } : item))
@@ -544,7 +579,6 @@ export function WorkspaceSidebar({
           item.id === updatedChat.id ? { ...item, title: updatedChat.title } : item
         )
       );
-      dispatchChatStoreUpdated();
       setRenameFeedback({ message: 'Назву збережено.', tone: 'success' });
       renameCloseTimeoutRef.current = window.setTimeout(() => {
         closeRenameDialog();
@@ -577,7 +611,6 @@ export function WorkspaceSidebar({
     try {
       await deleteChatLibraryItem(chatBeingDeleted.id, DEFAULT_CHAT_USER_ID);
       setRecentChats((prev) => prev.filter((item) => item.id !== chatBeingDeleted.id));
-      dispatchChatStoreUpdated();
       closeDeleteDialog();
       if (activeRecentChatId === chatBeingDeleted.id) {
         router.push('/workspace');
@@ -637,7 +670,7 @@ export function WorkspaceSidebar({
           ref={isMenuOpen ? historyChatMenuRef : null}
           role="button"
           tabIndex={0}
-          className={sidebarChatRowHoverClassName}
+          className={`group ${sidebarChatRowHoverClassName}`}
           onMouseEnter={() => setHoveredChatId(chat.id)}
           onMouseLeave={() => setHoveredChatId((prev) => (prev === chat.id ? null : prev))}
           onFocus={() => setHoveredChatId(chat.id)}
@@ -664,27 +697,34 @@ export function WorkspaceSidebar({
             outline: 'none',
           }}
         >
-          <p
+          <div
             style={{
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 500,
-              fontSize: '14px',
-              lineHeight: '20px',
-              letterSpacing: '0.14px',
-              color: isActive ? palette.navActiveText : palette.navText,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              minWidth: 0,
-              flex: 1,
-              paddingRight: showMenuButton ? '34px' : '0px',
-              transition: 'padding-right 140ms ease',
               position: 'relative',
               zIndex: 0,
+              minWidth: 0,
+              flex: 1,
+              transition: 'padding-right 140ms ease, transform 100ms ease',
+              paddingRight: showMenuButton ? '34px' : '0px',
             }}
+            className="group-active:scale-[0.98]"
           >
-            {chat.title}
-          </p>
+            <p
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 500,
+                fontSize: '14px',
+                lineHeight: '20px',
+                letterSpacing: '0.14px',
+                color: isActive ? palette.navActiveText : palette.navText,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+              }}
+            >
+              {chat.title}
+            </p>
+          </div>
           {showActions ? (
             <div
               style={{
@@ -777,9 +817,6 @@ export function WorkspaceSidebar({
     openChatMenuId == null
       ? null
       : (recentChats.find((chat) => chat.id === openChatMenuId) ?? null);
-  const shouldShowScrollDivider =
-    !collapsed && historyScrolled && (pinnedExpanded || historyExpanded);
-
   const sidebarLabelStyle: React.CSSProperties = {
     overflow: 'hidden',
     minWidth: 0,
@@ -1033,8 +1070,7 @@ export function WorkspaceSidebar({
               style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.32)',
-                backdropFilter: 'blur(4px)',
+                ...SIDEBAR_DIALOG_OVERLAY_STYLE,
               }}
               aria-hidden
             />
@@ -1209,8 +1245,7 @@ export function WorkspaceSidebar({
               style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundColor: 'rgba(255, 255, 255, 0.82)',
-                backdropFilter: 'blur(6px)',
+                ...SIDEBAR_DIALOG_OVERLAY_STYLE,
               }}
               aria-hidden
             />
@@ -1353,6 +1388,8 @@ export function WorkspaceSidebar({
           display: 'flex',
           flexDirection: 'column',
           borderRight: `1px solid ${palette.divider}`,
+          zIndex: overlayActive ? 80 : 40,
+          boxShadow: overlayActive ? '0 24px 48px rgba(15, 23, 42, 0.18)' : 'none',
           transition: `width ${WORKSPACE_SIDEBAR_TRANSITION}`,
         }}
       >
@@ -1572,9 +1609,14 @@ export function WorkspaceSidebar({
             {/* Проєкти — Figma 62:11 */}
             <button
               type="button"
+              disabled
               aria-label="Проєкти"
-              className={stackedHoverFillClassName}
-              style={{ ...navButtonStyle, color: palette.navText }}
+              aria-disabled="true"
+              style={{
+                ...navButtonStyle,
+                color: palette.secondaryText,
+                cursor: 'default',
+              }}
             >
               <svg
                 width={18}
@@ -1630,7 +1672,7 @@ export function WorkspaceSidebar({
                     fontSize: '14px',
                     lineHeight: '20px',
                     letterSpacing: '0.14px',
-                    color: palette.navText,
+                    color: palette.secondaryText,
                     margin: 0,
                   }}
                 >
@@ -1641,32 +1683,13 @@ export function WorkspaceSidebar({
           </div>
         </div>
 
-        {/* Лінія над історією — з’являється при прокрутці, тільки коли історія розгорнута */}
-        {shouldShowScrollDivider && (
-          <div
-            style={{
-              flexShrink: 0,
-              paddingLeft: `${SIDEBAR_EDGE_PADDING}px`,
-              paddingRight: `${SIDEBAR_EDGE_PADDING}px`,
-            }}
-          >
-            <div
-              style={{
-                height: '1px',
-                backgroundColor: palette.divider,
-                marginLeft: '-8px',
-                marginRight: '-8px',
-              }}
-            />
-          </div>
-        )}
-
         {/* Прокручується тільки Історія — список чатів (прокрутка тільки коли розгорнуто) */}
         <div
           style={{
             flex: 1,
             minHeight: 0,
             overflow: 'hidden',
+            position: 'relative',
             opacity: collapsed ? 0 : 1,
             pointerEvents: collapsed ? 'none' : 'auto',
             transition: `opacity ${WORKSPACE_SIDEBAR_TRANSITION}`,
@@ -1701,7 +1724,6 @@ export function WorkspaceSidebar({
                     type="button"
                     onClick={() => {
                       if (pinnedExpanded) {
-                        setHistoryScrolled(false);
                         setPinnedClosing(true);
                         setTimeout(() => {
                           setPinnedExpanded(false);
@@ -1776,7 +1798,6 @@ export function WorkspaceSidebar({
                 type="button"
                 onClick={() => {
                   if (historyExpanded) {
-                    setHistoryScrolled(false);
                     setHistoryClosing(true);
                     setTimeout(() => {
                       setHistoryExpanded(false);
@@ -1849,9 +1870,39 @@ export function WorkspaceSidebar({
               ) : null}
             </div>
           </div>
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: `${SIDEBAR_HISTORY_FADE_HEIGHT}px`,
+              background: historyFadeState.top
+                ? `linear-gradient(180deg, ${palette.sidebarBackground} 0%, ${palette.sidebarBackground} 58%, rgba(255, 255, 255, 0) 100%)`
+                : 'transparent',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: `${SIDEBAR_HISTORY_FADE_HEIGHT}px`,
+              background: historyFadeState.bottom
+                ? `linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, ${palette.sidebarBackground} 42%, ${palette.sidebarBackground} 100%)`
+                : 'transparent',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
         </div>
 
-        {/* Bottom Section - Profile — завжди внизу, під лінією */}
+        {/* Bottom Section - Profile — завжди внизу */}
         <div
           style={{
             flexShrink: 0,
@@ -1861,15 +1912,6 @@ export function WorkspaceSidebar({
             zIndex: 30,
           }}
         >
-          {/* Horizontal line — відстань від лінії до елементів = відстань від низу */}
-          <div
-            style={{
-              height: '1px',
-              backgroundColor: palette.divider,
-              marginLeft: '-12px',
-              marginRight: '-12px',
-            }}
-          />
           <div
             ref={menuRef}
             style={{

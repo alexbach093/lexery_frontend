@@ -10,8 +10,24 @@ import {
   DEFAULT_CHAT_USER_ID,
   fetchChatLibrary,
   getChatSearchText,
+  isChatStoreStorageEvent,
   type ChatLibraryItem,
 } from '@/lib/chat-library';
+
+const SEARCH_EMPTY_STATE_QUERY_MAX_LENGTH = 48;
+const SEARCH_FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function truncateSearchQuery(value: string, maxLength: number): string {
+  const trimmedValue = value.trim();
+  const characters = Array.from(trimmedValue);
+
+  if (characters.length <= maxLength) {
+    return trimmedValue;
+  }
+
+  return `${characters.slice(0, maxLength).join('')}...`;
+}
 
 function SearchIcon() {
   return (
@@ -106,6 +122,14 @@ export function SearchOverlay() {
   const closeSearch = useCallback(() => {
     close();
   }, [close]);
+  const getFocusableElements = useCallback(() => {
+    const panel = panelRef.current;
+    if (!panel) return [];
+
+    return Array.from(panel.querySelectorAll<HTMLElement>(SEARCH_FOCUSABLE_SELECTOR)).filter(
+      (element) => element.getClientRects().length > 0
+    );
+  }, []);
 
   const refreshChatLibrary = useCallback(async () => {
     const refreshId = ++refreshIdRef.current;
@@ -126,11 +150,17 @@ export function SearchOverlay() {
     const handleStoreUpdated = () => {
       void refreshChatLibrary();
     };
+    const handleStorage = (event: StorageEvent) => {
+      if (!isChatStoreStorageEvent(event)) return;
+      handleStoreUpdated();
+    };
 
     window.addEventListener(CHAT_STORE_UPDATED_EVENT, handleStoreUpdated);
+    window.addEventListener('storage', handleStorage);
     return () => {
       refreshIdRef.current += 1;
       window.removeEventListener(CHAT_STORE_UPDATED_EVENT, handleStoreUpdated);
+      window.removeEventListener('storage', handleStorage);
     };
   }, [refreshChatLibrary]);
 
@@ -152,12 +182,47 @@ export function SearchOverlay() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         closeSearch();
+        return;
+      }
+
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const isFocusInsidePanel =
+        activeElement !== null && panelRef.current?.contains(activeElement) === true;
+
+      if (!isFocusInsidePanel) {
+        event.preventDefault();
+        firstElement.focus();
+        return;
+      }
+
+      if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+        return;
+      }
+
+      if (event.shiftKey && activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [closeSearch, isOpen]);
+  }, [closeSearch, getFocusableElements, isOpen]);
 
   const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
   const recentChats = chatLibrary;
@@ -168,6 +233,10 @@ export function SearchOverlay() {
 
   const visibleChats = normalizedQuery ? filteredChats : recentChats;
   const showEmptyStateBody = !normalizedQuery && visibleChats.length === 0;
+  const emptyStateQuery = useMemo(
+    () => truncateSearchQuery(searchQuery, SEARCH_EMPTY_STATE_QUERY_MAX_LENGTH),
+    [searchQuery]
+  );
   const activeHighlightedIndex =
     visibleChats.length === 0
       ? -1
@@ -186,6 +255,16 @@ export function SearchOverlay() {
   const handleOpenChat = useCallback(
     (chatId: string) => {
       closeSearch();
+
+      const isSameChat =
+        typeof window !== 'undefined' &&
+        window.location.pathname === '/workspace' &&
+        new URLSearchParams(window.location.search).get('chat') === chatId;
+
+      if (isSameChat) {
+        return;
+      }
+
       router.push(`/workspace?chat=${encodeURIComponent(chatId)}`);
     },
     [closeSearch, router]
@@ -414,9 +493,10 @@ export function SearchOverlay() {
                   fontWeight: 500,
                   color: searchRowTextColor,
                   marginBottom: 0,
+                  overflowWrap: 'anywhere',
                 }}
               >
-                Нічого не знайдено за запитом «{searchQuery.trim()}»
+                Нічого не знайдено за запитом «{emptyStateQuery}»
               </div>
             )}
           </div>
@@ -498,12 +578,34 @@ export function SearchOverlay() {
 
         {showEmptyStateBody ? (
           <div
-            aria-hidden
             style={{
-              minHeight: '18px',
-              background: 'transparent',
+              padding: '18px 20px 22px',
             }}
-          />
+          >
+            <div
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '16px',
+                lineHeight: '24px',
+                fontWeight: 600,
+                color: searchRowTextColor,
+                marginBottom: '6px',
+              }}
+            >
+              У вас ще немає чатів
+            </div>
+            <div
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontSize: '14px',
+                lineHeight: '21px',
+                fontWeight: 500,
+                color: searchRowMutedColor,
+              }}
+            >
+              Створіть новий чат, і він з&apos;явиться тут для швидкого пошуку.
+            </div>
+          </div>
         ) : null}
       </div>
     </div>

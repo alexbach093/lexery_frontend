@@ -2,20 +2,17 @@
 
 import { useRouter } from 'next/navigation';
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   SettingsGearIcon,
   SettingsDatabaseIcon,
   SettingsShieldIcon,
-  ChevronDownAltIcon,
   CloseAltIcon,
 } from '@/components/icons';
+import { getAppPreferences, setMemoryEnabledPreference } from '@/lib/app-preferences';
 import { clearChatLibrary } from '@/lib/chat-library';
 import { cn } from '@/lib/utils';
-
-const THEME_OPTIONS = ['Системна', 'Темна', 'Світла'] as const;
-type ThemeOption = (typeof THEME_OPTIONS)[number];
 
 type SectionId = 'general' | 'info' | 'security';
 type SettingKind = 'theme' | 'value' | 'toggle' | 'action';
@@ -391,13 +388,9 @@ function DeleteAccountConfirmDialog({ onClose }: { onClose: () => void }) {
 export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<SectionId>('general');
-  const [theme, setTheme] = useState<ThemeOption>('Світла');
-  const [themeOpen, setThemeOpen] = useState(false);
-  const [themeHovered, setThemeHovered] = useState(false);
-  const [memoryEnabled, setMemoryEnabled] = useState(true);
+  const [memoryEnabled, setMemoryEnabled] = useState(() => getAppPreferences().memoryEnabled);
   const [deleteChatsConfirmOpen, setDeleteChatsConfirmOpen] = useState(false);
   const [deleteAccountConfirmOpen, setDeleteAccountConfirmOpen] = useState(false);
-  const themeMenuRef = useRef<HTMLDivElement | null>(null);
 
   const sectionIcons = useMemo<Record<SectionId, ReactNode>>(
     () => ({
@@ -409,7 +402,6 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   );
 
   const activeSectionData = SECTIONS.find((section) => section.id === activeSection) ?? SECTIONS[0];
-  const themeButtonActive = themeHovered || themeOpen;
 
   const handleClose = useCallback(() => {
     if (onClose) {
@@ -419,17 +411,6 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
 
     router.back();
   }, [onClose, router]);
-
-  useEffect(() => {
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!themeMenuRef.current?.contains(event.target as Node)) {
-        setThemeOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -466,41 +447,9 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const renderControl = (row: SettingRow) => {
     if (row.kind === 'theme') {
       return (
-        <div ref={themeMenuRef} className="relative">
-          <SelectLikeControl
-            active={themeButtonActive}
-            onClick={() => setThemeOpen((current) => !current)}
-            onMouseEnter={() => setThemeHovered(true)}
-            onMouseLeave={() => setThemeHovered(false)}
-            onFocus={() => setThemeHovered(true)}
-            onBlur={() => setThemeHovered(false)}
-          >
-            <span>{theme}</span>
-            <ChevronDownAltIcon width={16} height={16} aria-hidden="true" />
-          </SelectLikeControl>
-
-          {themeOpen && (
-            <div className="absolute top-[calc(100%+6px)] right-0 z-10 min-w-33 rounded-xl border border-[#DEDEDE] bg-white p-1.25">
-              {THEME_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => {
-                    setTheme(option);
-                    setThemeOpen(false);
-                    setThemeHovered(false);
-                  }}
-                  className={cn(
-                    'flex h-8 w-full cursor-pointer items-center justify-start rounded-[9px] border-none px-2.25 text-left font-sans text-[13px] leading-4.25 font-normal text-[#171717] transition-colors',
-                    option === theme ? 'bg-[#F4F4F6]' : 'bg-transparent hover:bg-[#F4F4F6]'
-                  )}
-                >
-                  <span>{option}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <SelectLikeControl>
+          <span>Світла</span>
+        </SelectLikeControl>
       );
     }
 
@@ -508,9 +457,6 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
       return (
         <SelectLikeControl>
           <span>{row.value}</span>
-          {row.id !== 'language' && (
-            <ChevronDownAltIcon width={16} height={16} aria-hidden="true" />
-          )}
         </SelectLikeControl>
       );
     }
@@ -519,7 +465,13 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
       return (
         <ToggleControl
           checked={memoryEnabled}
-          onClick={() => setMemoryEnabled((current) => !current)}
+          onClick={() => {
+            setMemoryEnabled((current) => {
+              const nextValue = !current;
+              setMemoryEnabledPreference(nextValue);
+              return nextValue;
+            });
+          }}
         />
       );
     }
@@ -531,15 +483,11 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
         onClick={
           row.id === 'delete-chats'
             ? () => {
-                setThemeOpen(false);
-                setThemeHovered(false);
                 setDeleteAccountConfirmOpen(false);
                 setDeleteChatsConfirmOpen(true);
               }
             : row.id === 'delete-account'
               ? () => {
-                  setThemeOpen(false);
-                  setThemeHovered(false);
                   setDeleteChatsConfirmOpen(false);
                   setDeleteAccountConfirmOpen(true);
                 }
@@ -588,11 +536,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
                 label={section.label}
                 active={activeSection === section.id}
                 icon={sectionIcons[section.id]}
-                onClick={() => {
-                  setActiveSection(section.id);
-                  setThemeOpen(false);
-                  setThemeHovered(false);
-                }}
+                onClick={() => setActiveSection(section.id)}
               />
             ))}
           </div>

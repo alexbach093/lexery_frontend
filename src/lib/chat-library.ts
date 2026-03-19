@@ -3,8 +3,13 @@ import type { StoredChatSession, StoredChatSessionSummary } from '@/types';
 
 export const DEFAULT_CHAT_USER_ID = 'local-user';
 export const CHAT_STORE_UPDATED_EVENT = 'recent-chats-updated';
+export const CHAT_STORE_SYNC_STORAGE_KEY = 'lexery-chat-store-sync';
 
 export type ChatLibraryItem = StoredChatSessionSummary;
+
+function canUseStorage(): boolean {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+}
 
 function sortChatLibrary(items: ChatLibraryItem[]): ChatLibraryItem[] {
   return [...items].sort((a, b) => {
@@ -32,7 +37,23 @@ function toChatLibraryItem(chat: StoredChatSession | StoredChatSessionSummary): 
 
 export function dispatchChatStoreUpdated() {
   if (typeof window === 'undefined') return;
+
+  if (canUseStorage()) {
+    try {
+      window.localStorage.setItem(
+        CHAT_STORE_SYNC_STORAGE_KEY,
+        JSON.stringify({ updatedAt: Date.now() })
+      );
+    } catch {
+      // Ignore storage sync failures and still notify the current tab.
+    }
+  }
+
   window.dispatchEvent(new CustomEvent(CHAT_STORE_UPDATED_EVENT));
+}
+
+export function isChatStoreStorageEvent(event: StorageEvent): boolean {
+  return event.key === CHAT_STORE_SYNC_STORAGE_KEY;
 }
 
 export async function fetchChatLibrary(

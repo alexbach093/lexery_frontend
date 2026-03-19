@@ -28,7 +28,7 @@ export function WorkspaceMain({ className = '', onReady }: WorkspaceMainProps) {
     const h = Math.min(Math.max(el.scrollHeight, 88), 320);
     el.style.height = `${h}px`;
     el.style.overflowY = el.scrollHeight > 320 ? 'auto' : 'hidden';
-  }, [chat.systemPromptEditorOpen, chat.systemPrompt]);
+  }, [chat.systemPromptDraft, chat.systemPromptEditorOpen]);
 
   const chatInputBoxClasses = cn(
     'flex flex-col rounded-2xl',
@@ -56,13 +56,14 @@ export function WorkspaceMain({ className = '', onReady }: WorkspaceMainProps) {
     onSend: chat.handleSend,
     canSend: chat.canSend,
     isGenerationInProgress: chat.isGenerationInProgress,
+    isStoppingGeneration: chat.isStoppingGeneration,
     onStopGeneration: chat.handleStopGeneration,
     hasMessages: chat.hasMessages,
     placeholder: 'Запитайте будь-що',
     fileInputRef: chat.fileInputRef,
     textareaRef: chat.textareaRef,
     systemPromptEditorOpen: chat.systemPromptEditorOpen,
-    onSystemPromptEditorToggle: () => chat.setSystemPromptEditorOpen(true),
+    onSystemPromptEditorToggle: chat.openSystemPromptEditor,
     showExpandButton: chat.showExpandButton,
     onExpandToggle: chat.handleExpandToggle,
     filesExpanded: chat.filesExpanded,
@@ -150,9 +151,12 @@ export function WorkspaceMain({ className = '', onReady }: WorkspaceMainProps) {
           aria-modal="true"
           aria-labelledby="system-prompt-editor-title"
           className="fixed inset-0 z-100 box-border flex items-center justify-center p-6"
-          onClick={() => chat.setSystemPromptEditorOpen(false)}
         >
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden />
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            aria-hidden
+            onClick={chat.handleSystemPromptCancel}
+          />
           <div
             id="system-prompt-editor-dialog"
             className="relative w-full max-w-130 rounded-[26px] border border-[#F4F4F6] bg-white p-6"
@@ -160,24 +164,23 @@ export function WorkspaceMain({ className = '', onReady }: WorkspaceMainProps) {
           >
             <h2
               id="system-prompt-editor-title"
-              className="mb-1 text-lg font-semibold text-[#2A2A2A]"
+              className="mb-4 text-lg font-semibold text-[#2A2A2A]"
             >
               Системний промпт
             </h2>
-            <p className="mb-4 text-sm text-[#575757]">Системний промпт для чату (опційно).</p>
             <textarea
               ref={systemPromptTextareaRef}
-              value={chat.systemPrompt}
-              onChange={(e) => chat.setSystemPrompt(e.target.value)}
+              value={chat.systemPromptDraft}
+              onChange={(e) => chat.setSystemPromptDraft(e.target.value)}
               placeholder="Твоя задача давати мені повні відповіді..."
               rows={3}
-              className="box-border max-h-80 min-h-22 w-full resize-none rounded-xl border border-[#E0E0E0] p-3 text-sm leading-[1.4] text-[#2A2A2A]"
+              className="box-border max-h-80 min-h-22 w-full resize-none rounded-xl border border-[#E0E0E0] p-3 text-sm leading-[1.4] text-[#2A2A2A] outline-none focus:border-[#E0E0E0] focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
               aria-label="Системний промпт"
             />
             <div className="mt-4 flex justify-end gap-2.5">
               <button
                 type="button"
-                onClick={() => chat.setSystemPromptEditorOpen(false)}
+                onClick={chat.handleSystemPromptCancel}
                 className="cursor-pointer rounded-lg border border-[#E0E0E0] bg-white px-4 py-2.5 text-sm text-[#2A2A2A] transition-colors hover:bg-gray-50"
               >
                 Скасувати

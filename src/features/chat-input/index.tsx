@@ -26,6 +26,7 @@ export interface ChatInputProps {
   onSend: () => void;
   canSend: boolean;
   isGenerationInProgress: boolean;
+  isStoppingGeneration: boolean;
   onStopGeneration: () => void;
   hasMessages: boolean;
   placeholder?: string;
@@ -46,6 +47,7 @@ export function ChatInput({
   onSend,
   canSend,
   isGenerationInProgress,
+  isStoppingGeneration,
   onStopGeneration,
   hasMessages,
   placeholder = 'Запитайте будь-що',
@@ -112,7 +114,7 @@ export function ChatInput({
             className={cn(
               'workspace-action-btn workspace-icon-btn flex h-7.5 w-7.5 shrink-0 cursor-pointer items-center justify-center rounded-md p-0',
               systemPromptEditorOpen
-                ? 'border border-[#0070f3] bg-[#E8F0FE]'
+                ? 'border border-[#E0E0E0] bg-[#F4F4F6]'
                 : 'border-none bg-transparent'
             )}
             aria-label="Редактор промпту"
@@ -122,7 +124,7 @@ export function ChatInput({
             <SystemPromptIcon
               width={16}
               height={16}
-              className={systemPromptEditorOpen ? 'text-[#0070f3]' : 'text-[#575757]'}
+              className="text-[#575757]"
               aria-hidden="true"
             />
           </button>
@@ -167,12 +169,26 @@ export function ChatInput({
           )}
 
           {/* Action Button (Stop or Send) */}
-          {isGenerationInProgress ? (
+          {isStoppingGeneration ? (
+            <button
+              type="button"
+              disabled
+              className="flex h-11 w-11 shrink-0 cursor-default items-center justify-center rounded-lg border-none bg-[#E3E3E3] p-0.75"
+              aria-label="Зупиняємо генерацію"
+            >
+              <StopGenerationIcon
+                width={38}
+                height={38}
+                className="text-[#8A8A8A]"
+                aria-hidden="true"
+              />
+            </button>
+          ) : isGenerationInProgress ? (
             <button
               type="button"
               onClick={onStopGeneration}
               className="workspace-action-btn animate-pulse-subtle flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-[#F0F0F0] p-0.75"
-              aria-label="Stop generation"
+              aria-label="Зупинити генерацію"
             >
               <StopGenerationIcon
                 width={38}
