@@ -144,7 +144,6 @@ export function MessageVersions({
                     'block min-w-0 truncate',
                     i === activeVersionIndex ? 'font-semibold' : 'font-normal'
                   )}
-                  title={getVersionLabel(v, i)}
                 >
                   {getVersionLabel(v, i)}
                 </span>

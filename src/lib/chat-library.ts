@@ -1,47 +1,33 @@
-import { getRecentChats, RECENT_CHATS_UPDATED_EVENT, saveRecentChats } from '@/lib/recent-chats';
-import type { RecentChatItem } from '@/types';
+import { getChatRepository } from '@/lib/chat-repository';
+import type { StoredChatSession, StoredChatSessionSummary } from '@/types';
 
 export const DEFAULT_CHAT_USER_ID = 'local-user';
-export const CHAT_STORE_UPDATED_EVENT = RECENT_CHATS_UPDATED_EVENT;
+export const CHAT_STORE_UPDATED_EVENT = 'recent-chats-updated';
 
-export type ChatLibraryItem = RecentChatItem & {
-  updatedAt: string;
-  pinned: boolean;
-  userId?: string;
-};
+export type ChatLibraryItem = StoredChatSessionSummary;
 
-type StoredChatLibraryItem = RecentChatItem & {
-  updatedAt?: string;
-  pinned?: boolean;
-  userId?: string;
-};
+function sortChatLibrary(items: ChatLibraryItem[]): ChatLibraryItem[] {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a.updatedAt).getTime();
+    const bTime = new Date(b.updatedAt).getTime();
 
-function normalizeChatLibraryItem(item: StoredChatLibraryItem): ChatLibraryItem {
+    if (Number.isNaN(aTime) || Number.isNaN(bTime)) {
+      return b.createdAt.localeCompare(a.createdAt);
+    }
+
+    return bTime - aTime;
+  });
+}
+
+function toChatLibraryItem(chat: StoredChatSession | StoredChatSessionSummary): ChatLibraryItem {
   return {
-    id: item.id,
-    title: item.title,
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt ?? item.createdAt,
-    pinned: item.pinned === true,
-    userId: item.userId,
+    id: chat.id,
+    title: chat.title,
+    createdAt: chat.createdAt,
+    updatedAt: chat.updatedAt,
+    pinned: chat.pinned,
+    userId: chat.userId,
   };
-}
-
-function readChatLibrary(): ChatLibraryItem[] {
-  return (getRecentChats() as StoredChatLibraryItem[])
-    .map(normalizeChatLibraryItem)
-    .sort((a, b) => {
-      const aTime = new Date(a.updatedAt).getTime();
-      const bTime = new Date(b.updatedAt).getTime();
-      if (Number.isNaN(aTime) || Number.isNaN(bTime)) {
-        return b.createdAt.localeCompare(a.createdAt);
-      }
-      return bTime - aTime;
-    });
-}
-
-function persistChatLibrary(items: ChatLibraryItem[]) {
-  saveRecentChats(items as unknown as RecentChatItem[]);
 }
 
 export function dispatchChatStoreUpdated() {
@@ -52,35 +38,65 @@ export function dispatchChatStoreUpdated() {
 export async function fetchChatLibrary(
   _userId: string = DEFAULT_CHAT_USER_ID
 ): Promise<ChatLibraryItem[]> {
-  return readChatLibrary();
+  const repository = getChatRepository();
+  const chats = await repository.listChats();
+  return sortChatLibrary(chats.map(toChatLibraryItem));
 }
 
 export async function updateChatLibraryItem(
   id: string,
   patch: Partial<Pick<ChatLibraryItem, 'title' | 'pinned' | 'userId'>>
 ): Promise<ChatLibraryItem> {
-  const current = readChatLibrary();
-  const index = current.findIndex((item) => item.id === id);
-  if (index === -1) {
+  const repository = getChatRepository();
+  const current = await repository.getChat(id);
+  if (!current) {
     throw new Error(`Chat not found: ${id}`);
   }
 
-  const updatedItem: ChatLibraryItem = {
-    ...current[index],
-    ...patch,
-    updatedAt: new Date().toISOString(),
-  };
+  const nextUpdatedAt = new Date().toISOString();
 
-  const next = [...current];
-  next[index] = updatedItem;
-  persistChatLibrary(next);
+  let updated = current;
+
+  if (typeof patch.title === 'string' && patch.title !== current.title) {
+    updated = await repository.renameChat(id, patch.title);
+  }
+
+  if (typeof patch.pinned === 'boolean' && patch.pinned !== updated.pinned) {
+    updated = await repository.pinChat(id, patch.pinned);
+  }
+
+  if (patch.userId !== undefined && patch.userId !== updated.userId) {
+    updated = await repository.saveChat({
+      ...updated,
+      userId: patch.userId,
+      updatedAt: nextUpdatedAt,
+    });
+  }
+
+  if (
+    typeof patch.title !== 'string' &&
+    typeof patch.pinned !== 'boolean' &&
+    patch.userId === undefined
+  ) {
+    updated = await repository.saveChat({
+      ...updated,
+      updatedAt: nextUpdatedAt,
+    });
+  }
+
   dispatchChatStoreUpdated();
-  return updatedItem;
+  return toChatLibraryItem(updated);
 }
 
 export async function deleteChatLibraryItem(id: string, _userId: string = DEFAULT_CHAT_USER_ID) {
-  const current = readChatLibrary();
-  persistChatLibrary(current.filter((item) => item.id !== id));
+  const repository = getChatRepository();
+  await repository.deleteChat(id);
+  dispatchChatStoreUpdated();
+}
+
+export async function clearChatLibrary(_userId: string = DEFAULT_CHAT_USER_ID) {
+  const repository = getChatRepository();
+  await repository.clearChats();
   dispatchChatStoreUpdated();
 }
 

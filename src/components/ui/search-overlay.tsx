@@ -100,6 +100,7 @@ export function SearchOverlay() {
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const listScrollRef = useRef<HTMLDivElement>(null);
   const refreshIdRef = useRef(0);
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const closeSearch = useCallback(() => {
@@ -159,12 +160,10 @@ export function SearchOverlay() {
   }, [closeSearch, isOpen]);
 
   const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
-  const recentChats = useMemo(() => chatLibrary.slice(0, 6), [chatLibrary]);
+  const recentChats = chatLibrary;
   const filteredChats = useMemo(() => {
     if (!normalizedQuery) return [];
-    return chatLibrary
-      .filter((chat) => getChatSearchText(chat).includes(normalizedQuery))
-      .slice(0, 6);
+    return chatLibrary.filter((chat) => getChatSearchText(chat).includes(normalizedQuery));
   }, [chatLibrary, normalizedQuery]);
 
   const visibleChats = normalizedQuery ? filteredChats : recentChats;
@@ -173,6 +172,16 @@ export function SearchOverlay() {
     visibleChats.length === 0
       ? -1
       : Math.min(Math.max(highlightedIndex, 0), visibleChats.length - 1);
+
+  useEffect(() => {
+    if (!isOpen || activeHighlightedIndex < 0) return;
+
+    const container = listScrollRef.current;
+    const activeRow = container?.querySelector<HTMLElement>(
+      `[data-chat-index="${activeHighlightedIndex}"]`
+    );
+    activeRow?.scrollIntoView({ block: 'nearest' });
+  }, [activeHighlightedIndex, isOpen, visibleChats]);
 
   const handleOpenChat = useCallback(
     (chatId: string) => {
@@ -206,22 +215,29 @@ export function SearchOverlay() {
   if (!isOpen) return null;
 
   const showSearchResults = normalizedQuery.length > 0;
+  const searchPanelBorderColor = '#D4D4D4';
+  const searchDividerColor = '#E5E5E5';
+  const highlightedRowBackground = '#F4F4F4';
+  const searchRowTextColor = '#171717';
+  const searchRowMutedColor = '#737373';
+  const searchRowTimestampColor = '#737373';
   const resultsSectionHeaderStyle: CSSProperties = {
     fontFamily: 'Inter, sans-serif',
     fontSize: '13px',
     lineHeight: '18px',
     fontWeight: 500,
-    color: '#6B7280',
+    color: searchRowMutedColor,
   };
   const panelBaseStyle: CSSProperties = {
-    width: 'min(680px, calc(100% - 120px))',
+    width: 'min(680px, calc(100vw - var(--app-sidebar-width, 0px) - 64px))',
     maxHeight: 'min(460px, calc(100vh - 148px))',
     borderRadius: '22px',
-    border: '1px solid rgba(220, 225, 227, 0.9)',
-    background: 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(249,250,251,0.98) 100%)',
+    border: `1px solid ${searchPanelBorderColor}`,
+    background: '#FFFFFF',
     boxShadow: 'none',
     overflow: 'hidden',
-    backdropFilter: 'blur(14px)',
+    backdropFilter: 'none',
+    transform: 'translateX(calc(var(--app-sidebar-width, 0px) / 2))',
   };
 
   return (
@@ -230,15 +246,16 @@ export function SearchOverlay() {
       role="dialog"
       onClick={closeSearch}
       style={{
-        position: 'absolute',
+        position: 'fixed',
         inset: 0,
         zIndex: 90,
         display: 'flex',
         justifyContent: 'center',
-        alignItems: 'flex-start',
-        padding: '124px 32px 24px',
+        alignItems: 'center',
+        padding: '24px 32px',
         background: 'transparent',
-        backdropFilter: 'none',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
       }}
     >
       <div ref={panelRef} onClick={(event) => event.stopPropagation()} style={panelBaseStyle}>
@@ -251,11 +268,11 @@ export function SearchOverlay() {
             padding: '0 18px',
             borderBottom:
               visibleChats.length > 0 || normalizedQuery || showEmptyStateBody
-                ? '1px solid rgba(226, 232, 240, 0.92)'
+                ? `1px solid ${searchDividerColor}`
                 : 'none',
           }}
         >
-          <div style={{ color: '#6B7280', flexShrink: 0 }}>
+          <div style={{ color: searchRowMutedColor, flexShrink: 0 }}>
             <SearchIcon />
           </div>
           <input
@@ -273,7 +290,7 @@ export function SearchOverlay() {
               border: 'none',
               outline: 'none',
               background: 'transparent',
-              color: '#111827',
+              color: searchRowTextColor,
               fontFamily: 'Inter, sans-serif',
               fontWeight: 500,
               fontSize: '16px',
@@ -285,16 +302,11 @@ export function SearchOverlay() {
             type="button"
             aria-label="Закрити пошук"
             onClick={closeSearch}
+            className="inline-flex items-center justify-center rounded-[12px] border-none bg-transparent transition-colors hover:bg-[#F4F4F6] active:bg-[#F4F4F6]"
             style={{
               width: '40px',
               height: '40px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: 'none',
-              borderRadius: '12px',
-              background: 'transparent',
-              color: '#6B7280',
+              color: searchRowMutedColor,
               cursor: 'pointer',
               flexShrink: 0,
             }}
@@ -319,9 +331,12 @@ export function SearchOverlay() {
             </div>
             {visibleChats.length > 0 ? (
               <div
+                ref={listScrollRef}
                 style={{
                   maxHeight: 'min(292px, calc(100vh - 266px))',
                   overflowY: 'auto',
+                  overscrollBehavior: 'contain',
+                  scrollbarGutter: 'stable',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '2px',
@@ -332,6 +347,7 @@ export function SearchOverlay() {
                   return (
                     <button
                       key={chat.id}
+                      data-chat-index={index}
                       type="button"
                       onMouseEnter={() => setHighlightedIndex(index)}
                       onFocus={() => setHighlightedIndex(index)}
@@ -345,14 +361,14 @@ export function SearchOverlay() {
                         padding: '0 12px',
                         border: 'none',
                         borderRadius: '12px',
-                        background: isActive ? '#171717' : 'transparent',
-                        color: isActive ? '#FFFFFF' : '#111827',
+                        background: isActive ? highlightedRowBackground : 'transparent',
+                        color: searchRowTextColor,
                         cursor: 'pointer',
                         textAlign: 'left',
                         transition: 'background-color 140ms ease, color 140ms ease',
                       }}
                     >
-                      <div style={{ flexShrink: 0, color: isActive ? '#FFFFFF' : '#6B7280' }}>
+                      <div style={{ flexShrink: 0, color: searchRowMutedColor }}>
                         <ChatBubbleIcon />
                       </div>
                       <div
@@ -376,7 +392,7 @@ export function SearchOverlay() {
                           minWidth: '74px',
                           display: 'flex',
                           justifyContent: 'flex-end',
-                          color: isActive ? '#D1D5DB' : '#7A7A7A',
+                          color: isActive ? searchRowMutedColor : searchRowTimestampColor,
                           fontFamily: 'Inter, sans-serif',
                           fontSize: '13px',
                           lineHeight: '18px',
@@ -396,7 +412,7 @@ export function SearchOverlay() {
                   fontSize: '15px',
                   lineHeight: '22px',
                   fontWeight: 500,
-                  color: '#111827',
+                  color: searchRowTextColor,
                   marginBottom: 0,
                 }}
               >
@@ -406,9 +422,12 @@ export function SearchOverlay() {
           </div>
         ) : visibleChats.length > 0 ? (
           <div
+            ref={listScrollRef}
             style={{
               maxHeight: 'min(360px, calc(100vh - 208px))',
               overflowY: 'auto',
+              overscrollBehavior: 'contain',
+              scrollbarGutter: 'stable',
               padding: '10px',
             }}
           >
@@ -417,6 +436,7 @@ export function SearchOverlay() {
               return (
                 <button
                   key={chat.id}
+                  data-chat-index={index}
                   type="button"
                   onMouseEnter={() => setHighlightedIndex(index)}
                   onFocus={() => setHighlightedIndex(index)}
@@ -430,14 +450,14 @@ export function SearchOverlay() {
                     padding: '0 12px',
                     border: 'none',
                     borderRadius: '12px',
-                    background: isActive ? '#171717' : 'transparent',
-                    color: isActive ? '#FFFFFF' : '#111827',
+                    background: isActive ? highlightedRowBackground : 'transparent',
+                    color: searchRowTextColor,
                     cursor: 'pointer',
                     textAlign: 'left',
                     transition: 'background-color 140ms ease, color 140ms ease',
                   }}
                 >
-                  <div style={{ flexShrink: 0, color: isActive ? '#FFFFFF' : '#6B7280' }}>
+                  <div style={{ flexShrink: 0, color: searchRowMutedColor }}>
                     <ChatBubbleIcon />
                   </div>
                   <div
@@ -461,7 +481,7 @@ export function SearchOverlay() {
                       minWidth: '74px',
                       display: 'flex',
                       justifyContent: 'flex-end',
-                      color: isActive ? '#D1D5DB' : '#7A7A7A',
+                      color: isActive ? searchRowMutedColor : searchRowTimestampColor,
                       fontFamily: 'Inter, sans-serif',
                       fontSize: '13px',
                       lineHeight: '18px',

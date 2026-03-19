@@ -44,7 +44,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
   const POPOVER_WIDTH = 210;
   const POPOVER_GAP = 6;
   const POPOVER_VIEWPORT_MARGIN = 8;
-  const TOOLTIP_DELAY_MS = 1250;
+  const TOOLTIP_DELAY_MS = 900;
 
   const updateRegeneratePopoverPosition = useCallback(() => {
     const anchor = regenerateAnchorRef.current;
@@ -272,7 +272,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
             className={cn(
               baseBtnClasses,
               feedbackLike === 'like'
-                ? 'bg-[#22c55e]/10 text-[#22c55e] hover:bg-[#22c55e]/10 active:scale-100'
+                ? 'text-[#22c55e] hover:bg-transparent active:scale-100'
                 : 'hover:bg-transparent hover:text-[#333] active:scale-[0.92]'
             )}
             aria-label="Подобається"
@@ -305,7 +305,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
             className={cn(
               baseBtnClasses,
               feedbackLike === 'dislike'
-                ? 'bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444]/10 active:scale-100'
+                ? 'text-[#ef4444] hover:bg-transparent active:scale-100'
                 : 'hover:bg-transparent hover:text-[#333] active:scale-[0.92]'
             )}
             aria-label="Не подобається"
@@ -451,7 +451,6 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
           type="button"
           className="ml-1.5 h-auto w-auto cursor-pointer rounded-md border-none bg-transparent px-3 py-1 font-sans text-sm font-normal text-[#9A9A9A] transition-colors duration-150 hover:bg-transparent hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
           aria-label="Переглянути процес"
-          title="Переглянути процес"
         >
           Переглянути процес
         </button>

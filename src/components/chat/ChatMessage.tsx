@@ -129,7 +129,7 @@ export function ChatMessage({
   }, [versions?.length]);
 
   if (role === 'user') {
-    const USER_TOOLTIP_DELAY_MS = 1250;
+    const USER_TOOLTIP_DELAY_MS = 900;
 
     const showUserTooltipAfterDelay = (id: UserMessageTooltipId) => {
       userHoveredIdRef.current = id;

@@ -32,12 +32,14 @@ export function MessageList({
   const messages = messagesProp ?? [];
   const listEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when new messages arrive or assistant starts typing
-  useEffect(() => {
-    listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, isAssistantTyping]);
-
   const lastMsg = messages[messages.length - 1];
+  const lastMessageSignature = `${lastMsg?.id ?? ''}:${lastMsg?.role ?? ''}:${lastMsg?.content ?? ''}`;
+
+  // Keep streamed responses pinned to the latest content while they grow.
+  useEffect(() => {
+    listEndRef.current?.scrollIntoView({ behavior: isAssistantTyping ? 'auto' : 'smooth' });
+  }, [isAssistantTyping, lastMessageSignature, messages.length]);
+
   const lastIsEmptyAssistant = lastMsg?.role === 'assistant' && !(lastMsg.content ?? '').trim();
   const showTypingInsideLast = isAssistantTyping && lastIsEmptyAssistant;
   const showTypingAsSeparate = false;

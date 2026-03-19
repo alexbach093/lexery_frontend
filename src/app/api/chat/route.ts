@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { createChatCompletion } from '@/lib/server/openrouter';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   try {

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, type CSSProperties } from 'react';
 
 import { SearchOverlay } from '@/components/ui/search-overlay';
 import { SettingsScreen } from '@/components/ui/settings-screen';
@@ -60,6 +60,17 @@ export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutPro
   const sidebarWidth = sidebarCollapsed
     ? WORKSPACE_SIDEBAR_COLLAPSED_WIDTH
     : WORKSPACE_SIDEBAR_EXPANDED_WIDTH;
+  const mainAreaStyle: CSSProperties & { '--app-sidebar-width': string } = {
+    '--app-sidebar-width': `${sidebarWidth}px`,
+    marginLeft: `${sidebarWidth}px`,
+    height: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
+    overflow: 'visible',
+    transition: `margin-left ${WORKSPACE_SIDEBAR_TRANSITION}`,
+  };
 
   return (
     <SettingsOpenContext.Provider value={settingsContextValue}>
@@ -86,18 +97,7 @@ export function AppLayout({ children, bootOverlayVisible = false }: AppLayoutPro
               />
             </Suspense>
           </div>
-          <div
-            style={{
-              marginLeft: `${sidebarWidth}px`,
-              height: '100vh',
-              display: 'flex',
-              flexDirection: 'column',
-              position: 'relative',
-              backgroundColor: '#FFFFFF',
-              overflow: 'visible',
-              transition: `margin-left ${WORKSPACE_SIDEBAR_TRANSITION}`,
-            }}
-          >
+          <div style={mainAreaStyle}>
             <Suspense fallback={null}>{children}</Suspense>
             <SearchOverlay key={searchOverlaySessionKey} />
           </div>

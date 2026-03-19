@@ -78,7 +78,13 @@ export function WorkspaceMain({ className = '', onReady }: WorkspaceMainProps) {
     >
       <ChatMeta hasMessages={chat.hasMessages} compact={chat.tipsButtonCompact} />
 
-      {!chat.hasMessages ? (
+      {chat.isHydratingChat ? (
+        <div className="flex flex-1 items-center justify-center px-5 pb-16">
+          <p className="text-center font-sans text-[16px] leading-6 text-[#6B7280]">
+            Завантаження чату...
+          </p>
+        </div>
+      ) : !chat.hasMessages ? (
         <div className="flex flex-1 flex-col items-center justify-center px-5 pb-16">
           {chat.attachedFiles.length === 0 && (
             <p className="mb-9.5 text-center font-sans text-[22.587px] leading-normal font-bold text-black">
@@ -149,7 +155,7 @@ export function WorkspaceMain({ className = '', onReady }: WorkspaceMainProps) {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden />
           <div
             id="system-prompt-editor-dialog"
-            className="relative w-full max-w-130 rounded-[26px] border border-[#F4F4F6] bg-white p-6 shadow-[0_20px_40px_rgba(0,0,0,0.12)]"
+            className="relative w-full max-w-130 rounded-[26px] border border-[#F4F4F6] bg-white p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h2
@@ -178,7 +184,7 @@ export function WorkspaceMain({ className = '', onReady }: WorkspaceMainProps) {
               </button>
               <button
                 type="button"
-                onClick={() => chat.setSystemPromptEditorOpen(false)}
+                onClick={chat.handleSystemPromptApply}
                 className="cursor-pointer rounded-lg bg-[#2A2A2A] px-4 py-2.5 text-sm text-white transition-colors hover:bg-black"
               >
                 Застосувати

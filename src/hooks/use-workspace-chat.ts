@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { AttachedFile } from '@/features/attachments';
 import { getFileFormatIdOrExt, getFormatOptionForFile } from '@/features/attachments';
@@ -10,10 +11,13 @@ import {
   HOME_TEXTAREA_MIN_HEIGHT,
   HOME_TEXTAREA_MAX_HEIGHT,
 } from '@/features/chat-input';
-import { upsertRecentChat } from '@/lib/recent-chats';
-import type { Message, MessageVersion } from '@/types';
+import { DEFAULT_CHAT_USER_ID, dispatchChatStoreUpdated } from '@/lib/chat-library';
+import { getChatRepository } from '@/lib/chat-repository';
+import { messagesToStoredMessages, storedMessagesToMessages } from '@/lib/chat-session-mappers';
+import type { Message, MessageAttachment, MessageVersion, StoredChatSession } from '@/types';
 
 const HISTORY_TITLE_MAX_LENGTH = 60;
+const ASSISTANT_SUGGESTIONS = ['Детальніше', 'Ще приклад'] as const;
 
 /** Подія для відкриття нового чату (кнопка «Новий чат» у сайдбарі). */
 export const WORKSPACE_START_NEW_CHAT_EVENT = 'workspace-start-new-chat';
@@ -22,9 +26,72 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
+function buildHistoryTitle(text: string): string {
+  const raw = text.trim();
+  if (!raw) return 'Новий чат';
+  return (
+    raw.slice(0, HISTORY_TITLE_MAX_LENGTH) + (raw.length > HISTORY_TITLE_MAX_LENGTH ? '…' : '')
+  );
+}
+
+function buildMessageAttachments(files: AttachedFile[]): MessageAttachment[] | undefined {
+  if (files.length === 0) return undefined;
+
+  return files.map((item) => ({
+    name: item.file.name,
+    size: item.file.size,
+    previewUrl:
+      item.file.type.startsWith('image/') ||
+      /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|$)/i.test(item.file.name)
+        ? URL.createObjectURL(item.file)
+        : null,
+    type: item.file.type,
+    blob: item.file,
+  }));
+}
+
+function finalizeAssistantMessage(
+  message: Message,
+  options: {
+    content: string;
+    modifier?: string;
+    appendVersion?: boolean;
+    includeSuggestions?: boolean;
+  }
+): Message {
+  const createdAt = new Date().toISOString();
+  const nextVersion: MessageVersion = {
+    content: options.content,
+    createdAt,
+    modifier: options.modifier,
+  };
+  const existingVersions =
+    message.versions?.length && options.appendVersion
+      ? message.versions.map((version) => ({ ...version }))
+      : options.appendVersion && message.content.trim()
+        ? [{ content: message.content, createdAt }]
+        : [];
+  const versions = options.appendVersion ? [...existingVersions, nextVersion] : [nextVersion];
+
+  return {
+    ...message,
+    content: options.content,
+    versions,
+    activeVersionIndex: versions.length - 1,
+    suggestions: options.includeSuggestions ? [...ASSISTANT_SUGGESTIONS] : message.suggestions,
+  };
+}
+
 type ApiMessage = { role: 'user' | 'assistant'; content: string };
 
 export function useWorkspaceChat(onReady?: () => void) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const repository = useMemo(() => getChatRepository(), []);
+  const activeChatIdFromUrl = searchParams.get('chat');
+
+  const [currentChatId, setCurrentChatId] = useState<string | null>(activeChatIdFromUrl);
+  const [isHydratingChat, setIsHydratingChat] = useState<boolean>(activeChatIdFromUrl != null);
   const [value, setValue] = useState('');
   const [targetValue, setTargetValue] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -46,11 +113,23 @@ export function useWorkspaceChat(onReady?: () => void) {
   const fileListScrollRef = useRef<HTMLDivElement>(null);
   const streamAbortControllerRef = useRef<AbortController | null>(null);
   const expandCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hydrationRequestIdRef = useRef(0);
+  const skipHydrationChatIdRef = useRef<string | null>(null);
+  const systemPromptRef = useRef(systemPrompt);
+  const messagesRef = useRef<Message[]>([]);
 
   const isEmpty = targetValue.trim().length === 0;
   const isGenerationInProgress = isAssistantTyping || regeneratingMessageId != null;
   const canSend = (!isEmpty || attachedFiles.length > 0) && !isGenerationInProgress;
   const hasMessages = (messages?.length ?? 0) > 0;
+
+  useEffect(() => {
+    systemPromptRef.current = systemPrompt;
+  }, [systemPrompt]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const availableFormatOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -75,8 +154,9 @@ export function useWorkspaceChat(onReady?: () => void) {
           if (
             fileSearchQuery.trim() &&
             !item.file.name.toLowerCase().includes(fileSearchQuery.trim().toLowerCase())
-          )
+          ) {
             return false;
+          }
           return true;
         }),
     [attachedFiles, selectedFormats, fileSearchQuery]
@@ -88,16 +168,17 @@ export function useWorkspaceChat(onReady?: () => void) {
 
   useEffect(() => {
     if (!hasMessages) {
-      const t = setTimeout(() => setTipsButtonCompact(false), 0);
-      return () => clearTimeout(t);
+      const timeoutId = setTimeout(() => setTipsButtonCompact(false), 0);
+      return () => clearTimeout(timeoutId);
     }
-    const t = setTimeout(() => setTipsButtonCompact(true), 0);
-    return () => clearTimeout(t);
+
+    const timeoutId = setTimeout(() => setTipsButtonCompact(true), 0);
+    return () => clearTimeout(timeoutId);
   }, [hasMessages]);
 
   useEffect(() => {
     if (availableFormatOptions.length === 0) return;
-    const ids = new Set(availableFormatOptions.map((o) => o.id));
+    const ids = new Set(availableFormatOptions.map((option) => option.id));
     const rafId = requestAnimationFrame(() => {
       setSelectedFormats((prev) => {
         const next = new Set([...prev].filter((formatId) => ids.has(formatId)));
@@ -118,13 +199,16 @@ export function useWorkspaceChat(onReady?: () => void) {
       });
       return;
     }
-    const el = fileListRef.current;
-    if (!el) return;
-    const checkOverflow = () => setFilesOverflow(el.scrollWidth > el.clientWidth);
+
+    const element = fileListRef.current;
+    if (!element) return;
+
+    const checkOverflow = () => setFilesOverflow(element.scrollWidth > element.clientWidth);
     checkOverflow();
-    const ro = new ResizeObserver(checkOverflow);
-    ro.observe(el);
-    return () => ro.disconnect();
+
+    const resizeObserver = new ResizeObserver(checkOverflow);
+    resizeObserver.observe(element);
+    return () => resizeObserver.disconnect();
   }, [attachedFiles.length, filesExpanded]);
 
   useEffect(() => {
@@ -132,6 +216,36 @@ export function useWorkspaceChat(onReady?: () => void) {
       if (expandCloseTimeoutRef.current) clearTimeout(expandCloseTimeoutRef.current);
     };
   }, []);
+
+  const releaseDraftAttachments = useCallback((filesToRelease: AttachedFile[]) => {
+    filesToRelease.forEach((item) => {
+      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    });
+  }, []);
+
+  const resetComposer = useCallback(
+    (nextHasMessages: boolean) => {
+      setValue('');
+      setTargetValue('');
+      setAttachedFiles((prev) => {
+        releaseDraftAttachments(prev);
+        return [];
+      });
+      setFilesOverflow(false);
+      setFilesExpanded(false);
+      setExpandButtonClosing(false);
+      setSelectedFormats(new Set());
+      setFileSearchQuery('');
+
+      if (textareaRef.current) {
+        textareaRef.current.style.height = `${
+          nextHasMessages ? CHAT_TEXTAREA_MIN_HEIGHT : HOME_TEXTAREA_MIN_HEIGHT
+        }px`;
+        textareaRef.current.style.overflowY = 'hidden';
+      }
+    },
+    [releaseDraftAttachments]
+  );
 
   const handleExpandToggle = useCallback(() => {
     setFilesExpanded((prev) => {
@@ -155,48 +269,175 @@ export function useWorkspaceChat(onReady?: () => void) {
 
   const handleRemoveAllFiles = useCallback(() => {
     setAttachedFiles((prev) => {
-      prev.forEach((item) => {
-        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
-      });
+      releaseDraftAttachments(prev);
       return [];
     });
-  }, []);
+  }, [releaseDraftAttachments]);
 
   const handleRemoveFile = useCallback((index: number) => {
     setAttachedFiles((prev) => {
       const item = prev[index];
       if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
-      return prev.filter((_, i) => i !== index);
+      return prev.filter((_, currentIndex) => currentIndex !== index);
     });
   }, []);
 
-  const resizeTextarea = useCallback((el: HTMLTextAreaElement, isChat: boolean) => {
-    el.style.height = 'auto';
-    const minH = isChat ? CHAT_TEXTAREA_MIN_HEIGHT : HOME_TEXTAREA_MIN_HEIGHT;
-    const maxH = isChat ? CHAT_TEXTAREA_MAX_HEIGHT : HOME_TEXTAREA_MAX_HEIGHT;
-    const clamped = Math.min(Math.max(el.scrollHeight, minH), maxH);
-    el.style.height = `${clamped}px`;
-    el.style.overflowY = el.scrollHeight > maxH ? 'auto' : 'hidden';
+  const resizeTextarea = useCallback((element: HTMLTextAreaElement, isChat: boolean) => {
+    element.style.height = 'auto';
+    const minHeight = isChat ? CHAT_TEXTAREA_MIN_HEIGHT : HOME_TEXTAREA_MIN_HEIGHT;
+    const maxHeight = isChat ? CHAT_TEXTAREA_MAX_HEIGHT : HOME_TEXTAREA_MAX_HEIGHT;
+    const clampedHeight = Math.min(Math.max(element.scrollHeight, minHeight), maxHeight);
+    element.style.height = `${clampedHeight}px`;
+    element.style.overflowY = element.scrollHeight > maxHeight ? 'auto' : 'hidden';
   }, []);
 
-  const resetInput = useCallback(() => {
-    setValue('');
-    setTargetValue('');
-    setAttachedFiles([]);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = `${CHAT_TEXTAREA_MIN_HEIGHT}px`;
-      textareaRef.current.style.overflowY = 'hidden';
-    }
+  const commitMessages = useCallback((nextMessages: Message[]) => {
+    messagesRef.current = nextMessages;
+    setMessages(nextMessages);
   }, []);
+
+  const persistExistingChat = useCallback(
+    async (
+      chatId: string,
+      nextMessages: Message[],
+      options?: { fallbackTitle?: string; createdAt?: string; systemPrompt?: string }
+    ) => {
+      const existing = await repository.getChat(chatId);
+      const now = new Date().toISOString();
+      const nextSystemPrompt = options?.systemPrompt ?? systemPromptRef.current;
+
+      const session: StoredChatSession = existing
+        ? {
+            ...existing,
+            messages: messagesToStoredMessages(nextMessages),
+            systemPrompt: nextSystemPrompt,
+            updatedAt: now,
+          }
+        : {
+            id: chatId,
+            title:
+              options?.fallbackTitle ??
+              buildHistoryTitle(
+                nextMessages.find((message) => message.role === 'user')?.content ?? ''
+              ),
+            createdAt: options?.createdAt ?? now,
+            updatedAt: now,
+            pinned: false,
+            userId: DEFAULT_CHAT_USER_ID,
+            messages: messagesToStoredMessages(nextMessages),
+            systemPrompt: nextSystemPrompt,
+          };
+
+      await repository.saveChat(session);
+      dispatchChatStoreUpdated();
+      return session;
+    },
+    [repository]
+  );
+
+  const createChatSession = useCallback(
+    async (
+      chatId: string,
+      title: string,
+      nextMessages: Message[],
+      options?: { createdAt?: string; systemPrompt?: string }
+    ) => {
+      const createdAt = options?.createdAt ?? new Date().toISOString();
+      const session: StoredChatSession = {
+        id: chatId,
+        title,
+        createdAt,
+        updatedAt: createdAt,
+        pinned: false,
+        userId: DEFAULT_CHAT_USER_ID,
+        messages: messagesToStoredMessages(nextMessages),
+        systemPrompt: options?.systemPrompt ?? systemPromptRef.current,
+      };
+
+      await repository.createChat(session);
+      dispatchChatStoreUpdated();
+      return session;
+    },
+    [repository]
+  );
+
+  const hydrateChatSession = useCallback(
+    async (chatId: string | null) => {
+      const requestId = ++hydrationRequestIdRef.current;
+
+      if (chatId && skipHydrationChatIdRef.current === chatId) {
+        skipHydrationChatIdRef.current = null;
+        setCurrentChatId(chatId);
+        setIsHydratingChat(false);
+        return;
+      }
+
+      streamAbortControllerRef.current?.abort();
+      streamAbortControllerRef.current = null;
+      setIsAssistantTyping(false);
+      setRegeneratingMessageId(null);
+      setSystemPromptEditorOpen(false);
+      resetComposer(false);
+
+      if (!chatId) {
+        skipHydrationChatIdRef.current = null;
+        setCurrentChatId(null);
+        commitMessages([]);
+        setSystemPrompt('');
+        setIsHydratingChat(false);
+        return;
+      }
+
+      setIsHydratingChat(true);
+      setCurrentChatId(chatId);
+      commitMessages([]);
+      setSystemPrompt('');
+
+      try {
+        const session = await repository.getChat(chatId);
+        if (hydrationRequestIdRef.current !== requestId) return;
+
+        if (!session) {
+          setCurrentChatId(null);
+          commitMessages([]);
+          setSystemPrompt('');
+          setIsHydratingChat(false);
+          startTransition(() => router.replace('/workspace'));
+          return;
+        }
+
+        setCurrentChatId(session.id);
+        commitMessages(storedMessagesToMessages(session.messages));
+        setSystemPrompt(session.systemPrompt ?? '');
+        setIsHydratingChat(false);
+      } catch {
+        if (hydrationRequestIdRef.current !== requestId) return;
+        setCurrentChatId(null);
+        commitMessages([]);
+        setSystemPrompt('');
+        setIsHydratingChat(false);
+      }
+    },
+    [commitMessages, repository, resetComposer, router]
+  );
+
+  useEffect(() => {
+    void hydrateChatSession(activeChatIdFromUrl);
+  }, [activeChatIdFromUrl, hydrateChatSession]);
 
   const startNewChat = useCallback(() => {
+    skipHydrationChatIdRef.current = null;
     streamAbortControllerRef.current?.abort();
     streamAbortControllerRef.current = null;
+    setCurrentChatId(null);
+    setIsHydratingChat(false);
     setIsAssistantTyping(false);
     setRegeneratingMessageId(null);
-    setMessages([]);
-    resetInput();
-  }, [resetInput]);
+    commitMessages([]);
+    setSystemPrompt('');
+    setSystemPromptEditorOpen(false);
+    resetComposer(false);
+  }, [commitMessages, resetComposer]);
 
   useEffect(() => {
     const handler = () => startNewChat();
@@ -210,9 +451,9 @@ export function useWorkspaceChat(onReady?: () => void) {
 
   const streamChatResponse = useCallback(
     (
+      chatId: string,
       messagesForApi: ApiMessage[],
       assistantMessageId: string,
-      onError: (message: string) => void,
       signal?: AbortSignal,
       options?: { modifier?: string; appendVersion?: boolean; onComplete?: () => void }
     ) => {
@@ -222,89 +463,92 @@ export function useWorkspaceChat(onReady?: () => void) {
         body: JSON.stringify({ messages: messagesForApi }),
         signal,
       })
-        .then(async (res) => {
-          if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
+        .then(async (response) => {
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
             throw new Error(data?.error ?? 'Помилка запиту');
           }
-          const reader = res.body?.getReader();
+
+          const reader = response.body?.getReader();
           if (!reader) throw new Error('Немає потоку відповіді');
+
           const decoder = new TextDecoder();
           let buffer = '';
           let streamDone = false;
           let pendingContent = '';
-          const TYPEWRITER_MS = 25;
+
           const finalize = () => {
             streamAbortControllerRef.current = null;
             setIsAssistantTyping(false);
             options?.onComplete?.();
-            setMessages((prev) =>
-              prev.map((m) => {
-                if (m.id !== assistantMessageId || m.role !== 'assistant') return m;
-                const content = (m.content ?? '').trim() || 'Немає відповіді.';
-                const newVersion: MessageVersion = {
-                  content,
-                  createdAt: new Date().toISOString(),
-                  modifier: options?.modifier,
-                };
-                const versions: MessageVersion[] =
-                  options?.appendVersion && m.versions?.length
-                    ? [...m.versions, newVersion]
-                    : [newVersion];
-                return {
-                  ...m,
-                  content,
-                  suggestions: ['Детальніше', 'Ще приклад'],
-                  versions,
-                  activeVersionIndex: versions.length - 1,
-                };
-              })
+            const nextMessages = messagesRef.current.map((message) => {
+              if (message.id !== assistantMessageId || message.role !== 'assistant') {
+                return message;
+              }
+
+              const content = (message.content ?? '').trim() || 'Немає відповіді.';
+              return finalizeAssistantMessage(message, {
+                content,
+                modifier: options?.modifier,
+                appendVersion: options?.appendVersion,
+                includeSuggestions: true,
+              });
+            });
+
+            commitMessages(nextMessages);
+            void persistExistingChat(chatId, nextMessages);
+          };
+
+          const flushPendingContent = () => {
+            if (!pendingContent) return;
+
+            const chunkToAppend = pendingContent;
+            pendingContent = '';
+
+            commitMessages(
+              messagesRef.current.map((message) =>
+                message.id === assistantMessageId
+                  ? { ...message, content: (message.content ?? '') + chunkToAppend }
+                  : message
+              )
             );
           };
-          const typewriterInterval = setInterval(() => {
-            if (pendingContent.length > 0) {
-              const char = pendingContent[0];
-              pendingContent = pendingContent.slice(1);
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantMessageId ? { ...m, content: (m.content ?? '') + char } : m
-                )
-              );
-            }
-            if (streamDone && pendingContent.length === 0) {
-              clearInterval(typewriterInterval);
-              finalize();
-            }
-          }, TYPEWRITER_MS);
+
           try {
             while (!streamDone) {
-              const { done, value } = await reader.read();
+              const { done, value: chunk } = await reader.read();
               if (done) break;
-              buffer += decoder.decode(value, { stream: true });
+
+              buffer += decoder.decode(chunk, { stream: true });
               const parts = buffer.split('\n\n');
               buffer = parts.pop() ?? '';
+
               for (const line of parts) {
                 if (!line.startsWith('data: ')) continue;
+
                 const data = line.slice(6);
                 if (data === '[DONE]') {
                   streamDone = true;
                   break;
                 }
+
                 try {
                   const parsed = JSON.parse(data) as { content?: string; error?: string };
                   if (parsed.error) throw new Error(parsed.error);
-                  if (typeof parsed.content === 'string' && parsed.content.length > 0)
+                  if (typeof parsed.content === 'string' && parsed.content.length > 0) {
                     pendingContent += parsed.content;
+                    flushPendingContent();
+                  }
                 } catch {
-                  /* skip */
+                  // Skip malformed stream chunks.
                 }
               }
             }
           } finally {
-            if (!streamDone) clearInterval(typewriterInterval);
+            flushPendingContent();
           }
+
           if (streamDone && pendingContent.length === 0) {
-            clearInterval(typewriterInterval);
             finalize();
           } else if (!streamDone) {
             streamAbortControllerRef.current = null;
@@ -312,35 +556,37 @@ export function useWorkspaceChat(onReady?: () => void) {
             options?.onComplete?.();
           }
         })
-        .catch((err) => {
+        .catch((error) => {
           streamAbortControllerRef.current = null;
-          if (err instanceof Error && err.name === 'AbortError') {
-            setIsAssistantTyping(false);
-            options?.onComplete?.();
-            setMessages((prev) =>
-              prev.map((m) => {
-                if (m.id !== assistantMessageId || m.role !== 'assistant') return m;
-                const content = (m.content ?? '').trim() || 'Немає відповіді.';
-                const newVersion: MessageVersion = {
-                  content,
-                  createdAt: new Date().toISOString(),
-                  modifier: options?.modifier,
-                };
-                const versions: MessageVersion[] =
-                  options?.appendVersion && m.versions?.length
-                    ? [...m.versions, newVersion]
-                    : [newVersion];
-                return { ...m, content, versions, activeVersionIndex: versions.length - 1 };
-              })
-            );
-            return;
-          }
-          onError(err instanceof Error ? err.message : 'Помилка отримання відповіді');
           setIsAssistantTyping(false);
           options?.onComplete?.();
+
+          const isAbortError = error instanceof Error && error.name === 'AbortError';
+          const nextContent = isAbortError
+            ? null
+            : `**Помилка:** ${error instanceof Error ? error.message : 'Помилка отримання відповіді'}`;
+          const nextMessages = messagesRef.current.map((message) => {
+            if (message.id !== assistantMessageId || message.role !== 'assistant') {
+              return message;
+            }
+
+            const content = isAbortError
+              ? (message.content ?? '').trim() || 'Немає відповіді.'
+              : (nextContent ?? 'Немає відповіді.');
+
+            return finalizeAssistantMessage(message, {
+              content,
+              modifier: options?.modifier,
+              appendVersion: options?.appendVersion,
+              includeSuggestions: false,
+            });
+          });
+
+          commitMessages(nextMessages);
+          void persistExistingChat(chatId, nextMessages);
         });
     },
-    []
+    [commitMessages, persistExistingChat]
   );
 
   const handleStopGeneration = useCallback(() => {
@@ -351,211 +597,215 @@ export function useWorkspaceChat(onReady?: () => void) {
   }, []);
 
   const runSend = useCallback(
-    (text: string) => {
-      const attachments =
-        attachedFiles.length > 0
-          ? attachedFiles.map((a) => ({
-              name: a.file.name,
-              size: a.file.size,
-              previewUrl: a.previewUrl,
-            }))
-          : undefined;
+    async (text: string) => {
       const assistantId = generateId();
-      const isNewChat = messages.length === 0;
-      if (isNewChat) {
-        const raw = text.trim();
-        const title =
-          raw.length > 0
-            ? raw.slice(0, HISTORY_TITLE_MAX_LENGTH) +
-              (raw.length > HISTORY_TITLE_MAX_LENGTH ? '…' : '')
-            : 'Новий чат';
-        const chatId = generateId();
-        upsertRecentChat({
-          id: chatId,
-          title,
-          createdAt: new Date().toISOString(),
+      const nextUserMessage: Message = {
+        id: generateId(),
+        role: 'user',
+        content: text || '',
+        attachments: buildMessageAttachments(attachedFiles),
+      };
+      const nextAssistantMessage: Message = {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        versions: [],
+        activeVersionIndex: 0,
+      };
+      const nextMessages = [...messages, nextUserMessage, nextAssistantMessage];
+
+      let chatId = currentChatId;
+      if (!chatId) {
+        chatId = generateId();
+        const title = buildHistoryTitle(text);
+        const createdAt = new Date().toISOString();
+        const createdChatId = chatId;
+
+        skipHydrationChatIdRef.current = createdChatId;
+        setCurrentChatId(createdChatId);
+        startTransition(() => {
+          router.push(`/workspace?chat=${encodeURIComponent(createdChatId)}`);
         });
+
+        void createChatSession(createdChatId, title, nextMessages, {
+          createdAt,
+          systemPrompt: systemPromptRef.current,
+        });
+      } else {
+        void persistExistingChat(chatId, nextMessages);
       }
-      setMessages((prev) => [
-        ...prev,
-        { id: generateId(), role: 'user', content: text || '', attachments },
-        { id: assistantId, role: 'assistant', content: '', versions: [], activeVersionIndex: 0 },
-      ]);
-      resetInput();
+
+      commitMessages(nextMessages);
+      resetComposer(true);
       setIsAssistantTyping(true);
       streamAbortControllerRef.current?.abort();
+
       const controller = new AbortController();
       streamAbortControllerRef.current = controller;
+
       const messagesForApi: ApiMessage[] = [
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        ...messages.map((message) => ({ role: message.role, content: message.content })),
         { role: 'user', content: text || '' },
       ];
-      streamChatResponse(
-        messagesForApi,
-        assistantId,
-        (errorMessage) => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId
-                ? {
-                    ...m,
-                    content: `**Помилка:** ${errorMessage}`,
-                    versions: [
-                      {
-                        content: `**Помилка:** ${errorMessage}`,
-                        createdAt: new Date().toISOString(),
-                      },
-                    ],
-                    activeVersionIndex: 0,
-                  }
-                : m
-            )
-          );
-        },
-        controller.signal
-      );
+
+      streamChatResponse(chatId, messagesForApi, assistantId, controller.signal);
     },
-    [attachedFiles, resetInput, messages, streamChatResponse]
+    [
+      attachedFiles,
+      createChatSession,
+      currentChatId,
+      messages,
+      persistExistingChat,
+      resetComposer,
+      router,
+      streamChatResponse,
+      commitMessages,
+    ]
   );
 
   const handleSend = useCallback(() => {
     const text = targetValue.trim();
     if (!text && attachedFiles.length === 0) return;
-    runSend(text);
-  }, [targetValue, attachedFiles, runSend]);
+    void runSend(text);
+  }, [attachedFiles.length, runSend, targetValue]);
 
   const handleSuggestionClick = useCallback(
-    (suggestionText: string) => runSend(suggestionText),
+    (suggestionText: string) => {
+      void runSend(suggestionText);
+    },
     [runSend]
   );
 
   const handleRegenerate = useCallback(
     (assistantMessageId: string, modifier?: string) => {
-      const msg = messages.find((m) => m.id === assistantMessageId);
-      if (!msg || msg.role !== 'assistant') return;
-      const assistantIndex = messages.findIndex((m) => m.id === assistantMessageId);
+      if (!currentChatId) return;
+
+      const message = messages.find((item) => item.id === assistantMessageId);
+      if (!message || message.role !== 'assistant') return;
+
+      const assistantIndex = messages.findIndex((item) => item.id === assistantMessageId);
       let messagesForApi: ApiMessage[] = messages
         .slice(0, assistantIndex)
-        .map((m) => ({ role: m.role, content: m.content }));
+        .map((item) => ({ role: item.role, content: item.content }));
+
       if (messagesForApi.length === 0) return;
-      if (modifier?.trim())
+      if (modifier?.trim()) {
         messagesForApi = [...messagesForApi, { role: 'user', content: modifier.trim() }];
-      setMessages((prev) =>
-        prev.map((m) => (m.id === assistantMessageId ? { ...m, content: '' } : m))
+      }
+
+      const nextMessages = messages.map((item) =>
+        item.id === assistantMessageId ? { ...item, content: '' } : item
       );
+
+      commitMessages(nextMessages);
       setRegeneratingMessageId(assistantMessageId);
+      void persistExistingChat(currentChatId, nextMessages);
+
       streamAbortControllerRef.current?.abort();
       const controller = new AbortController();
       streamAbortControllerRef.current = controller;
-      streamChatResponse(
-        messagesForApi,
-        assistantMessageId,
-        (errorMessage) => {
-          setMessages((prev) =>
-            prev.map((m) => {
-              if (m.id !== assistantMessageId) return m;
-              const newVersion: MessageVersion = {
-                content: `**Помилка:** ${errorMessage}`,
-                createdAt: new Date().toISOString(),
-                modifier,
-              };
-              const versions = m.versions ?? [
-                { content: m.content, createdAt: new Date().toISOString() },
-              ];
-              return {
-                ...m,
-                content: newVersion.content,
-                versions: [...versions, newVersion],
-                activeVersionIndex: versions.length,
-              };
-            })
-          );
-        },
-        controller.signal,
-        { modifier, appendVersion: true, onComplete: () => setRegeneratingMessageId(null) }
-      );
+
+      streamChatResponse(currentChatId, messagesForApi, assistantMessageId, controller.signal, {
+        modifier,
+        appendVersion: true,
+        onComplete: () => setRegeneratingMessageId(null),
+      });
     },
-    [messages, streamChatResponse]
+    [commitMessages, currentChatId, messages, persistExistingChat, streamChatResponse]
   );
 
-  const handleSetActiveVersion = useCallback((assistantMessageId: string, index: number) => {
-    setMessages((prev) =>
-      prev.map((m) => {
-        if (m.id !== assistantMessageId || m.role !== 'assistant' || !m.versions) return m;
-        const i = Math.max(0, Math.min(index, m.versions.length - 1));
-        return { ...m, content: m.versions[i].content, activeVersionIndex: i };
-      })
-    );
-  }, []);
+  const handleSetActiveVersion = useCallback(
+    (assistantMessageId: string, index: number) => {
+      if (!currentChatId) return;
+
+      const nextMessages = messagesRef.current.map((message) => {
+        if (
+          message.id !== assistantMessageId ||
+          message.role !== 'assistant' ||
+          !message.versions
+        ) {
+          return message;
+        }
+
+        const nextIndex = Math.max(0, Math.min(index, message.versions.length - 1));
+        return {
+          ...message,
+          content: message.versions[nextIndex].content,
+          activeVersionIndex: nextIndex,
+        };
+      });
+
+      commitMessages(nextMessages);
+      void persistExistingChat(currentChatId, nextMessages);
+    },
+    [commitMessages, currentChatId, persistExistingChat]
+  );
 
   const handleEditMessage = useCallback(
     (messageId: string, newContent: string) => {
+      if (!currentChatId) return;
+
       const trimmed = newContent.trim();
-      const idx = messages.findIndex((m) => m.id === messageId);
-      if (idx === -1 || messages[idx].role !== 'user') return;
-      const nextMessage = messages[idx + 1];
+      const messageIndex = messages.findIndex((message) => message.id === messageId);
+      if (messageIndex === -1 || messages[messageIndex].role !== 'user') return;
+
+      const nextMessage = messages[messageIndex + 1];
       const removeFollowingAssistant = nextMessage?.role === 'assistant';
       const assistantId = generateId();
       const messagesForApi: ApiMessage[] = [
-        ...messages.slice(0, idx).map((m) => ({ role: m.role, content: m.content })),
+        ...messages.slice(0, messageIndex).map((message) => ({
+          role: message.role,
+          content: message.content,
+        })),
         { role: 'user', content: trimmed },
       ];
-      setMessages((prev) => {
-        const updated = prev.map((m) => (m.id === messageId ? { ...m, content: trimmed } : m));
-        const upToEdited = updated.slice(0, idx + 1);
-        const after = removeFollowingAssistant ? prev.slice(idx + 2) : prev.slice(idx + 1);
-        return [
-          ...upToEdited,
-          { id: assistantId, role: 'assistant', content: '', versions: [], activeVersionIndex: 0 },
-          ...after,
-        ];
-      });
+
+      const updatedMessages = messages.map((message) =>
+        message.id === messageId ? { ...message, content: trimmed } : message
+      );
+      const upToEdited = updatedMessages.slice(0, messageIndex + 1);
+      const after = removeFollowingAssistant
+        ? updatedMessages.slice(messageIndex + 2)
+        : updatedMessages.slice(messageIndex + 1);
+      const nextMessages = [
+        ...upToEdited,
+        {
+          id: assistantId,
+          role: 'assistant' as const,
+          content: '',
+          versions: [],
+          activeVersionIndex: 0,
+        },
+        ...after,
+      ];
+
+      commitMessages(nextMessages);
       setIsAssistantTyping(true);
+      void persistExistingChat(currentChatId, nextMessages);
+
       streamAbortControllerRef.current?.abort();
       const controller = new AbortController();
       streamAbortControllerRef.current = controller;
-      streamChatResponse(
-        messagesForApi,
-        assistantId,
-        (errorMessage) => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId
-                ? {
-                    ...m,
-                    content: `**Помилка:** ${errorMessage}`,
-                    versions: [
-                      {
-                        content: `**Помилка:** ${errorMessage}`,
-                        createdAt: new Date().toISOString(),
-                      },
-                    ],
-                    activeVersionIndex: 0,
-                  }
-                : m
-            )
-          );
-        },
-        controller.signal
-      );
+
+      streamChatResponse(currentChatId, messagesForApi, assistantId, controller.signal);
     },
-    [messages, streamChatResponse]
+    [commitMessages, currentChatId, messages, persistExistingChat, streamChatResponse]
   );
 
   const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const next = e.target.value;
-      setTargetValue(next);
-      setValue(next);
-      resizeTextarea(e.target, hasMessages);
+    (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const nextValue = event.target.value;
+      setTargetValue(nextValue);
+      setValue(nextValue);
+      resizeTextarea(event.target, hasMessages);
     },
-    [resizeTextarea, hasMessages]
+    [hasMessages, resizeTextarea]
   );
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
+    (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
         if (canSend) handleSend();
       }
     },
@@ -563,7 +813,7 @@ export function useWorkspaceChat(onReady?: () => void) {
   );
 
   const handleAttach = useCallback((files: File[]) => {
-    const newItems: AttachedFile[] = Array.from(files).map((file) => ({
+    const nextItems: AttachedFile[] = Array.from(files).map((file) => ({
       file,
       previewUrl:
         file.type.startsWith('image/') ||
@@ -571,8 +821,15 @@ export function useWorkspaceChat(onReady?: () => void) {
           ? URL.createObjectURL(file)
           : null,
     }));
-    setAttachedFiles((prev) => [...prev, ...newItems]);
+
+    setAttachedFiles((prev) => [...prev, ...nextItems]);
   }, []);
+
+  const handleSystemPromptApply = useCallback(() => {
+    setSystemPromptEditorOpen(false);
+    if (!currentChatId) return;
+    void persistExistingChat(currentChatId, messages, { systemPrompt });
+  }, [currentChatId, messages, persistExistingChat, systemPrompt]);
 
   const showExpandButton = filesOverflow || filesExpanded || expandButtonClosing;
 
@@ -592,6 +849,9 @@ export function useWorkspaceChat(onReady?: () => void) {
     setSystemPromptEditorOpen,
     systemPrompt,
     setSystemPrompt,
+    handleSystemPromptApply,
+    currentChatId,
+    isHydratingChat,
     hasMessages,
     canSend,
     isGenerationInProgress,

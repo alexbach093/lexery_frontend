@@ -6,7 +6,6 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 
-import { EditSquareIcon } from '@/components/ui/edit-square-icon';
 import { useSearchOpen } from '@/contexts/search-open';
 import { useSettingsOpen } from '@/contexts/settings-open';
 import { WORKSPACE_START_NEW_CHAT_EVENT } from '@/hooks/use-workspace-chat';
@@ -39,7 +38,7 @@ const SIDEBAR_NAV_ICON_SIZE = 18;
 const SIDEBAR_TOGGLE_SIZE = 32;
 const SIDEBAR_TOGGLE_TOP = 5;
 const SIDEBAR_PROFILE_SECTION_PADDING_X = 12;
-const SIDEBAR_PROFILE_AVATAR_SIZE = 24;
+const SIDEBAR_PROFILE_AVATAR_SIZE = 28;
 const SIDEBAR_COLLAPSED_CENTER_X = WORKSPACE_SIDEBAR_COLLAPSED_WIDTH / 2;
 const SIDEBAR_NAV_PADDING_LEFT =
   SIDEBAR_COLLAPSED_CENTER_X - SIDEBAR_EDGE_PADDING - SIDEBAR_NAV_ICON_SIZE / 2;
@@ -52,20 +51,22 @@ const SIDEBAR_TOGGLE_COLLAPSED_LEFT =
 const SIDEBAR_CHAT_RENAME_MIN_LENGTH = 2;
 const SIDEBAR_CHAT_RENAME_MAX_LENGTH = 60;
 const SIDEBAR_CHAT_RENAME_SUCCESS_CLOSE_DELAY_MS = 250;
-const SIDEBAR_CHAT_MENU_WIDTH = 176;
-const SIDEBAR_CHAT_MENU_ESTIMATED_HEIGHT = 132;
+const SIDEBAR_CHAT_MENU_WIDTH = 149;
+const SIDEBAR_CHAT_MENU_ESTIMATED_HEIGHT = 112;
 const SIDEBAR_CHAT_MENU_GAP = 4;
 const SIDEBAR_CHAT_MENU_VIEWPORT_MARGIN = 12;
-const SIDEBAR_DELETE_CHAT_CONFIRM_WIDTH = 560;
-const SIDEBAR_DELETE_CHAT_CONFIRM_RADIUS = 24;
+const SIDEBAR_CHAT_MENU_ICON_STROKE = 1.44;
+const SIDEBAR_CHAT_MENU_PENCIL_STROKE = 11.8;
+const SIDEBAR_DELETE_CHAT_CONFIRM_WIDTH = 436;
+const SIDEBAR_DELETE_CHAT_CONFIRM_RADIUS = 28;
 const SIDEBAR_DELETE_CHAT_CONFIRM_BUTTON_HEIGHT = 42;
 
 function SidebarChatMoreIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden>
-      <circle cx="4" cy="10" r="1.8" fill="currentColor" />
-      <circle cx="10" cy="10" r="1.8" fill="currentColor" />
-      <circle cx="16" cy="10" r="1.8" fill="currentColor" />
+      <circle cx="4" cy="10" r="1.95" fill="currentColor" />
+      <circle cx="10" cy="10" r="1.95" fill="currentColor" />
+      <circle cx="16" cy="10" r="1.95" fill="currentColor" />
     </svg>
   );
 }
@@ -73,18 +74,17 @@ function SidebarChatMoreIcon() {
 function SidebarChatStarIcon({ filled = false }: { filled?: boolean }) {
   return (
     <svg
-      width="18"
-      height="18"
-      viewBox="0 0 20 20"
+      width="15.656"
+      height="14.89"
+      viewBox="0 0 19.0584 18.207"
       fill="none"
       aria-hidden
       style={{ display: 'block', flexShrink: 0 }}
     >
       <path
-        d="M10.0129 2.1438L12.2647 6.59517C12.3809 6.82488 12.6016 6.98469 12.8561 7.02054L17.7091 7.70431C18.3501 7.79462 18.6072 8.58274 18.1428 9.02336L14.6294 12.3572C14.4452 12.5319 14.3619 12.7883 14.4068 13.0379L15.2616 17.7803C15.3753 18.4108 14.7011 18.8923 14.1311 18.6L9.79783 16.3777C9.57029 16.261 9.30042 16.2612 9.07306 16.3783L4.74611 18.6074C4.17651 18.9008 3.50146 18.4205 3.61403 17.7898L4.46077 13.0459C4.50525 12.7962 4.42156 12.5401 4.23709 12.3658L0.718081 9.03777C0.252893 8.59791 0.508772 7.80937 1.14959 7.71804L6.00139 7.02679C6.25589 6.99057 6.47633 6.83044 6.59217 6.60056L8.83734 2.14567C9.1337 1.55735 9.71571 1.55659 10.0129 2.1438Z"
+        d="M9.52922 0.8314L12.1095 6.42538L18.227 7.15071L13.7042 11.3333L14.9047 17.3756L9.52922 14.3666L4.15369 17.3756L5.35428 11.3333L0.831428 7.15071L6.94896 6.42538L9.52922 0.8314Z"
         stroke="currentColor"
-        strokeWidth="1.72"
-        strokeLinecap="round"
+        strokeWidth={SIDEBAR_CHAT_MENU_ICON_STROKE}
         strokeLinejoin="round"
         fill={filled ? 'currentColor' : 'none'}
       />
@@ -94,43 +94,68 @@ function SidebarChatStarIcon({ filled = false }: { filled?: boolean }) {
 
 function SidebarChatPencilIcon() {
   return (
-    <EditSquareIcon
-      size={18}
-      color="currentColor"
-      strokeWidth={13.5}
+    <svg
+      width="14.965"
+      height="14.965"
+      viewBox="0 0 145.917 147.486"
+      fill="none"
+      aria-hidden
       style={{ display: 'block', flexShrink: 0 }}
-    />
+    >
+      <path
+        d="M131.554 78.2465V105.942C131.554 125.062 116.055 140.562 96.9348 140.562H41.5435C22.4236 140.562 6.92391 125.062 6.92391 105.942V50.5509C6.92391 31.431 22.4236 15.9313 41.5435 15.9313H69.2391"
+        stroke="currentColor"
+        strokeWidth={SIDEBAR_CHAT_MENU_PENCIL_STROKE}
+        strokeLinecap="round"
+      />
+      <path
+        d="M105.05 10.9877C110.454 5.5757 119.218 5.57239 124.626 10.9803L134.938 21.2917C140.3 26.6535 140.355 35.3337 135.063 40.7639L86.18 90.9177C82.272 94.9274 76.912 97.1884 71.3151 97.1881L59.5638 97.1876C53.6588 97.1874 48.9431 92.265 49.1915 86.3608L49.7045 74.1641C49.9233 68.9626 52.0851 64.0328 55.7621 60.3502L105.05 10.9877Z"
+        stroke="currentColor"
+        strokeWidth={SIDEBAR_CHAT_MENU_PENCIL_STROKE}
+      />
+      <path
+        d="M95.0638 21.9448L122.856 49.7373"
+        stroke="currentColor"
+        strokeWidth={SIDEBAR_CHAT_MENU_PENCIL_STROKE}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
 function SidebarChatTrashIcon() {
   return (
     <svg
-      width="18"
-      height="18"
-      viewBox="0 0 18 20"
+      width="13.468"
+      height="13.468"
+      viewBox="0 0 14.9652 14.9652"
       fill="none"
+      overflow="visible"
       aria-hidden
-      style={{ display: 'block', flexShrink: 0 }}
+      style={{ display: 'block', flexShrink: 0, overflow: 'visible' }}
     >
       <path
-        d="M2.82051 4.87179V17.1795C2.82051 18.3124 3.7389 19.2308 4.8718 19.2308H13.0769C14.2098 19.2308 15.1282 18.3124 15.1282 17.1795V4.87179"
+        d="M0.8314 0.8314V10.8082C0.8314 11.7265 1.57586 12.471 2.4942 12.471H9.1454C10.0637 12.471 10.8082 11.7265 10.8082 10.8082V0.8314"
+        transform="translate(1.6628 3.3256)"
         stroke="currentColor"
-        strokeWidth="1.55"
+        strokeWidth={SIDEBAR_CHAT_MENU_ICON_STROKE}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M0.769231 4.87179H17.1795"
+        d="M0.8314 0.8314H14.1338"
+        transform="translate(0 3.3256)"
         stroke="currentColor"
-        strokeWidth="1.55"
+        strokeWidth={SIDEBAR_CHAT_MENU_ICON_STROKE}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
-        d="M3.84615 4.87179L5.89744 0.769231H12.0513L14.1026 4.87179"
+        d="M0.831582 4.157L2.49438 0.8314H7.48278L9.14558 4.157"
+        transform="translate(2.4944 0)"
         stroke="currentColor"
-        strokeWidth="1.55"
+        strokeWidth={SIDEBAR_CHAT_MENU_ICON_STROKE}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -638,7 +663,6 @@ export function WorkspaceSidebar({
             position: 'relative',
             outline: 'none',
           }}
-          title={chat.title}
         >
           <p
             style={{
@@ -800,8 +824,33 @@ export function WorkspaceSidebar({
   const navButtonHoverClassName =
     'transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset';
 
-  const menuItemClassName =
-    'w-full rounded-lg transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset';
+  const regularMenuItemClassName =
+    'transition-colors duration-150 hover:bg-[#F4F4F6] active:bg-[#ECECF0] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset';
+  const destructiveMenuItemClassName =
+    'transition-colors duration-150 hover:bg-[#FFF3F3] active:bg-[#FFE8E8] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset';
+  const menuItemClassName = regularMenuItemClassName;
+  const chatMenuButtonBaseStyle: React.CSSProperties = {
+    position: 'absolute',
+    left: '7px',
+    width: `${SIDEBAR_CHAT_MENU_WIDTH - 14}px`,
+    height: '27px',
+    padding: 0,
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    textAlign: 'left',
+    fontFamily: 'Inter, sans-serif',
+    fontWeight: 500,
+    fontSize: '12px',
+    lineHeight: '17px',
+    letterSpacing: '-0.01em',
+  };
+  const chatMenuLabelStyle: React.CSSProperties = {
+    position: 'absolute',
+    left: '31px',
+    top: '5px',
+    whiteSpace: 'nowrap',
+  };
 
   const toggleButtonStyle: React.CSSProperties = {
     position: 'absolute',
@@ -836,18 +885,16 @@ export function WorkspaceSidebar({
             onMouseDown={(event) => event.stopPropagation()}
             style={{
               position: 'fixed',
-              top: `${openChatMenuPosition.top}px`,
+              top: `${openChatMenuPosition.top - 1}px`,
               left: `${openChatMenuPosition.left}px`,
               width: `${SIDEBAR_CHAT_MENU_WIDTH}px`,
+              height: `${SIDEBAR_CHAT_MENU_ESTIMATED_HEIGHT}px`,
               zIndex: 120,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '3px',
-              borderRadius: '16px',
+              borderRadius: '14px',
               border: `1px solid ${palette.menuBorder}`,
               background: palette.menuBackground,
               boxShadow: 'none',
-              padding: '8px',
+              overflow: 'hidden',
             }}
           >
             <button
@@ -858,27 +905,31 @@ export function WorkspaceSidebar({
                 event.stopPropagation();
                 void handleTogglePinned(openChatMenuChat);
               }}
-              className={menuItemClassName}
+              className={regularMenuItemClassName}
               style={{
-                width: '100%',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '7px',
-                padding: '0 7px',
-                border: 'none',
-                borderRadius: '10px',
+                ...chatMenuButtonBaseStyle,
+                top: '7px',
                 color: palette.menuText,
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 500,
-                fontSize: '13px',
-                lineHeight: '18px',
               }}
             >
-              <SidebarChatStarIcon filled={openChatMenuChat.pinned} />
-              <span>{openChatMenuChat.pinned ? 'Відкріпити' : 'Закріпити'}</span>
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  left: '8px',
+                  top: '5px',
+                  width: '15.656px',
+                  height: '14.89px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <SidebarChatStarIcon filled={openChatMenuChat.pinned} />
+              </span>
+              <span style={chatMenuLabelStyle}>
+                {openChatMenuChat.pinned ? 'Відкріпити' : 'Закріпити'}
+              </span>
             </button>
             <button
               type="button"
@@ -888,32 +939,37 @@ export function WorkspaceSidebar({
                 event.stopPropagation();
                 handleRenameStart(openChatMenuChat);
               }}
-              className={menuItemClassName}
+              className={regularMenuItemClassName}
               style={{
-                width: '100%',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '7px',
-                padding: '0 7px',
-                border: 'none',
-                borderRadius: '10px',
+                ...chatMenuButtonBaseStyle,
+                top: '35px',
                 color: palette.menuText,
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 500,
-                fontSize: '13px',
-                lineHeight: '18px',
               }}
             >
-              <SidebarChatPencilIcon />
-              <span>Перейменувати</span>
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  left: '9px',
+                  top: '5px',
+                  width: '14.965px',
+                  height: '14.965px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <SidebarChatPencilIcon />
+              </span>
+              <span style={chatMenuLabelStyle}>Перейменувати</span>
             </button>
             <div
               style={{
+                position: 'absolute',
+                left: '8px',
+                top: '69px',
+                width: '133px',
                 height: '1px',
-                margin: '6px 0',
                 backgroundColor: palette.menuBorder,
               }}
             />
@@ -925,27 +981,29 @@ export function WorkspaceSidebar({
                 event.stopPropagation();
                 handleDeleteStart(openChatMenuChat);
               }}
-              className={menuItemClassName}
+              className={destructiveMenuItemClassName}
               style={{
-                width: '100%',
-                height: '32px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '7px',
-                padding: '0 7px',
-                border: 'none',
-                borderRadius: '10px',
+                ...chatMenuButtonBaseStyle,
+                top: '76px',
                 color: '#FF4747',
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 500,
-                fontSize: '13px',
-                lineHeight: '18px',
               }}
             >
-              <SidebarChatTrashIcon />
-              <span>Видалити</span>
+              <span
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  left: '10px',
+                  top: '5px',
+                  width: '13.468px',
+                  height: '13.468px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <SidebarChatTrashIcon />
+              </span>
+              <span style={chatMenuLabelStyle}>Видалити</span>
             </button>
           </div>,
           document.body
@@ -989,7 +1047,6 @@ export function WorkspaceSidebar({
                 border: '1px solid #F1F1F1',
                 borderRadius: '26px',
                 padding: '24px',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
               }}
               onClick={(event) => event.stopPropagation()}
             >
@@ -1152,8 +1209,8 @@ export function WorkspaceSidebar({
               style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.28)',
-                backdropFilter: 'blur(4px)',
+                backgroundColor: 'rgba(255, 255, 255, 0.82)',
+                backdropFilter: 'blur(6px)',
               }}
               aria-hidden
             />
@@ -1161,11 +1218,12 @@ export function WorkspaceSidebar({
               style={{
                 position: 'relative',
                 width: `min(${SIDEBAR_DELETE_CHAT_CONFIRM_WIDTH}px, 100%)`,
+                minHeight: '152px',
                 backgroundColor: '#FFFFFF',
-                border: '1px solid #E7E7E7',
+                border: '1px solid #D9D9D9',
                 borderRadius: `${SIDEBAR_DELETE_CHAT_CONFIRM_RADIUS}px`,
-                padding: '24px',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
+                padding: '28px 24px 22px',
+                boxSizing: 'border-box',
               }}
               onClick={(event) => event.stopPropagation()}
             >
@@ -1174,27 +1232,31 @@ export function WorkspaceSidebar({
                 style={{
                   margin: 0,
                   fontFamily: 'Inter, sans-serif',
-                  fontWeight: 600,
-                  fontSize: '20px',
-                  lineHeight: '1.2',
-                  color: '#2A2A2A',
+                  fontWeight: 700,
+                  fontSize: '16px',
+                  lineHeight: '22px',
+                  letterSpacing: '0',
+                  color: '#000000',
+                  textAlign: 'center',
                 }}
               >
-                Видалити чат
+                Видалити чат - ви впевнені?
               </h2>
               <p
                 id="sidebar-delete-chat-description"
                 style={{
-                  margin: '10px 0 0',
+                  margin: '6px 0 0',
                   fontFamily: 'Inter, sans-serif',
                   fontWeight: 400,
-                  fontSize: '14px',
-                  lineHeight: '1.5',
-                  color: '#5F6368',
+                  fontSize: '12px',
+                  lineHeight: '17px',
+                  letterSpacing: '0',
+                  color: 'rgba(0, 0, 0, 0.4)',
+                  textAlign: 'center',
                 }}
               >
                 Ви дійсно хочете видалити чат{' '}
-                <span style={{ color: '#2A2A2A', fontWeight: 500 }}>
+                <span style={{ color: 'rgba(0, 0, 0, 0.4)' }}>
                   &quot;{chatBeingDeleted.title}&quot;
                 </span>
                 ?
@@ -1202,12 +1264,13 @@ export function WorkspaceSidebar({
               {deleteFeedback ? (
                 <p
                   style={{
-                    margin: '10px 0 0',
+                    margin: '8px 0 0',
                     fontFamily: 'Inter, sans-serif',
                     fontWeight: 400,
                     fontSize: '12px',
-                    lineHeight: '1.4',
-                    color: '#C03A2B',
+                    lineHeight: '17px',
+                    color: '#E14D4D',
+                    textAlign: 'center',
                   }}
                 >
                   {deleteFeedback}
@@ -1216,9 +1279,10 @@ export function WorkspaceSidebar({
               <div
                 style={{
                   display: 'flex',
-                  justifyContent: 'flex-end',
+                  justifyContent: 'center',
+                  alignItems: 'center',
                   gap: '10px',
-                  marginTop: '18px',
+                  marginTop: deleteFeedback ? '12px' : '15px',
                 }}
               >
                 <button
@@ -1226,16 +1290,18 @@ export function WorkspaceSidebar({
                   onClick={closeDeleteDialog}
                   disabled={isDeleteSaving}
                   style={{
-                    minWidth: '102px',
                     height: `${SIDEBAR_DELETE_CHAT_CONFIRM_BUTTON_HEIGHT}px`,
-                    borderRadius: '8px',
-                    border: '1px solid #D7D7D7',
+                    padding: '0 26px',
+                    borderRadius: '999px',
+                    border: '1px solid rgba(0, 0, 0, 0.1)',
                     backgroundColor: '#FFFFFF',
                     fontFamily: 'Inter, sans-serif',
                     fontWeight: 400,
-                    fontSize: '14px',
-                    color: '#2A2A2A',
+                    fontSize: '15px',
+                    lineHeight: '21px',
+                    color: '#000000',
                     cursor: isDeleteSaving ? 'default' : 'pointer',
+                    transition: 'background-color 150ms ease',
                   }}
                 >
                   Скасувати
@@ -1244,17 +1310,19 @@ export function WorkspaceSidebar({
                   type="button"
                   onClick={() => void handleDeleteConfirm()}
                   disabled={isDeleteSaving}
+                  className={isDeleteSaving ? 'bg-white' : 'bg-white hover:bg-[#FFF0F0]'}
                   style={{
-                    minWidth: '128px',
                     height: `${SIDEBAR_DELETE_CHAT_CONFIRM_BUTTON_HEIGHT}px`,
-                    borderRadius: '8px',
-                    border: 'none',
-                    backgroundColor: isDeleteSaving ? '#F19999' : '#E14D4D',
+                    padding: '0 26px',
+                    borderRadius: '999px',
+                    border: isDeleteSaving ? '1px solid #F4CACA' : '1px solid #F19A9A',
                     fontFamily: 'Inter, sans-serif',
-                    fontWeight: 500,
+                    fontWeight: 400,
                     fontSize: '14px',
-                    color: '#FFFFFF',
+                    lineHeight: '20px',
+                    color: isDeleteSaving ? '#F2A4A4' : '#F25555',
                     cursor: isDeleteSaving ? 'default' : 'pointer',
+                    transition: 'background-color 150ms ease',
                   }}
                 >
                   {isDeleteSaving ? 'Видалення...' : 'Видалити'}
@@ -1385,7 +1453,6 @@ export function WorkspaceSidebar({
               onClick={handleNewChatClick}
               aria-label="Новий чат"
               className={`group ${stackedHoverFillClassName}`}
-              title="Новий чат"
               style={{ ...navButtonStyle, color: palette.navText }}
             >
               <span
@@ -1453,7 +1520,6 @@ export function WorkspaceSidebar({
               onClick={toggleSearchOpen}
               aria-label="Пошук"
               className={`group ${navButtonHoverClassName}`}
-              title="Пошук"
               aria-expanded={isSearchOpen}
               style={{
                 ...navButtonStyle,
@@ -1508,7 +1574,6 @@ export function WorkspaceSidebar({
               type="button"
               aria-label="Проєкти"
               className={stackedHoverFillClassName}
-              title="Проєкти"
               style={{ ...navButtonStyle, color: palette.navText }}
             >
               <svg
@@ -1790,7 +1855,7 @@ export function WorkspaceSidebar({
         <div
           style={{
             flexShrink: 0,
-            paddingBottom: '14px',
+            paddingBottom: '12px',
             paddingLeft: `${SIDEBAR_PROFILE_SECTION_PADDING_X}px`,
             paddingRight: `${SIDEBAR_PROFILE_SECTION_PADDING_X}px`,
             zIndex: 30,
@@ -1847,6 +1912,7 @@ export function WorkspaceSidebar({
                       minHeight: '32px',
                       padding: '6px 8px',
                       border: 'none',
+                      borderRadius: '10px',
                       cursor: 'pointer',
                       textAlign: 'left',
                       color: palette.menuText,
@@ -1915,6 +1981,7 @@ export function WorkspaceSidebar({
                       minHeight: '32px',
                       padding: '6px 8px',
                       border: 'none',
+                      borderRadius: '10px',
                       cursor: 'pointer',
                       textAlign: 'left',
                       color: palette.menuText,
@@ -1984,11 +2051,13 @@ export function WorkspaceSidebar({
                   className={menuItemClassName}
                   style={{
                     display: 'flex',
+                    width: '100%',
                     gap: '8px',
                     alignItems: 'center',
                     minHeight: '32px',
                     padding: '6px 8px',
                     border: 'none',
+                    borderRadius: '10px',
                     cursor: 'pointer',
                     textAlign: 'left',
                     color: palette.menuText,
@@ -2061,7 +2130,7 @@ export function WorkspaceSidebar({
               aria-expanded={isMenuOpen}
               style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 justifyContent: 'flex-start',
                 gap: '8px',
                 minWidth: 0,
@@ -2097,37 +2166,62 @@ export function WorkspaceSidebar({
                 style={{
                   ...sidebarLabelStyle,
                   flex: collapsed ? '0 0 auto' : '1 1 0',
+                  maxWidth: collapsed ? '0px' : 'none',
                 }}
                 aria-hidden={collapsed}
               >
                 <div
                   style={{
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    fontFamily: 'Inter, sans-serif',
-                    fontWeight: 500,
-                    fontSize: '14px',
-                    lineHeight: '20px',
-                    letterSpacing: '0.14px',
-                    color: palette.navText,
-                  }}
-                  title="Олександр"
-                >
-                  Олександр
-                </div>
-                <div
-                  style={{
-                    fontFamily: 'Inter, sans-serif',
-                    fontWeight: 400,
-                    fontSize: '12px',
-                    lineHeight: '1.25',
-                    letterSpacing: '0.12px',
-                    color: palette.profileSecondaryText,
-                    marginTop: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                    minWidth: 0,
+                    minHeight: `${SIDEBAR_PROFILE_AVATAR_SIZE}px`,
                   }}
                 >
-                  <span>Free</span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 500,
+                      fontSize: '14px',
+                      lineHeight: '20px',
+                      letterSpacing: '0.14px',
+                      color: palette.navText,
+                      minWidth: 0,
+                      flex: 1,
+                      minHeight: '100%',
+                    }}
+                  >
+                    Олександр
+                  </div>
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: `${SIDEBAR_PROFILE_AVATAR_SIZE}px`,
+                      padding: '0 12px',
+                      borderRadius: '999px',
+                      border: '1px solid #E5E5E5',
+                      backgroundColor: '#FFFFFF',
+                      fontFamily: 'Inter, sans-serif',
+                      fontWeight: 400,
+                      fontSize: '12px',
+                      lineHeight: '16px',
+                      letterSpacing: '0.12px',
+                      color: palette.profileSecondaryText,
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    Free
+                  </span>
                 </div>
               </div>
             </button>
