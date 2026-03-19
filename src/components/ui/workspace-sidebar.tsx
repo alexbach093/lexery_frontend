@@ -656,7 +656,7 @@ export function WorkspaceSidebar({
   };
 
   const sidebarChatRowHoverClassName =
-    'relative isolate transition-colors duration-150 before:pointer-events-none before:absolute before:left-0 before:right-0 before:-top-[2px] before:-bottom-[2px] before:rounded-[8px] before:bg-transparent before:transition-colors before:duration-150 before:-z-10 hover:before:bg-[#F4F4F6] first:before:top-0 last:before:bottom-0 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset';
+    'relative isolate transform-gpu transition-[background-color,transform] duration-180 ease-[cubic-bezier(0.22,1,0.36,1)] active:scale-[0.992] before:pointer-events-none before:absolute before:left-0 before:right-0 before:-top-[2px] before:-bottom-[2px] before:rounded-[8px] before:bg-transparent before:transition-colors before:duration-180 before:ease-[cubic-bezier(0.22,1,0.36,1)] before:-z-10 hover:before:bg-[#F4F4F6] first:before:top-0 last:before:bottom-0 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset';
 
   const renderSidebarChatRow = useCallback(
     (chat: ChatLibraryItem, showActions = false) => {
@@ -703,10 +703,9 @@ export function WorkspaceSidebar({
               zIndex: 0,
               minWidth: 0,
               flex: 1,
-              transition: 'padding-right 140ms ease, transform 100ms ease',
+              transition: 'padding-right 180ms cubic-bezier(0.22, 1, 0.36, 1)',
               paddingRight: showMenuButton ? '34px' : '0px',
             }}
-            className="group-active:scale-[0.98]"
           >
             <p
               style={{
