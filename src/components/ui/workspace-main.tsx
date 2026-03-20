@@ -6,8 +6,8 @@ import { AttachmentsPanelCollapsed, AttachmentsPanelExpanded } from '@/features/
 import { ChatInput } from '@/features/chat-input';
 import { ChatMeta } from '@/features/chat-meta';
 import { MessageList } from '@/features/message-list';
-import { useWorkspaceChat } from '@/hooks/use-workspace-chat';
 import { cn } from '@/lib/utils';
+import { useWorkspaceChat } from '@/workspace-chat';
 
 export interface WorkspaceMainProps {
   className?: string;

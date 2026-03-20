@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useSearchOpen } from '@/contexts/search-open';
@@ -13,6 +13,8 @@ import {
   isChatStoreStorageEvent,
   type ChatLibraryItem,
 } from '@/lib/chat-library';
+
+import { ChatBubbleIcon, CloseOverlayIcon, ReturnIcon, SearchIcon } from '../icons';
 
 const SEARCH_EMPTY_STATE_QUERY_MAX_LENGTH = 48;
 const SEARCH_FOCUSABLE_SELECTOR =
@@ -27,65 +29,6 @@ function truncateSearchQuery(value: string, maxLength: number): string {
   }
 
   return `${characters.slice(0, maxLength).join('')}...`;
-}
-
-function SearchIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M17 7L7 17M7 7L17 17"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ChatBubbleIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 178 178" fill="none" aria-hidden>
-      <path
-        d="M89 157C126.555 157 157 126.555 157 89C157 51.4446 126.555 21 89 21C51.4446 21 21 51.4446 21 89C21 100.24 23.727 110.843 28.5556 120.183L21 157L57.8167 149.444C67.1572 154.273 77.7601 157 89 157Z"
-        stroke="currentColor"
-        strokeWidth="15.1111"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="55.0383" cy="89.0383" r="11.3333" fill="currentColor" />
-      <circle cx="89.0383" cy="89.0383" r="11.3333" fill="currentColor" />
-      <circle cx="123.0383" cy="89.0383" r="11.3333" fill="currentColor" />
-    </svg>
-  );
-}
-
-function ReturnIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
-      <path
-        d="M7.5 6.66675L11.6667 2.50008M11.6667 2.50008L15.8333 6.66675M11.6667 2.50008V11.2501C11.6667 12.1706 10.9205 12.9167 10 12.9167H4.16667"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 function formatSearchTimestamp(updatedAt: string, locale: Intl.LocalesArgument = 'uk'): string {
@@ -294,64 +237,27 @@ export function SearchOverlay() {
   if (!isOpen) return null;
 
   const showSearchResults = normalizedQuery.length > 0;
-  const searchPanelBorderColor = '#D4D4D4';
-  const searchDividerColor = '#E5E5E5';
-  const highlightedRowBackground = '#F4F4F4';
-  const searchRowTextColor = '#171717';
-  const searchRowMutedColor = '#737373';
-  const searchRowTimestampColor = '#737373';
-  const resultsSectionHeaderStyle: CSSProperties = {
-    fontFamily: 'Inter, sans-serif',
-    fontSize: '13px',
-    lineHeight: '18px',
-    fontWeight: 500,
-    color: searchRowMutedColor,
-  };
-  const panelBaseStyle: CSSProperties = {
-    width: 'min(680px, calc(100vw - var(--app-sidebar-width, 0px) - 64px))',
-    maxHeight: 'min(460px, calc(100vh - 148px))',
-    borderRadius: '22px',
-    border: `1px solid ${searchPanelBorderColor}`,
-    background: '#FFFFFF',
-    boxShadow: 'none',
-    overflow: 'hidden',
-    backdropFilter: 'none',
-    transform: 'translateX(calc(var(--app-sidebar-width, 0px) / 2))',
-  };
 
   return (
     <div
       aria-modal="true"
       role="dialog"
       onClick={closeSearch}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 90,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '24px 32px',
-        background: 'transparent',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
-      }}
+      className="fixed inset-0 z-90 flex items-center justify-center bg-transparent px-8 py-6 backdrop-blur-xs [-webkit-backdrop-filter:blur(4px)]"
     >
-      <div ref={panelRef} onClick={(event) => event.stopPropagation()} style={panelBaseStyle}>
+      <div
+        ref={panelRef}
+        onClick={(event) => event.stopPropagation()}
+        className="max-h-[min(460px,calc(100vh-148px))] w-[min(680px,calc(100vw-var(--app-sidebar-width,0px)-64px))] translate-x-[calc(var(--app-sidebar-width,0px)/2)] overflow-hidden rounded-[22px] border border-[#D4D4D4] bg-[#FFFFFF] shadow-none"
+      >
         <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px',
-            minHeight: '74px',
-            padding: '0 18px',
-            borderBottom:
-              visibleChats.length > 0 || normalizedQuery || showEmptyStateBody
-                ? `1px solid ${searchDividerColor}`
-                : 'none',
-          }}
+          className={`flex min-h-18.5 items-center gap-3.5 px-4.5 ${
+            visibleChats.length > 0 || normalizedQuery || showEmptyStateBody
+              ? 'border-b border-[#E5E5E5]'
+              : 'border-none'
+          }`}
         >
-          <div style={{ color: searchRowMutedColor, flexShrink: 0 }}>
+          <div className="shrink-0 text-[#737373]">
             <SearchIcon />
           </div>
           <input
@@ -363,63 +269,27 @@ export function SearchOverlay() {
             }}
             onKeyDown={handleSearchInputKeyDown}
             placeholder="Пошук чатів і проєктів"
-            style={{
-              flex: 1,
-              minWidth: 0,
-              border: 'none',
-              outline: 'none',
-              background: 'transparent',
-              color: searchRowTextColor,
-              fontFamily: 'Inter, sans-serif',
-              fontWeight: 500,
-              fontSize: '16px',
-              lineHeight: '24px',
-              letterSpacing: '0.01em',
-            }}
+            className="min-w-0 flex-1 border-none bg-transparent text-base leading-6 font-medium tracking-[0.01em] text-[#171717] outline-none"
           />
           <button
             type="button"
             aria-label="Закрити пошук"
             onClick={closeSearch}
-            className="inline-flex items-center justify-center rounded-[12px] border-none bg-transparent transition-colors hover:bg-[#F4F4F6] active:bg-[#F4F4F6]"
-            style={{
-              width: '40px',
-              height: '40px',
-              color: searchRowMutedColor,
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
+            className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border-none bg-transparent text-[#737373] transition-colors hover:bg-[#F4F4F6] active:bg-[#F4F4F6]"
           >
-            <CloseIcon />
+            <CloseOverlayIcon />
           </button>
         </div>
 
         {showSearchResults ? (
-          <div
-            style={{
-              padding: '14px 18px 18px',
-            }}
-          >
-            <div
-              style={{
-                ...resultsSectionHeaderStyle,
-                marginBottom: '12px',
-              }}
-            >
+          <div className="px-4.5 pt-3.5 pb-4.5">
+            <div className="mb-3 text-[13px] leading-4.5 font-medium text-[#737373]">
               Результати пошуку
             </div>
             {visibleChats.length > 0 ? (
               <div
                 ref={listScrollRef}
-                style={{
-                  maxHeight: 'min(292px, calc(100vh - 266px))',
-                  overflowY: 'auto',
-                  overscrollBehavior: 'contain',
-                  scrollbarGutter: 'stable',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '2px',
-                }}
+                className="flex max-h-[min(292px,calc(100vh-266px))] flex-col gap-0.5 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
               >
                 {visibleChats.map((chat, index) => {
                   const isActive = index === activeHighlightedIndex;
@@ -431,52 +301,22 @@ export function SearchOverlay() {
                       onMouseEnter={() => setHighlightedIndex(index)}
                       onFocus={() => setHighlightedIndex(index)}
                       onClick={() => handleOpenChat(chat.id)}
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        minHeight: '44px',
-                        padding: '0 12px',
-                        border: 'none',
-                        borderRadius: '12px',
-                        background: isActive ? highlightedRowBackground : 'transparent',
-                        color: searchRowTextColor,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        transition: 'background-color 140ms ease, color 140ms ease',
-                      }}
+                      className={`flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border-none px-3 text-left text-[#171717] transition-colors duration-140 ease-in-out ${
+                        isActive ? 'bg-[#F4F4F4]' : 'bg-transparent'
+                      }`}
                     >
-                      <div style={{ flexShrink: 0, color: searchRowMutedColor }}>
+                      <div className="shrink-0 text-[#737373]">
                         <ChatBubbleIcon />
                       </div>
                       <div
-                        style={{
-                          flex: 1,
-                          minWidth: 0,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '14px',
-                          lineHeight: '20px',
-                          fontWeight: isActive ? 600 : 500,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
+                        className={`min-w-0 flex-1 overflow-hidden text-[14px] leading-5 text-ellipsis whitespace-nowrap ${
+                          isActive ? 'font-semibold' : 'font-medium'
+                        }`}
                       >
                         {chat.title}
                       </div>
                       <div
-                        style={{
-                          flexShrink: 0,
-                          minWidth: '74px',
-                          display: 'flex',
-                          justifyContent: 'flex-end',
-                          color: isActive ? searchRowMutedColor : searchRowTimestampColor,
-                          fontFamily: 'Inter, sans-serif',
-                          fontSize: '13px',
-                          lineHeight: '18px',
-                          fontWeight: 500,
-                        }}
+                        className={`flex min-w-18.5 shrink-0 justify-end text-[13px] leading-4.5 font-medium text-[#737373]`}
                       >
                         {isActive ? <ReturnIcon /> : formatSearchTimestamp(chat.updatedAt)}
                       </div>
@@ -485,17 +325,7 @@ export function SearchOverlay() {
                 })}
               </div>
             ) : (
-              <div
-                style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontSize: '15px',
-                  lineHeight: '22px',
-                  fontWeight: 500,
-                  color: searchRowTextColor,
-                  marginBottom: 0,
-                  overflowWrap: 'anywhere',
-                }}
-              >
+              <div className="m-0 text-[15px] leading-5.5 font-medium wrap-break-word text-[#171717]">
                 Нічого не знайдено за запитом «{emptyStateQuery}»
               </div>
             )}
@@ -503,13 +333,7 @@ export function SearchOverlay() {
         ) : visibleChats.length > 0 ? (
           <div
             ref={listScrollRef}
-            style={{
-              maxHeight: 'min(360px, calc(100vh - 208px))',
-              overflowY: 'auto',
-              overscrollBehavior: 'contain',
-              scrollbarGutter: 'stable',
-              padding: '10px',
-            }}
+            className="max-h-[min(360px,calc(100vh-208px))] overflow-y-auto overscroll-contain p-2.5 [scrollbar-gutter:stable]"
           >
             {visibleChats.map((chat, index) => {
               const isActive = index === activeHighlightedIndex;
@@ -521,52 +345,22 @@ export function SearchOverlay() {
                   onMouseEnter={() => setHighlightedIndex(index)}
                   onFocus={() => setHighlightedIndex(index)}
                   onClick={() => handleOpenChat(chat.id)}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    minHeight: '44px',
-                    padding: '0 12px',
-                    border: 'none',
-                    borderRadius: '12px',
-                    background: isActive ? highlightedRowBackground : 'transparent',
-                    color: searchRowTextColor,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'background-color 140ms ease, color 140ms ease',
-                  }}
+                  className={`flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border-none px-3 text-left text-[#171717] transition-colors duration-140 ease-in-out ${
+                    isActive ? 'bg-[#F4F4F4]' : 'bg-transparent'
+                  }`}
                 >
-                  <div style={{ flexShrink: 0, color: searchRowMutedColor }}>
+                  <div className="shrink-0 text-[#737373]">
                     <ChatBubbleIcon />
                   </div>
                   <div
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      fontFamily: 'Inter, sans-serif',
-                      fontSize: '14px',
-                      lineHeight: '20px',
-                      fontWeight: isActive ? 600 : 500,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
+                    className={`min-w-0 flex-1 overflow-hidden text-[14px] leading-5 text-ellipsis whitespace-nowrap ${
+                      isActive ? 'font-semibold' : 'font-medium'
+                    }`}
                   >
                     {chat.title}
                   </div>
                   <div
-                    style={{
-                      flexShrink: 0,
-                      minWidth: '74px',
-                      display: 'flex',
-                      justifyContent: 'flex-end',
-                      color: isActive ? searchRowMutedColor : searchRowTimestampColor,
-                      fontFamily: 'Inter, sans-serif',
-                      fontSize: '13px',
-                      lineHeight: '18px',
-                      fontWeight: 500,
-                    }}
+                    className={`flex min-w-18.5 shrink-0 justify-end text-[13px] leading-4.5 font-medium text-[#737373]`}
                   >
                     {isActive ? <ReturnIcon /> : formatSearchTimestamp(chat.updatedAt)}
                   </div>
@@ -577,32 +371,11 @@ export function SearchOverlay() {
         ) : null}
 
         {showEmptyStateBody ? (
-          <div
-            style={{
-              padding: '18px 20px 22px',
-            }}
-          >
-            <div
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '16px',
-                lineHeight: '24px',
-                fontWeight: 600,
-                color: searchRowTextColor,
-                marginBottom: '6px',
-              }}
-            >
+          <div className="px-5 pt-4.5 pb-5.5">
+            <div className="mb-1.5 text-[16px] leading-6 font-semibold text-[#171717]">
               У вас ще немає чатів
             </div>
-            <div
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                fontSize: '14px',
-                lineHeight: '21px',
-                fontWeight: 500,
-                color: searchRowMutedColor,
-              }}
-            >
+            <div className="text-[14px] leading-5.25 font-medium text-[#737373]">
               Створіть новий чат, і він з&apos;явиться тут для швидкого пошуку.
             </div>
           </div>

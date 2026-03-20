@@ -86,3 +86,23 @@ export interface StoredChatSession extends StoredChatSessionSummary {
   messages: StoredMessage[];
   systemPrompt?: string;
 }
+
+export type SectionId = 'general' | 'info' | 'security';
+export type SettingKind = 'theme' | 'value' | 'toggle' | 'action';
+
+export type SettingRow = {
+  id: string;
+  label: string;
+  description?: string;
+  kind: SettingKind;
+  value?: string;
+  actionLabel?: string;
+  danger?: boolean;
+  disabled?: boolean;
+};
+
+export type SettingsSection = {
+  id: SectionId;
+  label: string;
+  rows: SettingRow[];
+};
