@@ -14,6 +14,7 @@ import {
   SidebarSearchIcon,
 } from '@/components/icons';
 import { useSearchOpen } from '@/contexts/search-open';
+import { useSettingsOpen } from '@/contexts/settings-open';
 import {
   CHAT_STORE_UPDATED_EVENT,
   DEFAULT_CHAT_USER_ID,
@@ -33,8 +34,6 @@ import {
 import { SidebarDeleteDialog } from '../sidebar/SidebarDeleteDialog';
 import { SidebarHistoryItem } from '../sidebar/SidebarHistoryItem';
 import { SidebarRenameDialog } from '../sidebar/SidebarRenameDialog';
-
-import { useSettingsOpen } from '@/contexts/settings-open';
 
 interface WorkspaceSidebarProps {
   className?: string;
