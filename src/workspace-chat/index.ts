@@ -8,7 +8,7 @@ import {
   CHAT_TEXTAREA_MAX_HEIGHT,
   HOME_TEXTAREA_MIN_HEIGHT,
   HOME_TEXTAREA_MAX_HEIGHT,
-} from '@/features/chat-input';
+} from '@/components/chat/ChatInput';
 import {
   CHAT_STORE_UPDATED_EVENT,
   DEFAULT_CHAT_USER_ID,
@@ -203,7 +203,7 @@ export function useWorkspaceChat(onReady?: () => void) {
         setCurrentChatId(null);
         setIsHydratingChat(false);
         setIsStoppingGeneration(false);
-        startTransition(() => router.replace('/workspace'));
+        startTransition(() => router.replace('/'));
         return;
       }
 
@@ -248,7 +248,7 @@ export function useWorkspaceChat(onReady?: () => void) {
         if (!session) {
           setCurrentChatId(null);
           setIsHydratingChat(false);
-          startTransition(() => router.replace('/workspace'));
+          startTransition(() => router.replace('/'));
           return;
         }
         setCurrentChatId(session.id);
@@ -303,7 +303,7 @@ export function useWorkspaceChat(onReady?: () => void) {
             setIsStoppingGeneration(false);
             setRegeneratingMessageId(null);
             setIsHydratingChat(false);
-            startTransition(() => router.replace('/workspace'));
+            startTransition(() => router.replace('/'));
             return;
           }
           commitMessages(storedMessagesToMessages(session.messages));
@@ -351,9 +351,7 @@ export function useWorkspaceChat(onReady?: () => void) {
     setSystemPromptEditorOpen(false);
     resetComposer(false);
     const nextPath =
-      typeof window !== 'undefined' && window.location.pathname
-        ? window.location.pathname
-        : '/workspace';
+      typeof window !== 'undefined' && window.location.pathname ? window.location.pathname : '/';
     startTransition(() => router.replace(nextPath));
   }, [
     commitMessages,
@@ -409,7 +407,7 @@ export function useWorkspaceChat(onReady?: () => void) {
         chatId = generateId();
         skipHydrationChatIdRef.current = chatId;
         setCurrentChatId(chatId);
-        startTransition(() => router.push(`/workspace?chat=${encodeURIComponent(chatId!)}`));
+        startTransition(() => router.push(`/?chat=${encodeURIComponent(chatId!)}`));
         void createChatSession(chatId, buildHistoryTitle(text), nextMessages, {
           createdAt: new Date().toISOString(),
           systemPrompt: systemPromptRef.current,

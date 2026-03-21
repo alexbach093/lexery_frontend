@@ -1,4 +1,4 @@
-import type { AttachedFile } from '@/features/attachments';
+import type { AttachedFile } from '@/components/attachments';
 import type { Message, MessageAttachment, MessageVersion, StoredMessage } from '@/types';
 
 import { HISTORY_TITLE_MAX_LENGTH, ASSISTANT_SUGGESTIONS } from './constants';

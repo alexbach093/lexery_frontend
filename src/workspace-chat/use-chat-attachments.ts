@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { AttachedFile } from '@/features/attachments';
-import { getFileFormatIdOrExt, getFormatOptionForFile } from '@/features/attachments';
+import type { AttachedFile } from '@/components/attachments';
+import { getFileFormatIdOrExt, getFormatOptionForFile } from '@/components/attachments';
 
 export function useChatAttachments() {
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
