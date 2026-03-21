@@ -14,7 +14,6 @@ import {
   SidebarSearchIcon,
 } from '@/components/icons';
 import { useSearchOpen } from '@/contexts/search-open';
-import { useSettingsOpen } from '@/contexts/settings-open';
 import {
   CHAT_STORE_UPDATED_EVENT,
   DEFAULT_CHAT_USER_ID,
@@ -26,10 +25,16 @@ import {
 import { cn } from '@/lib/utils';
 import { WORKSPACE_START_NEW_CHAT_EVENT } from '@/workspace-chat';
 
-import { SidebarChatMenu } from '../sidebar/SidebarChatMenu';
+import {
+  SIDEBAR_CHAT_MENU_HEIGHT,
+  SIDEBAR_CHAT_MENU_WIDTH,
+  SidebarChatMenu,
+} from '../sidebar/SidebarChatMenu';
 import { SidebarDeleteDialog } from '../sidebar/SidebarDeleteDialog';
 import { SidebarHistoryItem } from '../sidebar/SidebarHistoryItem';
 import { SidebarRenameDialog } from '../sidebar/SidebarRenameDialog';
+
+import { useSettingsOpen } from '@/contexts/settings-open';
 
 interface WorkspaceSidebarProps {
   className?: string;
@@ -100,12 +105,15 @@ export function WorkspaceSidebar({
 
   const updateHistoryFadeState = useCallback(() => {
     const el = historyScrollRef.current;
-    if (!el || collapsed) {
+    if (!el) {
       setHistoryFadeState((prev) =>
         prev.top || prev.bottom ? { top: false, bottom: false } : prev
       );
       return;
     }
+    // Preserve the last fade mask while the sidebar collapses so rows under the
+    // bottom gradient do not flash before the content opacity transition finishes.
+    if (collapsed) return;
     const maxScrollTop = Math.max(0, el.scrollHeight - el.clientHeight);
     const nextState = {
       top: el.scrollTop > 4,
@@ -160,11 +168,16 @@ export function WorkspaceSidebar({
     const availableWidth = window.innerWidth;
     const availableHeight = window.innerHeight;
     const preferredTop = rect.bottom + 4;
-    const fallbackTop = rect.top - 112 - 4;
-    const preferredLeft = rect.right - 149;
+    const fallbackTop = rect.top - SIDEBAR_CHAT_MENU_HEIGHT - 4;
+    const preferredLeft = rect.right - SIDEBAR_CHAT_MENU_WIDTH;
     const top =
-      preferredTop + 112 <= availableHeight - 12 ? preferredTop : Math.max(12, fallbackTop);
-    const left = Math.min(Math.max(12, preferredLeft), availableWidth - 149 - 12);
+      preferredTop + SIDEBAR_CHAT_MENU_HEIGHT <= availableHeight - 12
+        ? preferredTop
+        : Math.max(12, fallbackTop);
+    const left = Math.min(
+      Math.max(12, preferredLeft),
+      availableWidth - SIDEBAR_CHAT_MENU_WIDTH - 12
+    );
     setOpenChatMenuPosition({ left, top });
   }, []);
 

@@ -10,7 +10,7 @@ export function SidebarChatStarIcon({ filled = false, ...props }: SidebarChatSta
       <path
         d="M9.52922 0.8314L12.1095 6.42538L18.227 7.15071L13.7042 11.3333L14.9047 17.3756L9.52922 14.3666L4.15369 17.3756L5.35428 11.3333L0.831428 7.15071L6.94896 6.42538L9.52922 0.8314Z"
         stroke="currentColor"
-        strokeWidth={1.44}
+        strokeWidth={1.6628}
         strokeLinejoin="round"
         fill={filled ? 'currentColor' : 'none'}
       />
