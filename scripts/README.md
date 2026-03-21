@@ -43,6 +43,7 @@ npx tsx scripts/extract-figma-design.ts
 ```
 
 This will:
+
 1. Fetch the Figma file and find the boot screen node (0-1283)
 2. Extract a screenshot URL
 3. Extract all colors used in the design
@@ -56,6 +57,7 @@ This will:
 If you have the Figma MCP server configured in Cursor, you can use these MCP tools directly:
 
 #### 1. Get Design Context
+
 This extracts complete design context with React + Tailwind code:
 
 ```
@@ -65,13 +67,15 @@ Use Figma MCP get_design_context tool with:
 ```
 
 #### 2. Get Screenshot
+
 ```
 Use Figma MCP get_screenshot tool with:
-- File: IO0sKndZpfYlW5OVXoIpuC  
+- File: IO0sKndZpfYlW5OVXoIpuC
 - Node: 0-1283
 ```
 
 #### 3. Get Metadata
+
 ```
 Use Figma MCP get_metadata tool with:
 - File: IO0sKndZpfYlW5OVXoIpuC
@@ -79,6 +83,7 @@ Use Figma MCP get_metadata tool with:
 ```
 
 #### 4. Get Variable Definitions
+
 ```
 Use Figma MCP get_variable_defs tool with:
 - File: IO0sKndZpfYlW5OVXoIpuC
@@ -173,15 +178,19 @@ After extraction:
 ## 🐛 Troubleshooting
 
 ### "FIGMA_TOKEN environment variable not set"
+
 Make sure you've added `FIGMA_TOKEN=your_token` to your `.env` file.
 
 ### "Node with ID X not found"
+
 Double-check the node ID in the Figma URL. The node ID should be in the format `node-id=X-XXXX`.
 
 ### "Figma API error: 403"
+
 Your token may be invalid or expired. Generate a new one from Figma settings.
 
 ### "Figma API error: 404"
+
 The file ID may be incorrect, or you don't have access to the file.
 
 ## 📚 Figma API Documentation

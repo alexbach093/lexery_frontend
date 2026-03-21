@@ -346,7 +346,6 @@ async function main() {
     console.log('═'.repeat(60));
     console.log('✅ Extraction complete!');
     console.log('═'.repeat(60));
-
   } catch (error: unknown) {
     console.error('❌ Error:', error);
     process.exit(1);
