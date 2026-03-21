@@ -3,15 +3,36 @@
  * Extracts design information from a Figma node
  */
 
+interface FigmaColor {
+  r: number;
+  g: number;
+  b: number;
+  a?: number;
+}
+
+interface FigmaPaint {
+  type?: string;
+  color?: FigmaColor;
+}
+
+interface ExtractedTextNode {
+  text: string;
+  fontFamily?: string;
+  fontWeight?: number;
+  fontSize?: number;
+  lineHeight?: number;
+  letterSpacing?: number;
+}
+
 interface FigmaNode {
   id: string;
   name: string;
   type: string;
   children?: FigmaNode[];
-  backgroundColor?: { r: number; g: number; b: number; a: number };
-  fills?: any[];
-  strokes?: any[];
-  effects?: any[];
+  backgroundColor?: FigmaColor;
+  fills?: FigmaPaint[];
+  strokes?: unknown[];
+  effects?: unknown[];
   characters?: string;
   style?: {
     fontFamily?: string;
@@ -26,7 +47,7 @@ interface FigmaNode {
     width: number;
     height: number;
   };
-  constraints?: any;
+  constraints?: Record<string, unknown>;
   layoutMode?: string;
   primaryAxisSizingMode?: string;
   counterAxisSizingMode?: string;
@@ -41,8 +62,12 @@ interface FigmaNode {
 
 interface FigmaFile {
   document: FigmaNode;
-  components: Record<string, any>;
-  styles: Record<string, any>;
+  components: Record<string, unknown>;
+  styles: Record<string, unknown>;
+}
+
+interface FigmaImagesResponse {
+  images?: Record<string, string | null>;
 }
 
 const FIGMA_FILE_ID = 'IO0sKndZpfYlW5OVXoIpuC';
@@ -55,9 +80,9 @@ if (!FIGMA_TOKEN) {
   process.exit(1);
 }
 
-async function fetchFigmaFile() {
+async function fetchFigmaFile(): Promise<FigmaFile> {
   const url = `https://api.figma.com/v1/files/${FIGMA_FILE_ID}`;
-  
+
   const response = await fetch(url, {
     headers: {
       'X-Figma-Token': FIGMA_TOKEN!,
@@ -68,12 +93,12 @@ async function fetchFigmaFile() {
     throw new Error(`Figma API error: ${response.status} ${response.statusText}`);
   }
 
-  return await response.json() as { document: FigmaNode };
+  return (await response.json()) as FigmaFile;
 }
 
-async function fetchFigmaImages(nodeIds: string[]) {
+async function fetchFigmaImages(nodeIds: string[]): Promise<FigmaImagesResponse> {
   const url = `https://api.figma.com/v1/images/${FIGMA_FILE_ID}?ids=${nodeIds.join(',')}&format=png&scale=2`;
-  
+
   const response = await fetch(url, {
     headers: {
       'X-Figma-Token': FIGMA_TOKEN!,
@@ -84,10 +109,10 @@ async function fetchFigmaImages(nodeIds: string[]) {
     throw new Error(`Figma Images API error: ${response.status} ${response.statusText}`);
   }
 
-  return await response.json();
+  return (await response.json()) as FigmaImagesResponse;
 }
 
-async function getNodeById(fileData: any, nodeId: string): Promise<FigmaNode | null> {
+async function getNodeById(fileData: FigmaFile, nodeId: string): Promise<FigmaNode | null> {
   function traverse(node: FigmaNode): FigmaNode | null {
     if (node.id === nodeId) {
       return node;
@@ -114,40 +139,33 @@ function rgbToHex(r: number, g: number, b: number): string {
 
 function extractColors(node: FigmaNode): string[] {
   const colors: string[] = [];
-  
+
   if (node.backgroundColor) {
     const { r, g, b } = node.backgroundColor;
     colors.push(rgbToHex(r, g, b));
   }
-  
+
   if (node.fills && Array.isArray(node.fills)) {
-    node.fills.forEach((fill: any) => {
+    node.fills.forEach((fill) => {
       if (fill.type === 'SOLID' && fill.color) {
         const { r, g, b } = fill.color;
         colors.push(rgbToHex(r, g, b));
       }
     });
   }
-  
+
   if (node.children) {
-    node.children.forEach(child => {
+    node.children.forEach((child) => {
       colors.push(...extractColors(child));
     });
   }
-  
+
   return colors;
 }
 
-function extractTextContent(node: FigmaNode): Array<{
-  text: string;
-  fontFamily?: string;
-  fontWeight?: number;
-  fontSize?: number;
-  lineHeight?: number;
-  letterSpacing?: number;
-}> {
-  const textNodes: any[] = [];
-  
+function extractTextContent(node: FigmaNode): ExtractedTextNode[] {
+  const textNodes: ExtractedTextNode[] = [];
+
   function traverse(n: FigmaNode) {
     if (n.type === 'TEXT' && n.characters) {
       textNodes.push({
@@ -163,7 +181,7 @@ function extractTextContent(node: FigmaNode): Array<{
       n.children.forEach(traverse);
     }
   }
-  
+
   traverse(node);
   return textNodes;
 }
@@ -178,7 +196,12 @@ function analyzeLayout(node: FigmaNode): {
 } {
   return {
     layoutMode: node.layoutMode,
-    direction: node.layoutMode === 'VERTICAL' ? 'column' : node.layoutMode === 'HORIZONTAL' ? 'row' : undefined,
+    direction:
+      node.layoutMode === 'VERTICAL'
+        ? 'column'
+        : node.layoutMode === 'HORIZONTAL'
+          ? 'row'
+          : undefined,
     gap: node.itemSpacing,
     padding: {
       top: node.paddingTop || 0,
@@ -194,22 +217,22 @@ function analyzeLayout(node: FigmaNode): {
 function generateNodeTree(node: FigmaNode, depth: number = 0): string {
   const indent = '  '.repeat(depth);
   let output = `${indent}- ${node.type}: ${node.name} (${node.id})\n`;
-  
+
   if (node.absoluteBoundingBox) {
     const { width, height } = node.absoluteBoundingBox;
     output += `${indent}  Size: ${width}x${height}px\n`;
   }
-  
+
   if (node.type === 'TEXT' && node.characters) {
     output += `${indent}  Text: "${node.characters}"\n`;
   }
-  
+
   if (node.children) {
-    node.children.forEach(child => {
+    node.children.forEach((child) => {
       output += generateNodeTree(child, depth + 1);
     });
   }
-  
+
   return output;
 }
 
@@ -222,29 +245,29 @@ async function main() {
     // Fetch the Figma file
     console.log('📥 Fetching Figma file...');
     const fileData = await fetchFigmaFile();
-    
+
     // Find the specific node
     console.log('🔍 Finding target node...');
     const targetNode = await getNodeById(fileData, NODE_ID);
-    
+
     if (!targetNode) {
       console.error(`❌ Node with ID ${NODE_ID} not found`);
       process.exit(1);
     }
-    
+
     console.log(`✅ Found node: ${targetNode.name} (${targetNode.type})\n`);
-    
+
     // Extract screenshot URL
     console.log('📸 Fetching screenshot...');
     const imagesData = await fetchFigmaImages([NODE_ID]);
     const screenshotUrl = imagesData.images?.[NODE_ID];
-    
+
     // Extract all data
     const colors = [...new Set(extractColors(targetNode))];
     const textContent = extractTextContent(targetNode);
     const layout = analyzeLayout(targetNode);
     const nodeTree = generateNodeTree(targetNode);
-    
+
     // Generate report
     const report = {
       node: {
@@ -265,13 +288,13 @@ async function main() {
       layout: layout,
       structure: nodeTree,
     };
-    
+
     // Output report
     console.log('═'.repeat(60));
     console.log('📊 DESIGN EXTRACTION REPORT');
     console.log('═'.repeat(60));
     console.log();
-    
+
     console.log('📱 NODE INFORMATION:');
     console.log(`   Name: ${report.node.name}`);
     console.log(`   Type: ${report.node.type}`);
@@ -280,17 +303,17 @@ async function main() {
       console.log(`   Size: ${report.node.size.width}x${report.node.size.height}px`);
     }
     console.log();
-    
+
     console.log('📸 SCREENSHOT:');
     console.log(`   URL: ${screenshotUrl || 'Not available'}`);
     console.log();
-    
+
     console.log('🎨 COLORS:');
     colors.forEach((color, i) => {
       console.log(`   ${i + 1}. ${color}`);
     });
     console.log();
-    
+
     console.log('📝 TEXT CONTENT:');
     textContent.forEach((text, i) => {
       console.log(`   ${i + 1}. "${text.text}"`);
@@ -299,30 +322,31 @@ async function main() {
       console.log(`      Size: ${text.fontSize || 'Unknown'}px`);
       console.log();
     });
-    
+
     console.log('📐 LAYOUT:');
     console.log(`   Mode: ${layout.layoutMode || 'Absolute'}`);
     console.log(`   Direction: ${layout.direction || 'N/A'}`);
     console.log(`   Gap: ${layout.gap || 0}px`);
-    console.log(`   Padding: ${layout.padding?.top || 0}px ${layout.padding?.right || 0}px ${layout.padding?.bottom || 0}px ${layout.padding?.left || 0}px`);
+    console.log(
+      `   Padding: ${layout.padding?.top || 0}px ${layout.padding?.right || 0}px ${layout.padding?.bottom || 0}px ${layout.padding?.left || 0}px`
+    );
     console.log();
-    
+
     console.log('🌲 NODE STRUCTURE:');
     console.log(nodeTree);
     console.log();
-    
+
     // Save to file
     const outputPath = './figma-extraction-report.json';
     const fs = await import('fs');
     fs.writeFileSync(outputPath, JSON.stringify(report, null, 2));
     console.log(`💾 Full report saved to: ${outputPath}`);
     console.log();
-    
+
     console.log('═'.repeat(60));
     console.log('✅ Extraction complete!');
     console.log('═'.repeat(60));
-    
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Error:', error);
     process.exit(1);
   }

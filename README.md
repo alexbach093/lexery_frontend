@@ -61,6 +61,7 @@ import { BootScreen } from '@/components/BootScreen';
 ```
 
 **Documentation:**
+
 - 📚 [Figma Extraction Guide](./FIGMA_EXTRACTION_GUIDE.md) - Quick start
 - 🚀 [Complete Summary](./FIGMA_TO_REACT_SUMMARY.md) - Full workflow details
 - ⚡ [Quick Reference](./QUICK_REFERENCE.md) - Commands and examples

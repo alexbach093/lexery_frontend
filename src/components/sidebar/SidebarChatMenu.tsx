@@ -17,12 +17,17 @@ interface SidebarChatMenuProps {
   onDeleteClick: (chat: ChatLibraryItem) => void;
 }
 
+export const SIDEBAR_CHAT_MENU_WIDTH = 160;
+export const SIDEBAR_CHAT_MENU_HEIGHT = 118;
+
 export const SidebarChatMenu = forwardRef<HTMLDivElement, SidebarChatMenuProps>(
   ({ chat, position, onPinToggle, onRenameClick, onDeleteClick }, ref) => {
     if (typeof document === 'undefined') return null;
 
     const menuItemClasses =
-      'flex min-h-7 w-full cursor-pointer items-center justify-start gap-2 rounded-md border-none px-1.5 py-1 text-left transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0070f3]';
+      'absolute left-2 right-2 flex h-7 items-center gap-2 rounded-[9px] px-2 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0070f3]';
+    const menuItemLabelClasses =
+      'min-w-0 truncate font-sans text-[13px] leading-[17px] font-medium tracking-[-0.13px] text-inherit';
 
     return createPortal(
       <div
@@ -31,49 +36,49 @@ export const SidebarChatMenu = forwardRef<HTMLDivElement, SidebarChatMenuProps>(
         aria-orientation="vertical"
         onClick={(event) => event.stopPropagation()}
         onMouseDown={(event) => event.stopPropagation()}
-        className="fixed z-120 w-36 overflow-hidden rounded-xl border border-[#E0E7E8] bg-white px-1.5 py-1 shadow-sm"
+        className="fixed z-120 h-[118px] w-40 overflow-hidden rounded-[16px] border border-[#E0E7E8] bg-white"
         style={{
           top: `${position.top}px`,
           left: `${position.left}px`,
         }}
       >
-        <div className="flex flex-col gap-0.5">
-          <button
-            type="button"
-            role="menuitem"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onPinToggle(chat);
-            }}
-            className={menuItemClasses}
-          >
-            <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center">
-              <SidebarChatStarIcon filled={chat.pinned} className="block h-full w-full shrink-0" />
-            </div>
-            <span className="mt-px flex-1 truncate font-sans text-xs leading-none font-medium text-[#111827]">
-              {chat.pinned ? 'Відкріпити' : 'Закріпити'}
-            </span>
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onRenameClick(chat);
-            }}
-            className={menuItemClasses}
-          >
-            <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center">
-              <SidebarChatPencilIcon className="block h-full w-full shrink-0" />
-            </div>
-            <span className="mt-px flex-1 truncate font-sans text-xs leading-none font-medium text-[#111827]">
-              Перейменувати
-            </span>
-          </button>
-        </div>
-        <div className="my-1 h-px bg-[#E0E7E8]" aria-hidden />
+        <button
+          type="button"
+          role="menuitem"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onPinToggle(chat);
+          }}
+          className={cn(
+            menuItemClasses,
+            'top-[7px] text-black hover:bg-[#F4F4F6] active:bg-[#EEEEF2]'
+          )}
+        >
+          <div className="flex h-[15px] w-[15px] shrink-0 items-center justify-center">
+            <SidebarChatStarIcon filled={chat.pinned} className="block h-full w-full shrink-0" />
+          </div>
+          <span className={menuItemLabelClasses}>{chat.pinned ? 'Відкріпити' : 'Закріпити'}</span>
+        </button>
+        <button
+          type="button"
+          role="menuitem"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRenameClick(chat);
+          }}
+          className={cn(
+            menuItemClasses,
+            'top-[35px] text-black hover:bg-[#F4F4F6] active:bg-[#EEEEF2]'
+          )}
+        >
+          <div className="flex h-[15px] w-[15px] shrink-0 items-center justify-center">
+            <SidebarChatPencilIcon className="block h-full w-full shrink-0" />
+          </div>
+          <span className={menuItemLabelClasses}>Перейменувати</span>
+        </button>
+        <div className="absolute inset-x-2 top-[72px] h-px bg-[#E0E7E8]" aria-hidden />
         <button
           type="button"
           role="menuitem"
@@ -84,15 +89,13 @@ export const SidebarChatMenu = forwardRef<HTMLDivElement, SidebarChatMenuProps>(
           }}
           className={cn(
             menuItemClasses,
-            'mb-0.5 text-[#EF4444] hover:bg-[#FFF3F3] active:bg-[#FFE8E8]'
+            'top-[80px] text-[#FF4747] hover:bg-[#FFF3F3] active:bg-[#FFE8E8]'
           )}
         >
-          <div className="flex h-3.5 w-3.5 shrink-0 items-center justify-center">
-            <SidebarChatTrashIcon className="block h-full w-full shrink-0 overflow-visible" />
+          <div className="flex h-[15px] w-[15px] shrink-0 items-center justify-center">
+            <SidebarChatTrashIcon className="block h-[14px] w-[14px] shrink-0" />
           </div>
-          <span className="mt-px flex-1 truncate font-sans text-xs leading-none font-medium text-inherit">
-            Видалити
-          </span>
+          <span className={menuItemLabelClasses}>Видалити</span>
         </button>
       </div>,
       document.body
