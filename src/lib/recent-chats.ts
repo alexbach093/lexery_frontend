@@ -3,7 +3,6 @@
 import type { RecentChatItem } from '@/types';
 
 const STORAGE_KEY = 'lexery-recent-chats';
-const MAX_ITEMS = 50;
 
 function isStorageAvailable(): boolean {
   if (typeof window === 'undefined') return false;
@@ -38,14 +37,14 @@ export function getRecentChats(): RecentChatItem[] {
     );
     // Newest first (assume createdAt ISO order)
     items.sort((a, b) => (b.createdAt > a.createdAt ? 1 : b.createdAt < a.createdAt ? -1 : 0));
-    return items.slice(0, MAX_ITEMS);
+    return items;
   } catch {
     return [];
   }
 }
 
 /**
- * Replace entire recent chats list and persist. Keeps newest-first, enforces MAX_ITEMS.
+ * Replace entire recent chats list and persist. Keeps newest-first order.
  */
 export function saveRecentChats(items: RecentChatItem[]): void {
   if (!isStorageAvailable()) return;
@@ -53,7 +52,7 @@ export function saveRecentChats(items: RecentChatItem[]): void {
     const sorted = [...items].sort((a, b) =>
       b.createdAt > a.createdAt ? 1 : b.createdAt < a.createdAt ? -1 : 0
     );
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted.slice(0, MAX_ITEMS)));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
   } catch {
     // ignore
   }
@@ -70,7 +69,7 @@ export function upsertRecentChat(item: RecentChatItem): void {
   const next = [item, ...without].sort((a, b) =>
     b.createdAt > a.createdAt ? 1 : b.createdAt < a.createdAt ? -1 : 0
   );
-  saveRecentChats(next.slice(0, MAX_ITEMS));
+  saveRecentChats(next);
   try {
     window.dispatchEvent(new CustomEvent('recent-chats-updated'));
   } catch {

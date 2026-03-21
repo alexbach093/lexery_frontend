@@ -102,8 +102,8 @@ export function MessageVersions({
         type="button"
         onClick={() => (open ? setOpen(false) : openDropdown())}
         className={cn(
-          'inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-black',
-          'transition-all duration-150 hover:bg-transparent hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset active:scale-[0.92] active:bg-transparent'
+          'inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-[#575757]',
+          'transition-all duration-150 hover:bg-transparent hover:text-[#333] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset active:scale-[0.92] active:bg-transparent'
         )}
         aria-expanded={open}
         aria-haspopup="listbox"
@@ -144,7 +144,6 @@ export function MessageVersions({
                     'block min-w-0 truncate',
                     i === activeVersionIndex ? 'font-semibold' : 'font-normal'
                   )}
-                  title={getVersionLabel(v, i)}
                 >
                   {getVersionLabel(v, i)}
                 </span>

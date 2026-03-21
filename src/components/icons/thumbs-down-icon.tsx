@@ -1,11 +1,16 @@
 import type { SVGProps } from 'react';
 
-export function ThumbsDownIcon(props: SVGProps<SVGSVGElement>) {
+type ThumbsDownIconProps = SVGProps<SVGSVGElement> & {
+  filled?: boolean;
+};
+
+export function ThumbsDownIcon({ filled = false, ...props }: ThumbsDownIconProps) {
   return (
     <svg viewBox="0 0 12 11" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
       <path
         d="M2.47304 0.454082L9.63849 0.454083C10.3352 0.454083 10.9 1.01887 10.9 1.71556L10.9 5.5C10.9 6.1967 10.3352 6.76148 9.63849 6.76148L8.42139 6.76148C7.99961 6.76148 7.60574 6.97227 7.37178 7.32321L5.55073 10.0548C5.34618 10.3616 5.00181 10.5459 4.63305 10.5459C3.95151 10.5459 3.43309 9.93394 3.54513 9.26168L3.71702 8.23034C3.84517 7.46143 3.25222 6.76148 2.47271 6.76148L1.71615 6.76148C0.920101 6.76148 0.323052 6.0332 0.47917 5.2526L1.23606 1.46817C1.35399 0.878519 1.87172 0.454082 2.47304 0.454082Z"
         stroke="currentColor"
+        fill={filled ? 'currentColor' : 'none'}
         strokeWidth="0.9"
         strokeLinecap="round"
         strokeLinejoin="round"

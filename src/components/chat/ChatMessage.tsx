@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { CopyIcon, EditIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -60,11 +60,9 @@ export function ChatMessage({
   const [userCopyFeedback, setUserCopyFeedback] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editDraft, setEditDraft] = useState(content);
-  const [editSlotHeight, setEditSlotHeight] = useState(60);
+  const [editWidth, setEditWidth] = useState(320);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const editBlockRef = useRef<HTMLDivElement>(null);
   const userMessageWrapperRef = useRef<HTMLDivElement>(null);
-  const editBlockHeightRef = useRef<number>(0);
   const [actionRowVisible, setActionRowVisible] = useState(false);
   const userTooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userHalfSecondTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -94,30 +92,27 @@ export function ChatMessage({
   useEffect(() => {
     if (!isEditing) return;
     const rafId = requestAnimationFrame(() => {
-      setEditDraft(content);
-      editTextareaRef.current?.focus();
+      const textarea = editTextareaRef.current;
+      if (!textarea) return;
+      textarea.focus();
+      const end = textarea.value.length;
+      textarea.setSelectionRange(end, end);
     });
     return () => cancelAnimationFrame(rafId);
-  }, [isEditing, content]);
+  }, [isEditing]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isEditing) return;
-    const block = editBlockRef.current;
-    if (!block) return;
+    const textarea = editTextareaRef.current;
+    if (!textarea) return;
 
-    const syncEditSlotHeight = () => {
-      const nextHeight = Math.max(editBlockHeightRef.current || 0, block.offsetHeight);
-      setEditSlotHeight(nextHeight);
-    };
+    textarea.style.height = 'auto';
+    const minHeight = 80;
+    const maxHeight = Math.max(240, Math.min(window.innerHeight * 0.6, 480));
+    const nextHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight);
 
-    syncEditSlotHeight();
-
-    const resizeObserver = new ResizeObserver(() => {
-      syncEditSlotHeight();
-    });
-    resizeObserver.observe(block);
-
-    return () => resizeObserver.disconnect();
+    textarea.style.height = `${nextHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
   }, [isEditing, editDraft]);
 
   useEffect(() => {
@@ -129,7 +124,7 @@ export function ChatMessage({
   }, [versions?.length]);
 
   if (role === 'user') {
-    const USER_TOOLTIP_DELAY_MS = 1250;
+    const USER_TOOLTIP_DELAY_MS = 900;
 
     const showUserTooltipAfterDelay = (id: UserMessageTooltipId) => {
       userHoveredIdRef.current = id;
@@ -183,9 +178,8 @@ export function ChatMessage({
 
     const handleStartEdit = () => {
       const wrapper = userMessageWrapperRef.current;
-      const h = wrapper ? wrapper.offsetHeight : 60;
-      editBlockHeightRef.current = h;
-      setEditSlotHeight(h);
+      const nextWidth = wrapper ? Math.max(wrapper.offsetWidth, 320) : 320;
+      setEditWidth(nextWidth);
       setEditDraft(content);
       setIsEditing(true);
     };
@@ -209,50 +203,42 @@ export function ChatMessage({
     if (isEditing) {
       return (
         <div
-          className="relative w-full max-w-100 self-end overflow-visible"
-          style={{
-            height: editSlotHeight,
-            minHeight: editSlotHeight,
-          }}
+          className="ml-auto flex max-w-150 flex-col items-end gap-2.5 self-end"
+          style={{ width: `${editWidth}px` }}
         >
-          <div
-            ref={editBlockRef}
-            className="absolute top-0 right-0 z-20 flex w-full max-w-100 flex-col items-end gap-2.5"
-          >
-            <textarea
-              ref={editTextareaRef}
-              value={editDraft}
-              onChange={(e) => setEditDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleDoneEdit();
-                }
-                if (e.key === 'Escape') {
-                  e.preventDefault();
-                  handleCancelEdit();
-                }
-              }}
-              rows={3}
-              className="box-border min-h-20 w-full resize-none rounded-[18px] border border-[#E0E0E0] px-3.5 py-3 font-sans text-[15px] leading-5 text-[#2A2A2A] outline-none"
-              aria-label="Редагувати повідомлення"
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={handleCancelEdit}
-                className="cursor-pointer rounded-md border border-[#E0E0E0] bg-white px-3 py-1.5 text-sm text-[#2A2A2A] transition-colors hover:bg-gray-50"
-              >
-                Скасувати
-              </button>
-              <button
-                type="button"
-                onClick={handleDoneEdit}
-                className="cursor-pointer rounded-md border-none bg-[#2A2A2A] px-3 py-1.5 text-sm text-white transition-colors hover:bg-black"
-              >
-                Готово
-              </button>
-            </div>
+          <textarea
+            ref={editTextareaRef}
+            value={editDraft}
+            onChange={(e) => setEditDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleDoneEdit();
+              }
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                handleCancelEdit();
+              }
+            }}
+            rows={3}
+            className="box-border min-h-20 w-full resize-none rounded-[18px] border border-[#E0E0E0] px-3.5 py-3 font-sans text-[15px] leading-5 text-[#2A2A2A] outline-none"
+            aria-label="Редагувати повідомлення"
+          />
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="cursor-pointer rounded-md border border-[#E0E0E0] bg-white px-3 py-1.5 text-sm text-[#2A2A2A] transition-colors hover:bg-gray-50"
+            >
+              Скасувати
+            </button>
+            <button
+              type="button"
+              onClick={handleDoneEdit}
+              className="cursor-pointer rounded-md border-none bg-[#2A2A2A] px-3 py-1.5 text-sm text-white transition-colors hover:bg-black"
+            >
+              Готово
+            </button>
           </div>
         </div>
       );

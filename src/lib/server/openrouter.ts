@@ -61,12 +61,17 @@ export async function createChatCompletion(
  */
 export function createChatCompletionStream(
   messages: OpenAI.Chat.ChatCompletionMessageParam[],
-  options?: { model?: string }
+  options?: { model?: string; signal?: AbortSignal }
 ) {
   const client = createOpenRouterClient();
-  return client.chat.completions.create({
-    model: options?.model ?? OPENROUTER_DEFAULT_MODEL,
-    messages,
-    stream: true,
-  });
+  return client.chat.completions.create(
+    {
+      model: options?.model ?? OPENROUTER_DEFAULT_MODEL,
+      messages,
+      stream: true,
+    },
+    {
+      signal: options?.signal,
+    }
+  );
 }
