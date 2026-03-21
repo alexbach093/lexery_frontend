@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { AttachmentIcon, ImagePlaceholderIcon, ChevronDownSmallIcon } from '@/components/icons';
-import { formatFileSize } from '@/components/ui/file-preview';
+import { formatFileSize } from '@/components/ui/FilePreview';
 import { cn } from '@/lib/utils';
 import type { MessageAttachment } from '@/types';
 
