@@ -66,10 +66,12 @@ export function SidebarDeleteDialog({ chat, onClose, onSuccess }: SidebarDeleteD
         </h2>
         <p
           id="sidebar-delete-chat-description"
-          className="mt-1.5 text-center font-sans text-xs text-black/40"
+          className="mt-1.5 px-2 text-center font-sans text-xs text-black/40 sm:px-6"
         >
-          Ви дійсно хочете видалити чат{' '}
-          <span className="text-black/40">&quot;{chat.title}&quot;</span>?
+          Ви дійсно хочете видалити чат
+          <span className="mt-1 block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-black/40">
+            &quot;{chat.title}&quot;?
+          </span>
         </p>
         {feedback && (
           <p className="mt-2 text-center font-sans text-xs text-[#E14D4D]">{feedback}</p>

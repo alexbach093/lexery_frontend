@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -9,6 +9,7 @@ import {
   HOME_TEXTAREA_MIN_HEIGHT,
   HOME_TEXTAREA_MAX_HEIGHT,
 } from '@/components/chat/ChatInput';
+import { getWorkspaceChatPath, getWorkspaceHomePath } from '@/lib/app-routes';
 import {
   CHAT_STORE_UPDATED_EVENT,
   DEFAULT_CHAT_USER_ID,
@@ -32,14 +33,12 @@ import { useChatStream } from './use-chat-stream';
 
 export { WORKSPACE_START_NEW_CHAT_EVENT, WORKSPACE_OPEN_CHAT_EVENT } from './constants';
 
-export function useWorkspaceChat(onReady?: () => void) {
+export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const repository = useMemo(() => getChatRepository(), []);
-  const activeChatIdFromUrl = searchParams.get('chat');
 
-  const [currentChatId, setCurrentChatId] = useState<string | null>(activeChatIdFromUrl);
-  const [isHydratingChat, setIsHydratingChat] = useState<boolean>(activeChatIdFromUrl != null);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(routeChatId);
+  const [isHydratingChat, setIsHydratingChat] = useState<boolean>(routeChatId != null);
   const [messages, setMessages] = useState<Message[]>([]);
 
   const [value, setValue] = useState('');
@@ -59,7 +58,7 @@ export function useWorkspaceChat(onReady?: () => void) {
   const currentChatIdRef = useRef<string | null>(currentChatId);
 
   const attachmentsData = useChatAttachments();
-  const { attachedFiles, resetAttachments, handleAttach } = attachmentsData;
+  const { attachedFiles, resetAttachments } = attachmentsData;
 
   const commitMessages = useCallback((nextMessages: Message[]) => {
     messagesRef.current = nextMessages;
@@ -110,7 +109,6 @@ export function useWorkspaceChat(onReady?: () => void) {
     regeneratingMessageId,
     setRegeneratingMessageId,
     streamChatResponse,
-    handleStopGeneration,
     streamAbortControllerRef,
     streamingChatIdRef,
   } = streamData;
@@ -137,9 +135,6 @@ export function useWorkspaceChat(onReady?: () => void) {
   useEffect(() => {
     regeneratingMessageIdRef.current = regeneratingMessageId;
   }, [regeneratingMessageId]);
-  useEffect(() => {
-    onReady?.();
-  }, [onReady]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setTipsButtonCompact(hasMessages), 0);
@@ -203,7 +198,7 @@ export function useWorkspaceChat(onReady?: () => void) {
         setCurrentChatId(null);
         setIsHydratingChat(false);
         setIsStoppingGeneration(false);
-        startTransition(() => router.replace('/'));
+        startTransition(() => router.replace(getWorkspaceHomePath()));
         return;
       }
 
@@ -248,7 +243,7 @@ export function useWorkspaceChat(onReady?: () => void) {
         if (!session) {
           setCurrentChatId(null);
           setIsHydratingChat(false);
-          startTransition(() => router.replace('/'));
+          startTransition(() => router.replace(getWorkspaceHomePath()));
           return;
         }
         setCurrentChatId(session.id);
@@ -279,12 +274,12 @@ export function useWorkspaceChat(onReady?: () => void) {
   useEffect(() => {
     let isActive = true;
     Promise.resolve().then(() => {
-      if (isActive) void hydrateChatSession(activeChatIdFromUrl);
+      if (isActive) void hydrateChatSession(routeChatId);
     });
     return () => {
       isActive = false;
     };
-  }, [activeChatIdFromUrl, hydrateChatSession]);
+  }, [hydrateChatSession, routeChatId]);
 
   useEffect(() => {
     const handleChatStoreUpdated = () => {
@@ -303,7 +298,7 @@ export function useWorkspaceChat(onReady?: () => void) {
             setIsStoppingGeneration(false);
             setRegeneratingMessageId(null);
             setIsHydratingChat(false);
-            startTransition(() => router.replace('/'));
+            startTransition(() => router.replace(getWorkspaceHomePath()));
             return;
           }
           commitMessages(storedMessagesToMessages(session.messages));
@@ -350,9 +345,7 @@ export function useWorkspaceChat(onReady?: () => void) {
     setSystemPrompt('');
     setSystemPromptEditorOpen(false);
     resetComposer(false);
-    const nextPath =
-      typeof window !== 'undefined' && window.location.pathname ? window.location.pathname : '/';
-    startTransition(() => router.replace(nextPath));
+    startTransition(() => router.replace(getWorkspaceHomePath()));
   }, [
     commitMessages,
     currentChatId,
@@ -404,11 +397,12 @@ export function useWorkspaceChat(onReady?: () => void) {
 
       let chatId = currentChatId;
       if (!chatId) {
-        chatId = generateId();
-        skipHydrationChatIdRef.current = chatId;
-        setCurrentChatId(chatId);
-        startTransition(() => router.push(`/?chat=${encodeURIComponent(chatId!)}`));
-        void createChatSession(chatId, buildHistoryTitle(text), nextMessages, {
+        const nextChatId = generateId();
+        chatId = nextChatId;
+        skipHydrationChatIdRef.current = nextChatId;
+        setCurrentChatId(nextChatId);
+        startTransition(() => router.push(getWorkspaceChatPath(nextChatId)));
+        void createChatSession(nextChatId, buildHistoryTitle(text), nextMessages, {
           createdAt: new Date().toISOString(),
           systemPrompt: systemPromptRef.current,
         });

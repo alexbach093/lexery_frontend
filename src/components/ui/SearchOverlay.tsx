@@ -1,10 +1,11 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useSearchOpen } from '@/contexts/search-open';
+import { getRouteChatIdFromPathname, getWorkspaceChatPath } from '@/lib/app-routes';
 import {
   CHAT_STORE_UPDATED_EVENT,
   DEFAULT_CHAT_USER_ID,
@@ -52,8 +53,9 @@ function formatSearchTimestamp(updatedAt: string, locale: Intl.LocalesArgument =
 }
 
 export function SearchOverlay() {
+  const pathname = usePathname();
   const router = useRouter();
-  const { isOpen, close } = useSearchOpen();
+  const { isOpen, close, closeImmediate } = useSearchOpen();
   const [searchQuery, setSearchQuery] = useState('');
   const [chatLibrary, setChatLibrary] = useState<ChatLibraryItem[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -197,20 +199,17 @@ export function SearchOverlay() {
 
   const handleOpenChat = useCallback(
     (chatId: string) => {
-      closeSearch();
+      closeImmediate();
 
-      const isSameChat =
-        typeof window !== 'undefined' &&
-        window.location.pathname === '/' &&
-        new URLSearchParams(window.location.search).get('chat') === chatId;
+      const isSameChat = getRouteChatIdFromPathname(pathname) === chatId;
 
       if (isSameChat) {
         return;
       }
 
-      router.push(`/?chat=${encodeURIComponent(chatId)}`);
+      router.push(getWorkspaceChatPath(chatId));
     },
-    [closeSearch, router]
+    [closeImmediate, pathname, router]
   );
 
   const handleSearchInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {

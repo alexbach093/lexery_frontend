@@ -45,12 +45,7 @@ export function MessageList({
   const showTypingAsSeparate = false;
 
   return (
-    <div
-      className={cn(
-        'mx-auto box-border flex w-full max-w-180 flex-col gap-6 pt-13 pb-34.5',
-        className
-      )}
-    >
+    <div className={cn('mx-auto box-border flex w-full max-w-180 flex-col gap-6 pt-13', className)}>
       {messages.map((msg) => (
         <ChatMessage
           key={msg.id}

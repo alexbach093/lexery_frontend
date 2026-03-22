@@ -1,32 +1,38 @@
 'use client';
 
-import { Suspense, useEffect, useState, type CSSProperties } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { SearchOverlay } from '@/components/ui/SearchOverlay';
-import { SettingsScreen } from '@/components/ui/SettingsScreen';
 import {
   WORKSPACE_SIDEBAR_COLLAPSED_WIDTH,
   WORKSPACE_SIDEBAR_EXPANDED_WIDTH,
   WORKSPACE_SIDEBAR_TRANSITION,
   WorkspaceSidebar,
 } from '@/components/ui/WorkspaceSidebar';
-import { BootProvider, useBoot } from '@/contexts/boot-context';
 import { SearchOpenContext } from '@/contexts/search-open';
-import { SettingsOpenContext } from '@/contexts/settings-open';
 
-const SIDEBAR_FADE_MS = 600;
 const MOBILE_SIDEBAR_BREAKPOINT = 640;
+const SEARCH_OVERLAY_HISTORY_STATE = 'search';
 
-/** Внутрішній компонент лейауту, щоб мати доступ до useBoot() */
-function WorkspaceLayoutInner({ children }: { children: React.ReactNode }) {
-  const { isBootComplete } = useBoot();
+function isSearchOverlayHistoryState(state: unknown): boolean {
+  if (!state || typeof state !== 'object') {
+    return false;
+  }
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  return (state as { __lexeryOverlay?: string }).__lexeryOverlay === SEARCH_OVERLAY_HISTORY_STATE;
+}
+
+export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchOverlaySessionKey, setSearchOverlaySessionKey] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isCompactViewport, setIsCompactViewport] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const searchOpenRef = useRef(searchOpen);
+
+  useEffect(() => {
+    searchOpenRef.current = searchOpen;
+  }, [searchOpen]);
 
   useEffect(() => {
     const syncViewportMode = () => {
@@ -43,38 +49,73 @@ function WorkspaceLayoutInner({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('resize', syncViewportMode);
   }, []);
 
-  const openSearch = () => {
-    if (searchOpen) return;
-    setMobileSidebarOpen(false);
-    setSearchOverlaySessionKey((prev) => prev + 1);
-    setSearchOpen(true);
-  };
+  const closeSearchImmediate = useCallback(() => {
+    setSearchOpen(false);
+  }, []);
 
-  const closeSearch = () => setSearchOpen(false);
-
-  const toggleSearch = () => {
-    if (searchOpen) {
-      setSearchOpen(false);
+  const openSearch = useCallback(() => {
+    if (searchOpenRef.current) {
       return;
     }
+
     setMobileSidebarOpen(false);
     setSearchOverlaySessionKey((prev) => prev + 1);
     setSearchOpen(true);
-  };
 
-  const settingsContextValue = {
-    isOpen: settingsOpen,
-    open: () => {
-      setMobileSidebarOpen(false);
-      setSettingsOpen(true);
-    },
-    close: () => setSettingsOpen(false),
-  };
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const currentState =
+      window.history.state && typeof window.history.state === 'object' ? window.history.state : {};
+    window.history.pushState(
+      {
+        ...currentState,
+        __lexeryOverlay: SEARCH_OVERLAY_HISTORY_STATE,
+      },
+      '',
+      window.location.href
+    );
+  }, []);
+
+  const closeSearch = useCallback(() => {
+    if (typeof window !== 'undefined' && isSearchOverlayHistoryState(window.history.state)) {
+      window.history.back();
+      return;
+    }
+
+    setSearchOpen(false);
+  }, []);
+
+  const toggleSearch = useCallback(() => {
+    if (searchOpenRef.current) {
+      closeSearch();
+      return;
+    }
+
+    openSearch();
+  }, [closeSearch, openSearch]);
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const nextSearchOpen = isSearchOverlayHistoryState(event.state);
+      setSearchOpen(nextSearchOpen);
+
+      if (nextSearchOpen) {
+        setMobileSidebarOpen(false);
+        setSearchOverlaySessionKey((prev) => prev + 1);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const searchContextValue = {
     isOpen: searchOpen,
     open: openSearch,
     close: closeSearch,
+    closeImmediate: closeSearchImmediate,
     toggle: toggleSearch,
   };
 
@@ -98,73 +139,53 @@ function WorkspaceLayoutInner({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SettingsOpenContext.Provider value={settingsContextValue}>
-      <SearchOpenContext.Provider value={searchContextValue}>
-        <div
-          style={{
-            width: '100vw',
-            height: '100vh',
-            overflow: 'hidden',
-            backgroundColor: '#FFFFFF',
-          }}
-        >
-          {/* Sidebar */}
-          <div
-            style={{
-              opacity: isBootComplete ? 1 : 0,
-              pointerEvents: isBootComplete ? 'auto' : 'none',
-              transition: `opacity ${SIDEBAR_FADE_MS}ms ease-out`,
+    <SearchOpenContext.Provider value={searchContextValue}>
+      <div
+        style={{
+          width: '100vw',
+          height: '100vh',
+          overflow: 'hidden',
+          backgroundColor: '#FFFFFF',
+        }}
+      >
+        <Suspense fallback={null}>
+          <WorkspaceSidebar
+            collapsed={renderedSidebarCollapsed}
+            overlayActive={isCompactViewport && mobileSidebarOpen}
+            onToggleCollapse={() => {
+              if (isCompactViewport) {
+                setMobileSidebarOpen((prev) => !prev);
+                return;
+              }
+
+              setSidebarCollapsed((prev) => !prev);
             }}
-          >
-            <Suspense fallback={null}>
-              <WorkspaceSidebar
-                collapsed={renderedSidebarCollapsed}
-                overlayActive={isCompactViewport && mobileSidebarOpen}
-                onToggleCollapse={() => {
-                  if (isCompactViewport) {
-                    setMobileSidebarOpen((prev) => !prev);
-                    return;
-                  }
-                  setSidebarCollapsed((prev) => !prev);
-                }}
-              />
-            </Suspense>
-          </div>
+          />
+        </Suspense>
 
-          {isCompactViewport && mobileSidebarOpen && (
-            <button
-              type="button"
-              aria-label="Закрити sidebar"
-              onClick={() => setMobileSidebarOpen(false)}
-              style={{
-                position: 'fixed',
-                inset: 0,
-                zIndex: 70,
-                border: 'none',
-                background: 'rgba(23, 23, 23, 0.24)',
-                backdropFilter: 'blur(2px)',
-                WebkitBackdropFilter: 'blur(2px)',
-                cursor: 'pointer',
-              }}
-            />
-          )}
+        {isCompactViewport && mobileSidebarOpen && (
+          <button
+            type="button"
+            aria-label="Закрити sidebar"
+            onClick={() => setMobileSidebarOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 70,
+              border: 'none',
+              background: 'rgba(23, 23, 23, 0.24)',
+              backdropFilter: 'blur(2px)',
+              WebkitBackdropFilter: 'blur(2px)',
+              cursor: 'pointer',
+            }}
+          />
+        )}
 
-          {/* Main Area */}
-          <div style={mainAreaStyle}>
-            <Suspense fallback={null}>{children}</Suspense>
-            <SearchOverlay key={searchOverlaySessionKey} />
-          </div>
+        <div style={mainAreaStyle}>
+          <Suspense fallback={null}>{children}</Suspense>
+          <SearchOverlay key={searchOverlaySessionKey} />
         </div>
-      </SearchOpenContext.Provider>
-      {settingsOpen && <SettingsScreen onClose={settingsContextValue.close} />}
-    </SettingsOpenContext.Provider>
-  );
-}
-
-export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <BootProvider>
-      <WorkspaceLayoutInner>{children}</WorkspaceLayoutInner>
-    </BootProvider>
+      </div>
+    </SearchOpenContext.Provider>
   );
 }
