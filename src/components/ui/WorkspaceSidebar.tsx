@@ -80,6 +80,7 @@ export function WorkspaceSidebar({
 
   const [chatBeingRenamed, setChatBeingRenamed] = useState<ChatLibraryItem | null>(null);
   const [chatBeingDeleted, setChatBeingDeleted] = useState<ChatLibraryItem | null>(null);
+  const [avatarError, setAvatarError] = useState(false);
 
   const closeChatMenu = useCallback(() => {
     openChatMenuTriggerRef.current = null;
@@ -110,8 +111,6 @@ export function WorkspaceSidebar({
       );
       return;
     }
-    // Preserve the last fade mask while the sidebar collapses so rows under the
-    // bottom gradient do not flash before the content opacity transition finishes.
     if (collapsed) return;
     const maxScrollTop = Math.max(0, el.scrollHeight - el.clientHeight);
     const nextState = {
@@ -334,7 +333,7 @@ export function WorkspaceSidebar({
     <>
       <aside
         className={cn(
-          'fixed top-0 left-0 flex h-screen flex-col overflow-hidden border-r border-[#E0E7E8] bg-white transition-[width] duration-220 ease-in-out',
+          'fixed top-0 left-0 flex h-screen flex-col border-r border-[#E0E7E8] bg-white transition-[width] duration-220 ease-in-out',
           collapsed ? 'w-16' : 'w-62.5',
           overlayActive ? 'z-50 shadow-2xl' : 'z-40',
           className
@@ -587,16 +586,16 @@ export function WorkspaceSidebar({
           />
         </div>
 
-        <div className="z-30 shrink-0 px-3 pb-3.5">
-          <div ref={menuRef} className="relative flex min-w-0 items-center pt-3">
+        <div className="z-30 shrink-0 px-2 pb-3">
+          <div ref={menuRef} className="relative flex min-w-0 items-center pt-2">
             {isMenuOpen && (
               <div
                 role="menu"
                 aria-orientation="vertical"
                 className={cn(
-                  'absolute z-100 overflow-hidden rounded-xl border border-[#E0E7E8] bg-white p-1.5 shadow-sm',
+                  'absolute z-100 overflow-hidden rounded-xl border border-[#E0E7E8] bg-white p-1.5 shadow-lg shadow-black/5 outline-none',
                   collapsed
-                    ? 'bottom-0 left-[calc(100%+8px)] w-55'
+                    ? 'bottom-0 left-[calc(100%+8px)] w-56'
                     : '-inset-x-1.5 bottom-[calc(100%+8px)]'
                 )}
               >
@@ -650,35 +649,55 @@ export function WorkspaceSidebar({
             <button
               type="button"
               onClick={() => setIsMenuOpen((prev) => !prev)}
-              className="group flex w-full flex-1 cursor-pointer items-center justify-start gap-2 rounded-lg border-none bg-transparent pl-1.5 text-left transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+              className={cn(
+                'group flex w-full flex-1 cursor-pointer items-center justify-start rounded-lg border-none bg-transparent px-2 py-1.5 text-left transition-colors duration-150',
+                'hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset',
+                isMenuOpen && 'bg-[#F4F4F6]'
+              )}
               aria-label="Open profile menu"
               aria-haspopup="menu"
               aria-expanded={isMenuOpen}
             >
-              <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-[#E0E0E0]">
-                <Image
-                  src="/images/workspace/avatar.png"
-                  alt="Profile image"
-                  width={28}
-                  height={28}
-                  className="block h-full w-full object-cover"
-                />
+              <div
+                className={cn(
+                  'flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full transition-transform duration-200 group-active:scale-95',
+                  avatarError
+                    ? 'bg-gradient-to-br from-[#0052CC] to-[#4C9AFF] text-white'
+                    : 'bg-[#E0E0E0]'
+                )}
+              >
+                {!avatarError ? (
+                  <Image
+                    src="/images/avatar.png"
+                    alt="Profile image"
+                    width={32}
+                    height={32}
+                    className="block h-full w-full object-cover"
+                    onError={() => setAvatarError(true)}
+                  />
+                ) : (
+                  <span className="relative top-[1px] font-sans text-[15px] leading-none font-semibold tracking-wide">
+                    О
+                  </span>
+                )}
               </div>
               <div
                 className={cn(
                   'flex flex-col overflow-hidden whitespace-nowrap transition-all duration-220 ease-in-out',
-                  collapsed ? 'max-w-0 flex-[0_0_auto] opacity-0' : 'max-w-full flex-1 opacity-100'
+                  collapsed
+                    ? 'ml-0 max-w-0 flex-[0_0_auto] opacity-0'
+                    : 'ml-2 max-w-full flex-1 opacity-100'
                 )}
                 aria-hidden={collapsed}
               >
-                <div className="flex min-h-7 min-w-0 items-center justify-between gap-2">
+                <div className="flex min-h-8 min-w-0 items-center justify-between gap-2">
                   <div
-                    className="flex-1 truncate font-sans text-sm leading-7 font-medium tracking-[0.14px] text-black"
+                    className="flex-1 truncate font-sans text-sm font-medium tracking-[0.14px] text-black"
                     title="Олександр"
                   >
                     Олександр
                   </div>
-                  <span className="inline-flex h-7 shrink-0 items-center justify-center rounded-full border border-[#E5E5E5] bg-white px-3 font-sans text-xs tracking-[0.12px] text-[#5E5E5E]">
+                  <span className="inline-flex h-5 shrink-0 items-center justify-center rounded border border-[#E0E7E8] bg-transparent px-1.5 font-sans text-[11px] font-semibold tracking-[0.12px] text-[#6B7280]">
                     Free
                   </span>
                 </div>
