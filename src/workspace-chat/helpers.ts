@@ -34,10 +34,14 @@ export function buildMessageAttachments(files: AttachedFile[]): MessageAttachmen
 }
 
 export function hasPendingAssistantResponse(
-  messages: Pick<StoredMessage, 'role' | 'content'>[]
+  messages: Pick<StoredMessage, 'role' | 'content' | 'versions'>[]
 ): boolean {
   const lastMessage = messages[messages.length - 1];
-  return Boolean(lastMessage?.role === 'assistant' && !lastMessage.content.trim());
+  return Boolean(
+    lastMessage?.role === 'assistant' &&
+    (!lastMessage.content.trim() ||
+      (Array.isArray(lastMessage.versions) && lastMessage.versions.length === 0))
+  );
 }
 
 export function finalizeAssistantMessage(

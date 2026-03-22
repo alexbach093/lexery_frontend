@@ -380,6 +380,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
   const runSend = useCallback(
     async (text: string) => {
       const assistantId = generateId();
+      const createdAt = new Date().toISOString();
       const nextUserMessage: Message = {
         id: generateId(),
         role: 'user',
@@ -396,25 +397,35 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
       const nextMessages = [...messages, nextUserMessage, nextAssistantMessage];
 
       let chatId = currentChatId;
+      let shouldPersistStream = false;
+      let nextChatTitle: string | null = null;
       if (!chatId) {
         const nextChatId = generateId();
         chatId = nextChatId;
+        shouldPersistStream = true;
+        nextChatTitle = buildHistoryTitle(text);
         skipHydrationChatIdRef.current = nextChatId;
+        currentChatIdRef.current = nextChatId;
         setCurrentChatId(nextChatId);
-        startTransition(() => router.push(getWorkspaceChatPath(nextChatId)));
-        void createChatSession(nextChatId, buildHistoryTitle(text), nextMessages, {
-          createdAt: new Date().toISOString(),
-          systemPrompt: systemPromptRef.current,
-        });
-      } else {
-        void persistExistingChat(chatId, nextMessages);
       }
 
       commitMessages(nextMessages);
       resetComposer(true);
       setIsStoppingGeneration(false);
       setIsAssistantTyping(true);
+      isAssistantTypingRef.current = true;
       streamAbortControllerRef.current?.abort();
+
+      if (nextChatTitle) {
+        startTransition(() => router.push(getWorkspaceChatPath(chatId)));
+        void createChatSession(chatId, nextChatTitle, nextMessages, {
+          createdAt,
+          systemPrompt: systemPromptRef.current,
+        });
+      } else {
+        currentChatIdRef.current = chatId;
+        void persistExistingChat(chatId, nextMessages);
+      }
 
       const controller = new AbortController();
       streamAbortControllerRef.current = controller;
@@ -430,7 +441,8 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
         assistantId,
         nextMessages,
         controller,
-        controller.signal
+        controller.signal,
+        shouldPersistStream ? { persistDuringStream: true } : undefined
       );
     },
     [
