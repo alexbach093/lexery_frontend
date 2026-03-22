@@ -315,12 +315,12 @@ export function WorkspaceSidebar({
 
   const navButtonClasses = cn(
     'relative isolate flex h-8 w-full cursor-pointer items-center justify-start gap-3 rounded-lg border-none py-1.5 px-[15px] text-left transition-colors duration-150',
-    'before:absolute before:-inset-y-[2px] before:inset-x-0 before:-z-10 before:pointer-events-none before:rounded-lg before:bg-transparent before:transition-colors before:duration-150 hover:before:bg-[#F4F4F6] disabled:hover:before:bg-transparent first:before:top-0 last:before:bottom-0',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0070f3]'
+    'before:absolute before:-inset-y-[2px] before:inset-x-0 before:-z-10 before:pointer-events-none before:rounded-lg before:bg-transparent before:transition-colors before:duration-150 hover:before:bg-[#F4F4F4] disabled:hover:before:bg-transparent first:before:top-0 last:before:bottom-0',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5D5D5D]'
   );
 
   const menuItemClasses =
-    'flex min-h-8 w-full cursor-pointer items-center justify-start gap-2 rounded-lg border-none px-2 py-1.5 text-left transition-colors duration-150 hover:bg-[#F4F4F6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0070f3]';
+    'flex min-h-8 w-full cursor-pointer items-center justify-start gap-2 rounded-lg border-none px-2 py-1.5 text-left transition-colors duration-150 hover:bg-[#F4F4F4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5D5D5D]';
 
   const pinnedChats = recentChats.filter((chat) => chat.pinned);
   const historyChats = recentChats.filter((chat) => !chat.pinned);
@@ -333,7 +333,7 @@ export function WorkspaceSidebar({
     <>
       <aside
         className={cn(
-          'fixed top-0 left-0 flex h-screen flex-col border-r border-[#E0E7E8] bg-white transition-[width] duration-220 ease-in-out',
+          'fixed top-0 left-0 flex h-screen flex-col border-r border-[#E5E5E5] bg-white transition-[width] duration-220 ease-in-out',
           collapsed ? 'w-16' : 'w-62.5',
           overlayActive ? 'z-50 shadow-2xl' : 'z-40',
           className
@@ -363,7 +363,7 @@ export function WorkspaceSidebar({
               aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               aria-expanded={!collapsed}
               className={cn(
-                'absolute top-1.25 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#6B7280] transition-all duration-220 ease-in-out hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset',
+                'absolute top-1.25 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#727272] transition-all duration-220 ease-in-out hover:bg-[#F4F4F4] focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset',
                 collapsed ? 'left-[8px]' : 'left-49.5'
               )}
             >
@@ -405,7 +405,7 @@ export function WorkspaceSidebar({
               onClick={toggleSearchOpen}
               aria-label="Search"
               aria-expanded={isSearchOpen}
-              className={cn(navButtonClasses, isSearchOpen && 'bg-[#F4F4F6]')}
+              className={cn(navButtonClasses, isSearchOpen && 'bg-[#F4F4F4]')}
               title="Search"
             >
               <span className="flex min-w-0 items-center gap-3 transition-transform duration-75 ease-out group-active:scale-[0.98]">
@@ -431,7 +431,7 @@ export function WorkspaceSidebar({
 
             <button
               aria-label="Projects"
-              className={cn(navButtonClasses, 'cursor-default text-[#6B7280]')}
+              className={cn(navButtonClasses, 'cursor-default text-[#727272]')}
               title="Projects"
               disabled
             >
@@ -443,7 +443,7 @@ export function WorkspaceSidebar({
                 )}
                 aria-hidden={collapsed}
               >
-                <p className="m-0 font-sans text-sm font-medium tracking-[0.14px] text-[#6B7280]">
+                <p className="m-0 font-sans text-sm font-medium tracking-[0.14px] text-[#727272]">
                   Проєкти
                 </p>
               </span>
@@ -472,12 +472,12 @@ export function WorkspaceSidebar({
                   <button
                     type="button"
                     onClick={() => setPinnedExpanded((prev) => !prev)}
-                    className="flex h-8 w-fit cursor-pointer items-center justify-start gap-3 rounded-lg border-none py-1.5 pr-4 pl-3 text-left focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+                    className="flex h-8 w-fit cursor-pointer items-center justify-start gap-3 rounded-lg border-none py-1.5 pr-4 pl-3 text-left focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset"
                   >
                     <p
                       className={cn(
                         'font-sans text-[13px] font-medium tracking-[0.14px] transition-colors duration-220 ease-out',
-                        pinnedExpanded ? 'text-[#6B7280]' : 'text-black'
+                        pinnedExpanded ? 'text-[#727272]' : 'text-black'
                       )}
                     >
                       Закріплені
@@ -520,12 +520,12 @@ export function WorkspaceSidebar({
               <button
                 type="button"
                 onClick={() => setHistoryExpanded((prev) => !prev)}
-                className="flex h-8 w-fit cursor-pointer items-center justify-start gap-3 rounded-lg border-none py-1.5 pr-4 pl-3 text-left focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+                className="flex h-8 w-fit cursor-pointer items-center justify-start gap-3 rounded-lg border-none py-1.5 pr-4 pl-3 text-left focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset"
               >
                 <p
                   className={cn(
                     'font-sans text-[13px] font-medium tracking-[0.14px] transition-colors duration-220 ease-out',
-                    historyExpanded ? 'text-[#6B7280]' : 'text-black'
+                    historyExpanded ? 'text-[#727272]' : 'text-black'
                   )}
                 >
                   Історія
@@ -593,7 +593,7 @@ export function WorkspaceSidebar({
                 role="menu"
                 aria-orientation="vertical"
                 className={cn(
-                  'absolute z-100 overflow-hidden rounded-xl border border-[#E0E7E8] bg-white p-1.5 shadow-lg shadow-black/5 outline-none',
+                  'absolute z-100 overflow-hidden rounded-xl border border-[#E5E5E5] bg-white p-1.5 shadow-none outline-none',
                   collapsed
                     ? 'bottom-0 left-[calc(100%+8px)] w-56'
                     : '-inset-x-1.5 bottom-[calc(100%+8px)]'
@@ -628,7 +628,7 @@ export function WorkspaceSidebar({
                   </button>
                 </div>
 
-                <div className="my-1.5 h-px bg-[#E0E7E8]" aria-hidden />
+                <div className="my-1.5 h-px bg-[#E5E5E5]" aria-hidden />
 
                 <button
                   type="button"
@@ -650,9 +650,10 @@ export function WorkspaceSidebar({
               type="button"
               onClick={() => setIsMenuOpen((prev) => !prev)}
               className={cn(
-                'group flex w-full flex-1 cursor-pointer items-center justify-start rounded-lg border-none bg-transparent px-2 py-1.5 text-left transition-colors duration-150',
-                'hover:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset',
-                isMenuOpen && 'bg-[#F4F4F6]'
+                'group flex cursor-pointer items-center justify-start rounded-lg border-none bg-transparent px-2 py-1.5 text-left transition-[width,background-color] duration-220 ease-in-out',
+                collapsed ? 'mx-auto w-12' : 'w-full',
+                'hover:bg-[#F4F4F4] focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset',
+                isMenuOpen && 'bg-[#F4F4F4]'
               )}
               aria-label="Open profile menu"
               aria-haspopup="menu"
@@ -676,7 +677,7 @@ export function WorkspaceSidebar({
                     onError={() => setAvatarError(true)}
                   />
                 ) : (
-                  <span className="relative top-[1px] font-sans text-[15px] leading-none font-semibold tracking-wide">
+                  <span className="inline-flex h-full w-full items-center justify-center font-sans text-[17px] leading-none font-semibold tracking-wide">
                     О
                   </span>
                 )}
@@ -697,7 +698,7 @@ export function WorkspaceSidebar({
                   >
                     Олександр
                   </div>
-                  <span className="inline-flex h-5 shrink-0 items-center justify-center rounded border border-[#E0E7E8] bg-transparent px-1.5 font-sans text-[11px] font-semibold tracking-[0.12px] text-[#6B7280]">
+                  <span className="inline-flex h-5 shrink-0 items-center justify-center rounded border border-[#E5E5E5] bg-transparent px-1.5 font-sans text-[11px] font-semibold tracking-[0.12px] text-[#727272] transition-colors duration-150 hover:bg-[#E5E5E5]">
                     Free
                   </span>
                 </div>

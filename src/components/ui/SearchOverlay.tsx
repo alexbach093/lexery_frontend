@@ -275,7 +275,7 @@ export function SearchOverlay() {
             type="button"
             aria-label="Закрити пошук"
             onClick={closeSearch}
-            className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border-none bg-transparent text-[#737373] transition-colors hover:bg-[#F4F4F6] active:bg-[#F4F4F6]"
+            className="inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-2xl border-none bg-transparent text-[#737373] transition-colors hover:bg-[#F4F4F4] active:bg-[#F4F4F4]"
           >
             <CloseOverlayIcon />
           </button>

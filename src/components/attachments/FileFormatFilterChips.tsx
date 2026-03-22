@@ -64,7 +64,7 @@ export function FileFormatFilterChips({
             onClick={() => toggle(opt.id)}
             aria-pressed={active}
             className={cn(
-              'cursor-pointer rounded-md border font-sans font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none',
+              'cursor-pointer rounded-md border font-sans font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none',
               compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-[13px]',
               active
                 ? 'border-[#2A2A2A] bg-[#2A2A2A] text-white'

@@ -141,7 +141,7 @@ function WorkspaceLayoutInner({ children }: { children: React.ReactNode }) {
                 inset: 0,
                 zIndex: 70,
                 border: 'none',
-                background: 'rgba(15, 23, 42, 0.24)',
+                background: 'rgba(23, 23, 23, 0.24)',
                 backdropFilter: 'blur(2px)',
                 WebkitBackdropFilter: 'blur(2px)',
                 cursor: 'pointer',

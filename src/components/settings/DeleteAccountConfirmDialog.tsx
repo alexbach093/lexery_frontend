@@ -27,7 +27,7 @@ export function DeleteAccountConfirmDialog({ onClose }: { onClose: () => void })
             type="button"
             onClick={onClose}
             aria-label="Закрити підтвердження видалення облікового запису"
-            className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] border-none bg-transparent text-[#171717] transition-colors hover:bg-[#F4F4F6] active:bg-[#F4F4F6]"
+            className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] border-none bg-transparent text-[#171717] transition-colors hover:bg-[#F4F4F4] active:bg-[#F4F4F4]"
           >
             <CloseAltIcon width={20} height={20} aria-hidden="true" />
           </button>

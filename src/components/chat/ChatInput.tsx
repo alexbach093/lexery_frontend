@@ -17,7 +17,7 @@ export const HOME_TEXTAREA_MIN_HEIGHT = 82;
 export const HOME_TEXTAREA_MAX_HEIGHT = 280;
 export const CHAT_TEXTAREA_MIN_HEIGHT = 30;
 export const CHAT_TEXTAREA_MAX_HEIGHT = 240;
-export const AI_SPACE_EDITOR_ACTIVE_BG = '#E8F0FE';
+export const AI_SPACE_EDITOR_ACTIVE_BG = '#EFEFEF';
 
 export interface ChatInputProps {
   value: string;
@@ -114,7 +114,7 @@ export function ChatInput({
             className={cn(
               'workspace-action-btn workspace-icon-btn flex h-7.5 w-7.5 shrink-0 cursor-pointer items-center justify-center rounded-md p-0',
               systemPromptEditorOpen
-                ? 'border border-[#E0E0E0] bg-[#F4F4F6]'
+                ? 'border border-[#E0E0E0] bg-[#F4F4F4]'
                 : 'border-none bg-transparent'
             )}
             aria-label="Редактор промпту"

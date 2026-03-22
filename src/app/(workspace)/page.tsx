@@ -86,7 +86,7 @@ export default function WorkspacePage() {
   const chatInputBoxClasses = cn(
     'flex flex-col rounded-2xl',
     chat.hasMessages
-      ? 'box-border min-h-[103px] overflow-hidden bg-[#F5F6F6] px-[13px] pb-2 pt-[13px]'
+      ? 'box-border min-h-[103px] overflow-hidden bg-[#F6F6F6] px-[13px] pb-2 pt-[13px]'
       : 'bg-[#F7F7F7] px-4 pb-4 pt-3'
   );
 
@@ -136,7 +136,7 @@ export default function WorkspacePage() {
 
         {chat.isHydratingChat ? (
           <div className="flex flex-1 items-center justify-center px-5 pb-16">
-            <p className="text-center font-sans text-[16px] leading-6 text-[#6B7280]">
+            <p className="text-center font-sans text-[16px] leading-6 text-[#727272]">
               Завантаження чату...
             </p>
           </div>
@@ -214,7 +214,7 @@ export default function WorkspacePage() {
             />
             <div
               id="system-prompt-editor-dialog"
-              className="relative w-full max-w-130 rounded-[26px] border border-[#F4F4F6] bg-white p-6"
+              className="relative w-full max-w-130 rounded-[26px] border border-[#F4F4F4] bg-white p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <h2

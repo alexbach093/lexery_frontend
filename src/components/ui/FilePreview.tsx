@@ -193,7 +193,7 @@ export function FilePreview({ file, previewUrl, onRemove, uniformWidth }: FilePr
         type="button"
         onClick={onRemove}
         aria-label="Remove file"
-        className="workspace-action-btn flex h-4.5 w-4.5 shrink-0 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+        className="workspace-action-btn flex h-4.5 w-4.5 shrink-0 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset"
       >
         <CloseIcon width={11} height={11} className="text-[#575757]" aria-hidden="true" />
       </button>

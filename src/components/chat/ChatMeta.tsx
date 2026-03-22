@@ -12,7 +12,7 @@ export interface ChatMetaProps {
 export function ChatMeta({ hasMessages, compact }: ChatMetaProps) {
   // Shared base classes for the tips buttons
   const baseBtnClasses =
-    'box-border flex cursor-default items-center rounded-[5px] border border-[#E0E7E8] bg-white opacity-100';
+    'box-border flex cursor-default items-center rounded-[5px] border border-[#E5E5E5] bg-white opacity-100';
   const fullBtnClasses = 'min-h-[33px] min-w-[90px] justify-start gap-2.5 p-2.5 text-[#9A9A9A]';
   const compactBtnClasses = 'h-10 w-10 justify-center p-0';
 

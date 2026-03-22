@@ -41,7 +41,7 @@ export function AttachmentsPanelExpanded({
   return (
     <div
       className={cn(
-        'mb-2.5 rounded-2xl bg-[#F5F6F6] pt-3 pb-4',
+        'mb-2.5 rounded-2xl bg-[#F6F6F6] pt-3 pb-4',
         variant === 'chat' ? 'px-3.25' : 'px-4'
       )}
     >
@@ -63,7 +63,7 @@ export function AttachmentsPanelExpanded({
               type="button"
               onClick={() => onFileSearchQueryChange('')}
               aria-label="Очистити пошук"
-              className="workspace-action-btn absolute top-1/2 right-1.5 flex h-4.5 w-4.5 -translate-y-1/2 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+              className="workspace-action-btn absolute top-1/2 right-1.5 flex h-4.5 w-4.5 -translate-y-1/2 cursor-pointer items-center justify-center rounded border-none bg-transparent p-0 hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset"
             >
               <CloseIcon width={11} height={11} className="text-[#575757]" aria-hidden="true" />
             </button>

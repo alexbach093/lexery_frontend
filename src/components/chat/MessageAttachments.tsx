@@ -75,7 +75,7 @@ function AttachmentsExpandable({ attachments }: { attachments: MessageAttachment
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
-        className="box-border flex cursor-pointer items-center gap-2 rounded-[14px] border border-[#E8E8E8] bg-[#F5F5F5] px-3 py-1.5 font-sans text-sm font-medium text-[#333333] transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none"
+        className="box-border flex cursor-pointer items-center gap-2 rounded-[14px] border border-[#E8E8E8] bg-[#F5F5F5] px-3 py-1.5 font-sans text-sm font-medium text-[#333333] transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none"
         aria-expanded={expanded}
         aria-label={expanded ? 'Collapse attachments' : 'Expand attachments'}
       >

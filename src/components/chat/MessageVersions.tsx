@@ -103,7 +103,7 @@ export function MessageVersions({
         onClick={() => (open ? setOpen(false) : openDropdown())}
         className={cn(
           'inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-[#575757]',
-          'transition-all duration-150 hover:bg-transparent hover:text-[#333] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset active:scale-[0.92] active:bg-transparent'
+          'transition-all duration-150 hover:bg-transparent hover:text-[#333] focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset active:scale-[0.92] active:bg-transparent'
         )}
         aria-expanded={open}
         aria-haspopup="listbox"
