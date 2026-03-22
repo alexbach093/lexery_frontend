@@ -100,7 +100,7 @@ export function SidebarRenameDialog({ chat, onClose, onSuccess }: SidebarRenameD
       : (validationMessage ?? feedback?.message ?? `2-60 символів`);
   const helperColor =
     feedback?.tone === 'success'
-      ? '#1E8E5A'
+      ? '#676767'
       : validationMessage || feedback?.tone === 'error'
         ? '#C03A2B'
         : '#7A7A7A';

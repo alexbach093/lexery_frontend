@@ -42,9 +42,9 @@ export function SidebarHistoryItem({
       tabIndex={0}
       className={cn(
         'relative isolate flex min-h-8 w-full cursor-pointer items-center justify-start rounded-lg border-none py-1.5 pr-4 pl-3 text-left transition-colors duration-150',
-        'before:pointer-events-none before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:rounded-lg before:bg-transparent before:transition-colors before:duration-150 hover:before:bg-[#F4F4F6] focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset',
+        'before:pointer-events-none before:absolute before:inset-x-0 before:-inset-y-0.5 before:-z-10 before:rounded-lg before:bg-transparent before:transition-colors before:duration-150 hover:before:bg-[#F4F4F4] focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset',
         'group',
-        isActive && 'bg-[#F4F4F6]'
+        isActive && 'bg-[#F4F4F4]'
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -75,10 +75,10 @@ export function SidebarHistoryItem({
           aria-label="Chat settings"
           onClick={handleMenuClick}
           className={cn(
-            'flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border-none focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset',
+            'flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border-none focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset',
             isMenuOpen
-              ? 'bg-[#F4F4F6] text-black'
-              : 'bg-transparent text-[#6B7280] hover:text-black'
+              ? 'bg-[#F4F4F4] text-black'
+              : 'bg-transparent text-[#727272] hover:text-black'
           )}
         >
           <SidebarChatMoreIcon className="block h-6 w-6 shrink-0" />

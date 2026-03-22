@@ -25,7 +25,7 @@ export const SidebarChatMenu = forwardRef<HTMLDivElement, SidebarChatMenuProps>(
     if (typeof document === 'undefined') return null;
 
     const menuItemClasses =
-      'absolute left-2 right-2 flex h-7 items-center gap-2 rounded-[9px] px-2 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0070f3]';
+      'absolute left-2 right-2 flex h-7 items-center gap-2 rounded-[9px] px-2 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#5D5D5D]';
     const menuItemLabelClasses =
       'min-w-0 truncate font-sans text-[13px] leading-[17px] font-medium tracking-[-0.13px] text-inherit';
 
@@ -36,7 +36,7 @@ export const SidebarChatMenu = forwardRef<HTMLDivElement, SidebarChatMenuProps>(
         aria-orientation="vertical"
         onClick={(event) => event.stopPropagation()}
         onMouseDown={(event) => event.stopPropagation()}
-        className="fixed z-120 h-[118px] w-40 overflow-hidden rounded-[16px] border border-[#E0E7E8] bg-white"
+        className="fixed z-120 h-[118px] w-40 overflow-hidden rounded-[16px] border border-[#E5E5E5] bg-white"
         style={{
           top: `${position.top}px`,
           left: `${position.left}px`,
@@ -52,7 +52,7 @@ export const SidebarChatMenu = forwardRef<HTMLDivElement, SidebarChatMenuProps>(
           }}
           className={cn(
             menuItemClasses,
-            'top-[7px] text-black hover:bg-[#F4F4F6] active:bg-[#EEEEF2]'
+            'top-[7px] text-black hover:bg-[#F4F4F4] active:bg-[#EEEEEE]'
           )}
         >
           <div className="flex h-[15px] w-[15px] shrink-0 items-center justify-center">
@@ -70,7 +70,7 @@ export const SidebarChatMenu = forwardRef<HTMLDivElement, SidebarChatMenuProps>(
           }}
           className={cn(
             menuItemClasses,
-            'top-[35px] text-black hover:bg-[#F4F4F6] active:bg-[#EEEEF2]'
+            'top-[35px] text-black hover:bg-[#F4F4F4] active:bg-[#EEEEEE]'
           )}
         >
           <div className="flex h-[15px] w-[15px] shrink-0 items-center justify-center">
@@ -78,7 +78,7 @@ export const SidebarChatMenu = forwardRef<HTMLDivElement, SidebarChatMenuProps>(
           </div>
           <span className={menuItemLabelClasses}>Перейменувати</span>
         </button>
-        <div className="absolute inset-x-2 top-[72px] h-px bg-[#E0E7E8]" aria-hidden />
+        <div className="absolute inset-x-2 top-[72px] h-px bg-[#E5E5E5]" aria-hidden />
         <button
           type="button"
           role="menuitem"

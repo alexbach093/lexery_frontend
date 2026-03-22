@@ -37,7 +37,7 @@ export function DeleteChatsConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-10.5 w-25.5 cursor-pointer items-center justify-center rounded-full border border-black/10 bg-white px-4 font-sans text-[15px] leading-5.25 font-normal tracking-normal whitespace-nowrap text-black transition-colors hover:bg-[#F4F4F6]"
+            className="inline-flex h-10.5 w-25.5 cursor-pointer items-center justify-center rounded-full border border-black/10 bg-white px-4 font-sans text-[15px] leading-5.25 font-normal tracking-normal whitespace-nowrap text-black transition-colors hover:bg-[#F4F4F4]"
           >
             Скасувати
           </button>

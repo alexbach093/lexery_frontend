@@ -217,7 +217,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
 
   // Base styling properties
   const baseBtnClasses =
-    'group flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-[#575757] transition-all duration-150 active:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+    'group flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-[#575757] transition-all duration-150 active:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
 
   const defaultIconHoverFilter =
     'block shrink-0 transition-[filter] duration-150 group-hover:[filter:brightness(0)_saturate(100%)_invert(0.45)]';
@@ -272,7 +272,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
             className={cn(
               baseBtnClasses,
               feedbackLike === 'like'
-                ? 'text-[#22c55e] hover:bg-transparent active:scale-100'
+                ? 'text-[#898989] hover:bg-transparent active:scale-100'
                 : 'hover:bg-transparent hover:text-[#333] active:scale-[0.92]'
             )}
             aria-label="Подобається"
@@ -449,7 +449,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
       <div className="chat-action-item-animate inline-block" style={{ animationDelay: '280ms' }}>
         <button
           type="button"
-          className="ml-1.5 h-auto w-auto cursor-pointer rounded-md border-none bg-transparent px-3 py-1 font-sans text-sm font-normal text-[#9A9A9A] transition-colors duration-150 hover:bg-transparent hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:outline-none focus-visible:ring-inset"
+          className="ml-1.5 h-auto w-auto cursor-pointer rounded-md border-none bg-transparent px-3 py-1 font-sans text-sm font-normal text-[#9A9A9A] transition-colors duration-150 hover:bg-transparent hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset"
           aria-label="Переглянути процес"
         >
           Переглянути процес

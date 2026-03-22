@@ -196,7 +196,7 @@ export function ChatMessage({
 
     // Style variables for repeating user action buttons
     const userBtnClasses =
-      'group flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-[#575757] transition-all duration-150 hover:bg-transparent active:scale-[0.92] active:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0070f3] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+      'group flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent p-0 text-[#575757] transition-all duration-150 hover:bg-transparent active:scale-[0.92] active:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:ring-offset-2 focus-visible:ring-offset-white';
     const userIconClasses =
       'block shrink-0 transition-[filter] duration-150 group-hover:[filter:brightness(0)_saturate(100%)_invert(0.45)]';
 
