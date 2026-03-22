@@ -45,6 +45,7 @@ export function useWorkspaceChat(onReady?: () => void) {
   const [value, setValue] = useState('');
   const [targetValue, setTargetValue] = useState('');
   const [tipsButtonCompact, setTipsButtonCompact] = useState(false);
+  const [scrollToBottomRequest, setScrollToBottomRequest] = useState(0);
 
   const [systemPromptEditorOpen, setSystemPromptEditorOpen] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState('');
@@ -417,6 +418,7 @@ export function useWorkspaceChat(onReady?: () => void) {
       }
 
       commitMessages(nextMessages);
+      setScrollToBottomRequest((current) => current + 1);
       resetComposer(true);
       setIsStoppingGeneration(false);
       setIsAssistantTyping(true);
@@ -639,6 +641,7 @@ export function useWorkspaceChat(onReady?: () => void) {
     targetValue,
     messages,
     currentChatId,
+    scrollToBottomRequest,
     isHydratingChat,
     hasMessages,
     canSend,

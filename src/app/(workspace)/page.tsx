@@ -176,6 +176,7 @@ export default function WorkspacePage() {
                     onRegenerate={chat.handleRegenerate}
                     onEditMessage={chat.handleEditMessage}
                     onSetActiveVersion={chat.handleSetActiveVersion}
+                    scrollToBottomRequest={chat.scrollToBottomRequest}
                   />
                 </div>
               </div>
