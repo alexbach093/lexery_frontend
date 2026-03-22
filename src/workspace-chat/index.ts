@@ -33,6 +33,18 @@ import { useChatStream } from './use-chat-stream';
 
 export { WORKSPACE_START_NEW_CHAT_EVENT, WORKSPACE_OPEN_CHAT_EVENT } from './constants';
 
+let pendingComposerScrollChatId: string | null = null;
+
+function queuePendingComposerScroll(chatId: string) {
+  pendingComposerScrollChatId = chatId;
+}
+
+function claimPendingComposerScroll(chatId: string): boolean {
+  if (pendingComposerScrollChatId !== chatId) return false;
+  pendingComposerScrollChatId = null;
+  return true;
+}
+
 export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }) {
   const router = useRouter();
   const repository = useMemo(() => getChatRepository(), []);
@@ -40,6 +52,8 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
   const [currentChatId, setCurrentChatId] = useState<string | null>(routeChatId);
   const [isHydratingChat, setIsHydratingChat] = useState<boolean>(routeChatId != null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [scrollToBottomRequest, setScrollToBottomRequest] = useState(0);
+  const [suppressAutoScroll, setSuppressAutoScroll] = useState(false);
 
   const [value, setValue] = useState('');
   const [targetValue, setTargetValue] = useState('');
@@ -63,6 +77,10 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
   const commitMessages = useCallback((nextMessages: Message[]) => {
     messagesRef.current = nextMessages;
     setMessages(nextMessages);
+  }, []);
+
+  const requestScrollToBottom = useCallback(() => {
+    setScrollToBottomRequest((currentRequest) => currentRequest + 1);
   }, []);
 
   const persistExistingChat = useCallback(
@@ -145,6 +163,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     (nextHasMessages: boolean) => {
       setValue('');
       setTargetValue('');
+      setSuppressAutoScroll(false);
       resetAttachments();
       if (textareaRef.current) {
         textareaRef.current.style.height = `${nextHasMessages ? CHAT_TEXTAREA_MIN_HEIGHT : HOME_TEXTAREA_MIN_HEIGHT}px`;
@@ -193,6 +212,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
       const requestId = ++hydrationRequestIdRef.current;
 
       if (chatId && dismissedChatIdRef.current === chatId) {
+        claimPendingComposerScroll(chatId);
         dismissedChatIdRef.current = null;
         skipHydrationChatIdRef.current = null;
         setCurrentChatId(null);
@@ -211,6 +231,9 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
         skipHydrationChatIdRef.current = null;
         if (hasLocalChatState) {
           setCurrentChatId(chatId);
+          if (claimPendingComposerScroll(chatId)) {
+            requestScrollToBottom();
+          }
           setIsHydratingChat(false);
           return;
         }
@@ -220,6 +243,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
       setIsStoppingGeneration(false);
       setRegeneratingMessageId(null);
       setSystemPromptEditorOpen(false);
+      setSuppressAutoScroll(false);
       resetComposer(false);
 
       if (!chatId) {
@@ -248,10 +272,17 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
         }
         setCurrentChatId(session.id);
         commitMessages(storedMessagesToMessages(session.messages));
+        if (claimPendingComposerScroll(session.id)) {
+          requestScrollToBottom();
+        }
         setSystemPrompt(session.systemPrompt ?? '');
-        setIsAssistantTyping(
-          streamingChatIdRef.current === session.id || hasPendingAssistantResponse(session.messages)
-        );
+        const hasActiveAssistantStream =
+          streamingChatIdRef.current === session.id ||
+          hasPendingAssistantResponse(session.messages);
+        setIsAssistantTyping(hasActiveAssistantStream);
+        if (!hasActiveAssistantStream) {
+          setIsStoppingGeneration(false);
+        }
         setIsHydratingChat(false);
       } catch {
         if (hydrationRequestIdRef.current !== requestId) return;
@@ -262,6 +293,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     [
       commitMessages,
       repository,
+      requestScrollToBottom,
       resetComposer,
       router,
       setIsAssistantTyping,
@@ -303,10 +335,13 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
           }
           commitMessages(storedMessagesToMessages(session.messages));
           setSystemPrompt(session.systemPrompt ?? '');
-          setIsAssistantTyping(
+          const hasActiveAssistantStream =
             streamingChatIdRef.current === session.id ||
-              hasPendingAssistantResponse(session.messages)
-          );
+            hasPendingAssistantResponse(session.messages);
+          setIsAssistantTyping(hasActiveAssistantStream);
+          if (!hasActiveAssistantStream) {
+            setIsStoppingGeneration(false);
+          }
           setIsHydratingChat(false);
         })
         .catch(() => {
@@ -341,6 +376,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     setIsAssistantTyping(false);
     setIsStoppingGeneration(false);
     setRegeneratingMessageId(null);
+    pendingComposerScrollChatId = null;
     commitMessages([]);
     setSystemPrompt('');
     setSystemPromptEditorOpen(false);
@@ -378,7 +414,8 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
   }, [value, hasMessages, resizeTextarea]);
 
   const runSend = useCallback(
-    async (text: string) => {
+    async (text: string, options?: { requestBottomScroll?: boolean }) => {
+      const shouldRequestBottomScroll = options?.requestBottomScroll === true;
       const assistantId = generateId();
       const createdAt = new Date().toISOString();
       const nextUserMessage: Message = {
@@ -410,6 +447,11 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
       }
 
       commitMessages(nextMessages);
+      if (shouldRequestBottomScroll) {
+        setSuppressAutoScroll(false);
+        if (nextChatTitle) queuePendingComposerScroll(chatId);
+        else requestScrollToBottom();
+      }
       resetComposer(true);
       setIsStoppingGeneration(false);
       setIsAssistantTyping(true);
@@ -451,6 +493,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
       currentChatId,
       messages,
       persistExistingChat,
+      requestScrollToBottom,
       resetComposer,
       router,
       streamChatResponse,
@@ -464,7 +507,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
 
   const handleSend = useCallback(() => {
     const text = targetValue.trim();
-    if (text) void runSend(text);
+    if (text) void runSend(text, { requestBottomScroll: true });
   }, [runSend, targetValue]);
 
   const handleSuggestionClick = useCallback(
@@ -608,6 +651,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
       const nextValue = event.target.value;
       setTargetValue(nextValue);
       setValue(nextValue);
+      setSuppressAutoScroll(nextValue.length > 0);
       resizeTextarea(event.target, hasMessages);
     },
     [hasMessages, resizeTextarea]
@@ -647,6 +691,8 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     currentChatId,
     isHydratingChat,
     hasMessages,
+    scrollToBottomRequest,
+    suppressAutoScroll,
     canSend,
     isGenerationInProgress,
     tipsButtonCompact,

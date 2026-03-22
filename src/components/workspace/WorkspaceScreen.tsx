@@ -136,7 +136,7 @@ export function WorkspaceScreen({ routeChatId }: WorkspaceScreenProps) {
           </div>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           <div
             className="flex min-h-0 flex-1 flex-col overflow-x-visible overflow-y-auto bg-transparent"
             style={chatScrollAreaStyle}
@@ -148,6 +148,8 @@ export function WorkspaceScreen({ routeChatId }: WorkspaceScreenProps) {
                     messages={chat.messages}
                     isAssistantTyping={chat.isAssistantTyping}
                     regeneratingMessageId={chat.regeneratingMessageId}
+                    scrollToBottomRequest={chat.scrollToBottomRequest}
+                    suppressAutoScroll={chat.suppressAutoScroll}
                     onSuggestionClick={chat.handleSuggestionClick}
                     onRegenerate={chat.handleRegenerate}
                     onEditMessage={chat.handleEditMessage}
@@ -156,27 +158,26 @@ export function WorkspaceScreen({ routeChatId }: WorkspaceScreenProps) {
                   />
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div
-                ref={composerRef}
-                className="sticky bottom-0 isolate z-10 rounded-t-4xl bg-white px-5 pt-3.25 pb-6 shadow-[0_-18px_36px_rgba(255,255,255,0.96)]"
-                style={composerHeight > 0 ? { marginTop: `${-composerHeight}px` } : undefined}
-              >
-                <div className="mx-auto -mt-3 w-full max-w-184.5">
-                  {chat.attachedFiles.length > 0 && chat.filesExpanded && (
-                    <AttachmentsPanelExpanded {...attachmentsPanelProps} variant="chat" />
-                  )}
-                  <div className={chatInputBoxClasses}>
-                    {chat.attachedFiles.length > 0 && !chat.filesExpanded && (
-                      <AttachmentsPanelCollapsed
-                        attachedFiles={chat.attachedFiles}
-                        onRemove={chat.handleRemoveFile}
-                        fileListRef={chat.fileListRef}
-                      />
-                    )}
-                    <ChatInput {...chatInputProps} />
-                  </div>
-                </div>
+          <div
+            ref={composerRef}
+            className="absolute right-3 bottom-0 left-0 isolate z-10 rounded-t-4xl bg-white px-5 pt-3.25 pb-6 shadow-[0_-18px_36px_rgba(255,255,255,0.96)]"
+          >
+            <div className="mx-auto -mt-3 w-full max-w-184.5">
+              {chat.attachedFiles.length > 0 && chat.filesExpanded && (
+                <AttachmentsPanelExpanded {...attachmentsPanelProps} variant="chat" />
+              )}
+              <div className={chatInputBoxClasses}>
+                {chat.attachedFiles.length > 0 && !chat.filesExpanded && (
+                  <AttachmentsPanelCollapsed
+                    attachedFiles={chat.attachedFiles}
+                    onRemove={chat.handleRemoveFile}
+                    fileListRef={chat.fileListRef}
+                  />
+                )}
+                <ChatInput {...chatInputProps} />
               </div>
             </div>
           </div>

@@ -10,6 +10,8 @@ export interface MessageListProps {
   messages?: Message[] | null;
   isAssistantTyping?: boolean;
   regeneratingMessageId?: string | null;
+  scrollToBottomRequest?: number;
+  suppressAutoScroll?: boolean;
   onSuggestionClick?: (text: string) => void;
   onRegenerate?: (assistantMessageId: string, modifier?: string) => void;
   onEditMessage?: (messageId: string, newContent: string) => void;
@@ -23,6 +25,8 @@ export function MessageList({
   messages: messagesProp,
   isAssistantTyping = false,
   regeneratingMessageId = null,
+  scrollToBottomRequest = 0,
+  suppressAutoScroll = false,
   onSuggestionClick,
   onRegenerate,
   onEditMessage,
@@ -31,14 +35,20 @@ export function MessageList({
 }: MessageListProps) {
   const messages = messagesProp ?? [];
   const listEndRef = useRef<HTMLDivElement>(null);
+  const handledScrollRequestRef = useRef(0);
 
   const lastMsg = messages[messages.length - 1];
-  const lastMessageSignature = `${lastMsg?.id ?? ''}:${lastMsg?.role ?? ''}:${lastMsg?.content ?? ''}`;
 
-  // Keep streamed responses pinned to the latest content while they grow.
   useEffect(() => {
-    listEndRef.current?.scrollIntoView({ behavior: isAssistantTyping ? 'auto' : 'smooth' });
-  }, [isAssistantTyping, lastMessageSignature, messages.length]);
+    if (messages.length === 0) return;
+    if (suppressAutoScroll) return;
+    if (scrollToBottomRequest === 0 || scrollToBottomRequest === handledScrollRequestRef.current) {
+      return;
+    }
+
+    handledScrollRequestRef.current = scrollToBottomRequest;
+    listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length, scrollToBottomRequest, suppressAutoScroll]);
 
   const lastIsEmptyAssistant = lastMsg?.role === 'assistant' && !(lastMsg.content ?? '').trim();
   const showTypingInsideLast = isAssistantTyping && lastIsEmptyAssistant;
