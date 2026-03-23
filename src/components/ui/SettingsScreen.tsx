@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { SettingsGearIcon, SettingsDatabaseIcon, SettingsShieldIcon } from '@/components/icons';
 import { getAppPreferences, setMemoryEnabledPreference } from '@/lib/app-preferences';
+import { getSettingsPath, getWorkspaceHomePath } from '@/lib/app-routes';
 import { clearChatLibrary } from '@/lib/chat-library';
 import type { SectionId, SettingRow } from '@/types';
 
@@ -21,9 +22,12 @@ import {
 } from '../settings/SettingsControls';
 import { SettingRowItem } from '../settings/SettingsRowItem';
 
-export function SettingsScreen({ onClose }: { onClose?: () => void }) {
+interface SettingsScreenProps {
+  activeSection: SectionId;
+}
+
+export function SettingsScreen({ activeSection }: SettingsScreenProps) {
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<SectionId>('general');
   const [memoryEnabled, setMemoryEnabled] = useState(() => getAppPreferences().memoryEnabled);
   const [deleteChatsConfirmOpen, setDeleteChatsConfirmOpen] = useState(false);
   const [deleteAccountConfirmOpen, setDeleteAccountConfirmOpen] = useState(false);
@@ -40,13 +44,19 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const activeSectionData = SECTIONS.find((section) => section.id === activeSection) ?? SECTIONS[0];
 
   const handleClose = useCallback(() => {
-    if (onClose) {
-      onClose();
-      return;
-    }
+    router.replace(getWorkspaceHomePath());
+  }, [router]);
 
-    router.back();
-  }, [onClose, router]);
+  const handleSectionSelect = useCallback(
+    (sectionId: SectionId) => {
+      if (sectionId === activeSection) {
+        return;
+      }
+
+      router.push(getSettingsPath(sectionId));
+    },
+    [activeSection, router]
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -68,10 +78,9 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
   const handleDeleteChatsConfirm = useCallback(async () => {
     try {
       await clearChatLibrary();
+    } finally {
       setDeleteChatsConfirmOpen(false);
-      router.push('/');
-    } catch {
-      setDeleteChatsConfirmOpen(false);
+      router.replace(getWorkspaceHomePath());
     }
   }, [router]);
 
@@ -102,8 +111,8 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
         <ToggleControl
           checked={memoryEnabled}
           onClick={() => {
-            setMemoryEnabled((current) => {
-              const nextValue = !current;
+            setMemoryEnabled((currentValue) => {
+              const nextValue = !currentValue;
               setMemoryEnabledPreference(nextValue);
               return nextValue;
             });
@@ -156,6 +165,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
             onConfirm={handleDeleteChatsConfirm}
           />
         )}
+
         <aside className="flex min-h-141 flex-col border-r border-[#ECECEC] bg-[#FDFDFD]">
           <div className="px-3 pt-3 pb-2.5">
             <SettingsCloseButton onClick={handleClose} />
@@ -172,7 +182,7 @@ export function SettingsScreen({ onClose }: { onClose?: () => void }) {
                 label={section.label}
                 active={activeSection === section.id}
                 icon={sectionIcons[section.id]}
-                onClick={() => setActiveSection(section.id)}
+                onClick={() => handleSectionSelect(section.id)}
               />
             ))}
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect, useCallback } from 'react';
 
 import {
@@ -14,7 +14,12 @@ import {
   SidebarSearchIcon,
 } from '@/components/icons';
 import { useSearchOpen } from '@/contexts/search-open';
-import { useSettingsOpen } from '@/contexts/settings-open';
+import {
+  getRouteChatIdFromPathname,
+  getSettingsPath,
+  getWorkspaceChatPath,
+  getWorkspaceHomePath,
+} from '@/lib/app-routes';
 import {
   CHAT_STORE_UPDATED_EVENT,
   DEFAULT_CHAT_USER_ID,
@@ -52,14 +57,16 @@ export function WorkspaceSidebar({
   onToggleCollapse,
   overlayActive = false,
 }: WorkspaceSidebarProps) {
-  const { open: openSettings } = useSettingsOpen();
-  const { isOpen: isSearchOpen, toggle: toggleSearchOpen } = useSearchOpen();
+  const {
+    isOpen: isSearchOpen,
+    toggle: toggleSearchOpen,
+    closeImmediate: closeSearchImmediate,
+  } = useSearchOpen();
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const activeRecentChatId = pathname === '/' ? searchParams.get('chat') : null;
+  const activeRecentChatId = getRouteChatIdFromPathname(pathname);
 
   const [recentChats, setRecentChats] = useState<ChatLibraryItem[]>([]);
   const historyScrollRef = useRef<HTMLDivElement>(null);
@@ -237,7 +244,9 @@ export function WorkspaceSidebar({
 
   const handleSettingsClick = () => {
     setIsMenuOpen(false);
-    openSettings();
+    closeChatMenu();
+    closeSearchImmediate();
+    router.push(getSettingsPath('general'));
   };
 
   const handleReportErrorClick = () => {
@@ -249,22 +258,28 @@ export function WorkspaceSidebar({
   };
 
   const handleNewChatClick = useCallback(() => {
-    if (pathname === '/' || pathname === '/') {
+    closeSearchImmediate();
+
+    if (pathname === getWorkspaceHomePath()) {
       window.dispatchEvent(new CustomEvent(WORKSPACE_START_NEW_CHAT_EVENT));
       return;
     }
-    router.push('/');
-  }, [pathname, router]);
+
+    router.push(getWorkspaceHomePath());
+  }, [closeSearchImmediate, pathname, router]);
 
   const handleRecentChatClick = useCallback(
     (chatId: string) => {
       closeChatMenu();
-      if (pathname === '/' && activeRecentChatId === chatId) {
+      closeSearchImmediate();
+
+      if (activeRecentChatId === chatId) {
         return;
       }
-      router.push(`/?chat=${encodeURIComponent(chatId)}`);
+
+      router.push(getWorkspaceChatPath(chatId));
     },
-    [activeRecentChatId, closeChatMenu, pathname, router]
+    [activeRecentChatId, closeChatMenu, closeSearchImmediate, router]
   );
 
   const handleMenuClick = useCallback(
@@ -307,7 +322,7 @@ export function WorkspaceSidebar({
       setRecentChats((prev) => prev.filter((item) => item.id !== deletedChatId));
       setChatBeingDeleted(null);
       if (activeRecentChatId === deletedChatId) {
-        router.push('/');
+        router.push(getWorkspaceHomePath());
       }
     },
     [activeRecentChatId, router]

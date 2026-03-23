@@ -67,7 +67,7 @@ export const SECTIONS: SettingsSection[] = [
         label: 'Вийти з усіх пристроїв',
         description: 'Завершує всі інші активні сесії цього акаунту',
         kind: 'action',
-        actionLabel: 'Видалити',
+        actionLabel: 'Вийти',
         danger: true,
       },
     ],

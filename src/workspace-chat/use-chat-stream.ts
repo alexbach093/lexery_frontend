@@ -42,10 +42,35 @@ export function useChatStream({
       initialMessages: Message[],
       controller: AbortController,
       signal?: AbortSignal,
-      options?: { modifier?: string; appendVersion?: boolean; onComplete?: () => void }
+      options?: {
+        modifier?: string;
+        appendVersion?: boolean;
+        onComplete?: () => void;
+        persistDuringStream?: boolean;
+      }
     ) => {
       let streamMessages = initialMessages;
+      let queuedPersistedMessages: Message[] | null = null;
+      let persistInFlight = false;
       const isCurrentController = () => streamAbortControllerRef.current === controller;
+
+      const flushPersistedMessages = () => {
+        if (persistInFlight || !queuedPersistedMessages) return;
+        const nextMessages = queuedPersistedMessages;
+        queuedPersistedMessages = null;
+        persistInFlight = true;
+        void persistExistingChat(chatId, nextMessages)
+          .catch(() => undefined)
+          .finally(() => {
+            persistInFlight = false;
+            flushPersistedMessages();
+          });
+      };
+
+      const schedulePersistedMessages = (nextMessages: Message[]) => {
+        queuedPersistedMessages = nextMessages;
+        flushPersistedMessages();
+      };
 
       const clearCurrentStream = () => {
         if (!isCurrentController()) return false;
@@ -78,7 +103,7 @@ export function useChatStream({
           commitMessages(nextMessages);
         }
         completeVisibleStream();
-        void persistExistingChat(chatId, nextMessages);
+        schedulePersistedMessages(nextMessages);
       };
 
       const buildInterruptedMessages = (errorContent?: string | null) =>
@@ -152,13 +177,13 @@ export function useChatStream({
             if (!pendingContent) return;
             const chunkToAppend = pendingContent;
             pendingContent = '';
-            syncActiveChatMessages(
-              streamMessages.map((msg) =>
-                msg.id === assistantMessageId
-                  ? { ...msg, content: (msg.content ?? '') + chunkToAppend }
-                  : msg
-              )
+            const nextMessages = streamMessages.map((msg) =>
+              msg.id === assistantMessageId
+                ? { ...msg, content: (msg.content ?? '') + chunkToAppend }
+                : msg
             );
+            syncActiveChatMessages(nextMessages);
+            if (options?.persistDuringStream) schedulePersistedMessages(nextMessages);
           };
 
           try {

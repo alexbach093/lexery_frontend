@@ -6,6 +6,7 @@ export type SearchOpenContextValue = {
   isOpen: boolean;
   open: () => void;
   close: () => void;
+  closeImmediate: () => void;
   toggle: () => void;
 };
 
