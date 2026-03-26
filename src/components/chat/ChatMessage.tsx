@@ -6,6 +6,7 @@ import { CopyIcon, EditIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import type { MessageAttachment, MessageVersion } from '@/types';
 
+import { AssistantThinkingProcess } from './AssistantThinkingProcess';
 import { MessageActions } from './MessageActions';
 import { MessageAttachments, MessageAttachmentsMultiple } from './MessageAttachments';
 import { MessageContainer } from './MessageContainer';
@@ -28,17 +29,7 @@ export interface ChatMessageProps {
   versions?: MessageVersion[];
   activeVersionIndex?: number;
   onSetActiveVersion?: (index: number) => void;
-}
-
-/** Typing indicator: pulsing dots. */
-function TypingIndicator() {
-  return (
-    <div className="flex items-center gap-0" aria-live="polite" aria-label="Набір відповіді">
-      <span className="h-1.5 w-1.5 animate-[chat-typing_1.4s_ease-in-out_infinite_both] rounded-full bg-[#616161]" />
-      <span className="h-1.5 w-1.5 animate-[chat-typing_1.4s_ease-in-out_0.2s_infinite_both] rounded-full bg-[#616161]" />
-      <span className="h-1.5 w-1.5 animate-[chat-typing_1.4s_ease-in-out_0.4s_infinite_both] rounded-full bg-[#616161]" />
-    </div>
-  );
+  thinkingPreviewPinned?: boolean;
 }
 
 export function ChatMessage({
@@ -54,6 +45,7 @@ export function ChatMessage({
   versions,
   activeVersionIndex = 0,
   onSetActiveVersion,
+  thinkingPreviewPinned = false,
 }: ChatMessageProps) {
   const attachmentsRef = useRef(attachments);
   const [userTooltipVisibleId, setUserTooltipVisibleId] = useState<UserMessageTooltipId>(null);
@@ -61,8 +53,10 @@ export function ChatMessage({
   const [isEditing, setIsEditing] = useState(false);
   const [editDraft, setEditDraft] = useState(content);
   const [editWidth, setEditWidth] = useState(320);
+  const [manualThinkingProcessVisible, setManualThinkingProcessVisible] = useState(false);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const userMessageWrapperRef = useRef<HTMLDivElement>(null);
+  const assistantMessageWrapperRef = useRef<HTMLDivElement>(null);
   const [actionRowVisible, setActionRowVisible] = useState(false);
   const userTooltipTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userHalfSecondTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -122,6 +116,19 @@ export function ChatMessage({
     });
     return () => cancelAnimationFrame(rafId);
   }, [versions?.length]);
+
+  useEffect(() => {
+    if (!manualThinkingProcessVisible) return;
+
+    const rafId = requestAnimationFrame(() => {
+      assistantMessageWrapperRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+
+    return () => cancelAnimationFrame(rafId);
+  }, [manualThinkingProcessVisible]);
 
   if (role === 'user') {
     const USER_TOOLTIP_DELAY_MS = 900;
@@ -336,38 +343,50 @@ export function ChatMessage({
 
   // Assistant
   const showHistoryButton = versions && versions.length > 1;
+  const showThinkingProcess = isTyping || thinkingPreviewPinned || manualThinkingProcessVisible;
 
   return (
     <MessageContainer role="assistant">
-      {isTyping ? (
-        <TypingIndicator />
-      ) : (
-        <div className="relative w-full">
-          <MessageMarkdown content={content} />
-          {versions && versions.length > 0 && (
-            <div
-              className={cn(
-                'transition-all duration-400 ease-out',
-                actionRowVisible ? 'translate-y-0 opacity-100' : 'translate-y-1.5 opacity-0'
-              )}
-            >
-              <MessageActions
-                content={content}
-                onRegenerate={onRegenerate}
-                trailing={
-                  showHistoryButton && versions ? (
-                    <MessageVersions
-                      versions={versions}
-                      activeVersionIndex={activeVersionIndex}
-                      onVersionChange={(i) => onSetActiveVersion?.(i)}
-                    />
-                  ) : null
-                }
-              />
-            </div>
-          )}
-        </div>
-      )}
+      <div ref={assistantMessageWrapperRef} className="relative w-full">
+        {showThinkingProcess ? (
+          <div className={cn('transition-all duration-300', content.trim() ? 'mb-8' : 'mb-0')}>
+            <AssistantThinkingProcess
+              isPinned={thinkingPreviewPinned || manualThinkingProcessVisible}
+            />
+          </div>
+        ) : null}
+
+        {content.trim() ? (
+          <>
+            <MessageMarkdown content={content} />
+            {versions && versions.length > 0 && (
+              <div
+                className={cn(
+                  'transition-all duration-400 ease-out',
+                  actionRowVisible ? 'translate-y-0 opacity-100' : 'translate-y-1.5 opacity-0'
+                )}
+              >
+                <MessageActions
+                  content={content}
+                  onRegenerate={onRegenerate}
+                  onViewProcess={() =>
+                    setManualThinkingProcessVisible((currentValue) => !currentValue)
+                  }
+                  trailing={
+                    showHistoryButton && versions ? (
+                      <MessageVersions
+                        versions={versions}
+                        activeVersionIndex={activeVersionIndex}
+                        onVersionChange={(i) => onSetActiveVersion?.(i)}
+                      />
+                    ) : null
+                  }
+                />
+              </div>
+            )}
+          </>
+        ) : null}
+      </div>
     </MessageContainer>
   );
 }

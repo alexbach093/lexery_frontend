@@ -19,6 +19,7 @@ type TooltipId = 'copy' | 'thumbs-up' | 'thumbs-down' | 'refresh' | null;
 export interface MessageActionsProps {
   content: string;
   onRegenerate?: (modifier?: string) => void;
+  onViewProcess?: () => void;
   /** Element on the left in the row. */
   leading?: React.ReactNode;
   /** Element on the right in the row (e.g., History button). */
@@ -26,7 +27,13 @@ export interface MessageActionsProps {
 }
 
 /** Action icons row below AI response — copy, like, dislike, regenerate, "View process". */
-export function MessageActions({ content, onRegenerate, leading, trailing }: MessageActionsProps) {
+export function MessageActions({
+  content,
+  onRegenerate,
+  onViewProcess,
+  leading,
+  trailing,
+}: MessageActionsProps) {
   const [tooltipVisibleId, setTooltipVisibleId] = useState<TooltipId>(null);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [feedbackLike, setFeedbackLike] = useState<'like' | 'dislike' | null>(null);
@@ -451,6 +458,7 @@ export function MessageActions({ content, onRegenerate, leading, trailing }: Mes
           type="button"
           className="ml-1.5 h-auto w-auto cursor-pointer rounded-md border-none bg-transparent px-3 py-1 font-sans text-sm font-normal text-[#9A9A9A] transition-colors duration-150 hover:bg-transparent hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset"
           aria-label="Переглянути процес"
+          onClick={onViewProcess}
         >
           Переглянути процес
         </button>

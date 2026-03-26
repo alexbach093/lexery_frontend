@@ -1,8 +1,17 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type DragEvent as ReactDragEvent,
+} from 'react';
 
 import { AttachmentsPanelCollapsed, AttachmentsPanelExpanded } from '@/components/attachments';
+import { ChatFileDropOverlay } from '@/components/chat/ChatFileDropOverlay';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { ChatMeta } from '@/components/chat/ChatMeta';
 import { MessageList } from '@/components/chat/MessageList';
@@ -22,6 +31,61 @@ export function WorkspaceScreen({ routeChatId }: WorkspaceScreenProps) {
   const systemPromptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const [composerHeight, setComposerHeight] = useState(0);
+  const dragDepthRef = useRef(0);
+  const [isFileDropActive, setIsFileDropActive] = useState(false);
+
+  const isFileDragEvent = useCallback((event: ReactDragEvent<HTMLElement>) => {
+    return Array.from(event.dataTransfer?.types ?? []).includes('Files');
+  }, []);
+
+  const handleDragEnter = useCallback(
+    (event: ReactDragEvent<HTMLElement>) => {
+      if (!isFileDragEvent(event)) return;
+      event.preventDefault();
+      dragDepthRef.current += 1;
+      setIsFileDropActive(true);
+    },
+    [isFileDragEvent]
+  );
+
+  const handleDragOver = useCallback(
+    (event: ReactDragEvent<HTMLElement>) => {
+      if (!isFileDragEvent(event)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+      if (!isFileDropActive) {
+        setIsFileDropActive(true);
+      }
+    },
+    [isFileDragEvent, isFileDropActive]
+  );
+
+  const handleDragLeave = useCallback(
+    (event: ReactDragEvent<HTMLElement>) => {
+      if (!isFileDragEvent(event)) return;
+      event.preventDefault();
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) {
+        setIsFileDropActive(false);
+      }
+    },
+    [isFileDragEvent]
+  );
+
+  const handleDrop = useCallback(
+    (event: ReactDragEvent<HTMLElement>) => {
+      if (!isFileDragEvent(event)) return;
+      event.preventDefault();
+      dragDepthRef.current = 0;
+      setIsFileDropActive(false);
+
+      const files = Array.from(event.dataTransfer.files ?? []);
+      if (files.length > 0) {
+        chat.handleAttach(files);
+      }
+    },
+    [chat, isFileDragEvent]
+  );
 
   useEffect(() => {
     if (!chat.systemPromptEditorOpen) return;
@@ -103,7 +167,13 @@ export function WorkspaceScreen({ routeChatId }: WorkspaceScreenProps) {
   };
 
   return (
-    <main className="relative flex h-full flex-1 flex-col overflow-visible bg-transparent">
+    <main
+      className="relative flex h-full flex-1 flex-col overflow-visible bg-transparent"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <ChatMeta hasMessages={chat.hasMessages} compact={chat.tipsButtonCompact} />
 
       {chat.isHydratingChat ? (
@@ -154,6 +224,7 @@ export function WorkspaceScreen({ routeChatId }: WorkspaceScreenProps) {
                     onRegenerate={chat.handleRegenerate}
                     onEditMessage={chat.handleEditMessage}
                     onSetActiveVersion={chat.handleSetActiveVersion}
+                    thinkingPreviewPinned={chat.thinkingPreviewPinned}
                     className="pb-[calc(var(--chat-composer-offset,0px)+24px)]"
                   />
                 </div>
@@ -183,6 +254,8 @@ export function WorkspaceScreen({ routeChatId }: WorkspaceScreenProps) {
           </div>
         </div>
       )}
+
+      {isFileDropActive && <ChatFileDropOverlay />}
 
       {chat.systemPromptEditorOpen && (
         <div
