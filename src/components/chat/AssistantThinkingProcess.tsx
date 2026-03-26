@@ -266,20 +266,9 @@ export function AssistantThinkingProcess({ isPinned = false }: AssistantThinking
                         {isLawList ? (
                           <div className="flex flex-col gap-3">
                             {item.queries.map((query) => (
-                              <a
+                              <div
                                 key={`${query.icon}-${query.label}`}
-                                href={query.href}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(event) => {
-                                  event.preventDefault();
-                                  event.stopPropagation();
-
-                                  if (!query.href) return;
-
-                                  window.open(query.href, '_blank', 'noopener,noreferrer');
-                                }}
-                                className="grid cursor-pointer grid-cols-[18px_minmax(0,1fr)] items-start gap-x-3 rounded-md text-left transition-colors hover:text-[#4F4F4F]"
+                                className="grid grid-cols-[18px_minmax(0,1fr)] items-start gap-x-3"
                               >
                                 <span className="mt-0.5 flex h-5 w-5 items-center justify-center">
                                   <Image
@@ -290,10 +279,16 @@ export function AssistantThinkingProcess({ isPinned = false }: AssistantThinking
                                     className={THINKING_SECONDARY_SITE_LOGO_CLASS}
                                   />
                                 </span>
-                                <span className="block font-sans text-[12px] leading-6 font-normal tracking-[-0.01em] text-[#6F6F6F] underline decoration-[#C7C7C7] underline-offset-[3px] transition-colors hover:text-[#4F4F4F]">
+                                <a
+                                  href={query.href}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="inline-block w-fit font-sans text-[12px] leading-6 font-normal tracking-[-0.01em] text-[#6F6F6F] underline decoration-[#C7C7C7] underline-offset-[3px] transition-colors hover:text-[#4F4F4F]"
+                                >
                                   {query.label}
-                                </span>
-                              </a>
+                                </a>
+                              </div>
                             ))}
                           </div>
                         ) : (
