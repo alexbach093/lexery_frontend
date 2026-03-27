@@ -85,8 +85,9 @@ const THINKING_TRACE_ITEMS = [
 ];
 
 const THINKING_LEADING_ICON_WRAPPER_CLASS =
-  'flex h-5 w-5 shrink-0 items-center justify-center text-[#B3B3B3]';
-const THINKING_LEADING_ICON_CLASS = 'h-4 w-4 shrink-0 text-[#B3B3B3] [&_path]:stroke-[1.2]';
+  'flex h-6 w-6 shrink-0 items-center justify-center text-[#8F8F8F]';
+const THINKING_LEADING_ICON_CLASS =
+  'h-[18px] w-[18px] shrink-0 text-[#8F8F8F] [&_path]:stroke-[1.2]';
 const THINKING_TRACE_ICON_CLASS = 'h-[18px] w-[18px] shrink-0 text-[#8F8F8F] [&_path]:stroke-[1.2]';
 const THINKING_SECONDARY_SEARCH_ICON_CLASS =
   'h-4 w-4 shrink-0 text-[#969696] [&_path]:stroke-[1.9]';
@@ -164,10 +165,10 @@ export function AssistantThinkingProcess({ isPinned = false }: AssistantThinking
             return (
               <div key={phase.label} className="transition-all duration-400 ease-out">
                 <div className={cn('mb-1.5', THINKING_ROW_LAYOUT_CLASS, 'text-[#8E8E8E]')}>
-                  <span className={cn(THINKING_LEADING_ICON_WRAPPER_CLASS, 'pt-0.5')}>
+                  <span className={THINKING_LEADING_ICON_WRAPPER_CLASS}>
                     <ThinkingSparkleIcon
-                      width={16}
-                      height={16}
+                      width={18}
+                      height={18}
                       className={THINKING_LEADING_ICON_CLASS}
                       aria-hidden="true"
                     />
