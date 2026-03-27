@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentType, type SVGProps } from 'react';
 
 import {
   SearchIcon,
@@ -14,6 +14,13 @@ import { cn } from '@/lib/utils';
 type ThinkingTraceQuery = {
   icon: 'search' | 'site_logo' | 'law';
   label: string;
+  href?: string;
+};
+
+type ThinkingTraceItem = {
+  title: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  queries: ThinkingTraceQuery[];
 };
 
 const THINKING_RADA_LOGO_SRC = '/rada-logo.png';
@@ -39,7 +46,7 @@ const THINKING_PLAN_ITEMS = [
   'Відшліфувати формулювання й фінальну подачу',
 ];
 
-const THINKING_TRACE_ITEMS = [
+const THINKING_TRACE_ITEMS: ThinkingTraceItem[] = [
   {
     title: 'Збираючи контекст запиту, історію діалогу та всі видимі вкладення',
     icon: ThinkingSparkleIcon,
