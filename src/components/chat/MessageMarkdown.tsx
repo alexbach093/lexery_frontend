@@ -24,44 +24,44 @@ export function MessageMarkdown({ content }: { content: string }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h1: ({ node, ...props }) => (
+          h1: ({ node: _node, ...props }) => (
             <h1 className="mt-[1em] mb-[0.5em] text-[1.75rem] leading-tight font-bold" {...props} />
           ),
-          h2: ({ node, ...props }) => (
+          h2: ({ node: _node, ...props }) => (
             <h2
               className="mt-[1em] mb-[0.5em] text-[1.5rem] leading-[1.3] font-semibold"
               {...props}
             />
           ),
-          h3: ({ node, ...props }) => (
+          h3: ({ node: _node, ...props }) => (
             <h3
               className="mt-[0.9em] mb-[0.4em] text-[1.25rem] leading-[1.35] font-semibold"
               {...props}
             />
           ),
-          h4: ({ node, ...props }) => (
+          h4: ({ node: _node, ...props }) => (
             <h4
               className="mt-[0.8em] mb-[0.4em] text-[1.1rem] leading-[1.4] font-semibold"
               {...props}
             />
           ),
-          h5: ({ node, ...props }) => (
+          h5: ({ node: _node, ...props }) => (
             <h5
               className="mt-[0.75em] mb-[0.35em] text-base leading-[1.4] font-semibold"
               {...props}
             />
           ),
-          h6: ({ node, ...props }) => (
+          h6: ({ node: _node, ...props }) => (
             <h6
               className="text-muted-foreground mt-[0.7em] mb-[0.35em] text-[0.9rem] leading-[1.45] font-semibold"
               {...props}
             />
           ),
-          p: ({ node, ...props }) => <p className="m-0 mb-[1em] last:mb-0" {...props} />,
-          strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
-          em: ({ node, ...props }) => <em className="italic" {...props} />,
-          del: ({ node, ...props }) => <del className="line-through" {...props} />,
-          code: ({ node, className, ...props }) => (
+          p: ({ node: _node, ...props }) => <p className="m-0 mb-[1em] last:mb-0" {...props} />,
+          strong: ({ node: _node, ...props }) => <strong className="font-bold" {...props} />,
+          em: ({ node: _node, ...props }) => <em className="italic" {...props} />,
+          del: ({ node: _node, ...props }) => <del className="line-through" {...props} />,
+          code: ({ node: _node, className, ...props }) => (
             <code
               className={cn(
                 'bg-muted text-foreground rounded px-[0.4em] py-[0.15em] font-mono text-[0.9em]',
@@ -70,7 +70,7 @@ export function MessageMarkdown({ content }: { content: string }) {
               {...props}
             />
           ),
-          pre: ({ node, ...props }) => (
+          pre: ({ node: _node, ...props }) => (
             <pre
               className={cn(
                 'bg-muted my-[0.75em] mb-[1em] max-w-full min-w-0 overflow-x-auto rounded-lg p-[0.75em] px-[1em] font-mono text-[0.9em] wrap-anywhere break-all whitespace-pre-wrap',
@@ -79,31 +79,31 @@ export function MessageMarkdown({ content }: { content: string }) {
               {...props}
             />
           ),
-          ul: ({ node, ...props }) => (
+          ul: ({ node: _node, ...props }) => (
             <ul
               className="my-[0.5em] mb-[1em] list-inside list-disc! pl-[0.5em] [&_ol]:my-[0.2em] [&_ul]:my-[0.2em]"
               {...props}
             />
           ),
-          ol: ({ node, ...props }) => (
+          ol: ({ node: _node, ...props }) => (
             <ol
               className="my-[0.5em] mb-[1em] list-inside list-decimal! pl-[0.5em] [&_ol]:my-[0.2em] [&_ul]:my-[0.2em]"
               {...props}
             />
           ),
-          li: ({ node, ...props }) => (
+          li: ({ node: _node, ...props }) => (
             <li className="my-[0.25em] list-item! pl-[0.25em]" {...props} />
           ),
-          blockquote: ({ node, ...props }) => (
+          blockquote: ({ node: _node, ...props }) => (
             <blockquote
               className="border-border text-foreground my-[0.75em] mb-[1em] border-l-4 py-[0.25em] pl-[1em]"
               {...props}
             />
           ),
-          hr: ({ node, ...props }) => (
+          hr: ({ node: _node, ...props }) => (
             <hr className="bg-border my-[1em] h-px border-none" {...props} />
           ),
-          table: ({ node, ...props }) => (
+          table: ({ node: _node, ...props }) => (
             <div className="[&::-webkit-scrollbar-thumb]:bg-border hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground [&::-webkit-scrollbar-track]:bg-muted my-[0.75em] mb-[1em] touch-pan-x overflow-x-auto rounded-lg [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-track]:rounded">
               <table
                 className="w-max min-w-full border-collapse rounded-lg text-[0.95em]"
@@ -111,13 +111,13 @@ export function MessageMarkdown({ content }: { content: string }) {
               />
             </div>
           ),
-          th: ({ node, ...props }) => (
+          th: ({ node: _node, ...props }) => (
             <th
               className="border-border bg-muted border px-[0.75em] py-[0.5em] text-left font-bold whitespace-nowrap"
               {...props}
             />
           ),
-          td: ({ node, ...props }) => (
+          td: ({ node: _node, ...props }) => (
             <td
               className="border-border bg-muted border px-[0.75em] py-[0.5em] text-left whitespace-nowrap"
               {...props}

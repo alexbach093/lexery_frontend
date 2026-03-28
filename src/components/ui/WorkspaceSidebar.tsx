@@ -14,9 +14,9 @@ import {
   SidebarSearchIcon,
 } from '@/components/icons';
 import { useSearchOpen } from '@/contexts/search-open';
+import { useSettingsOpen } from '@/contexts/settings-open';
 import {
   getRouteChatIdFromPathname,
-  getSettingsPath,
   getWorkspaceChatPath,
   getWorkspaceHomePath,
 } from '@/lib/app-routes';
@@ -62,6 +62,7 @@ export function WorkspaceSidebar({
     toggle: toggleSearchOpen,
     closeImmediate: closeSearchImmediate,
   } = useSearchOpen();
+  const { open: openSettings } = useSettingsOpen();
   const pathname = usePathname();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -246,7 +247,7 @@ export function WorkspaceSidebar({
     setIsMenuOpen(false);
     closeChatMenu();
     closeSearchImmediate();
-    router.push(getSettingsPath('general'));
+    openSettings('general');
   };
 
   const handleReportErrorClick = () => {
@@ -665,8 +666,7 @@ export function WorkspaceSidebar({
               type="button"
               onClick={() => setIsMenuOpen((prev) => !prev)}
               className={cn(
-                'group flex cursor-pointer items-center justify-start rounded-lg border-none bg-transparent px-2 py-1.5 text-left transition-[width,background-color] duration-220 ease-in-out',
-                collapsed ? 'mx-auto w-12' : 'w-full',
+                'group flex w-full cursor-pointer items-center justify-start rounded-lg border-none bg-transparent px-2 py-1.5 text-left transition-colors duration-220 ease-in-out',
                 'hover:bg-[#F4F4F4] focus-visible:ring-2 focus-visible:ring-[#5D5D5D] focus-visible:outline-none focus-visible:ring-inset',
                 isMenuOpen && 'bg-[#F4F4F4]'
               )}
@@ -699,10 +699,8 @@ export function WorkspaceSidebar({
               </div>
               <div
                 className={cn(
-                  'flex flex-col overflow-hidden whitespace-nowrap transition-all duration-220 ease-in-out',
-                  collapsed
-                    ? 'ml-0 max-w-0 flex-[0_0_auto] opacity-0'
-                    : 'ml-2 max-w-full flex-1 opacity-100'
+                  'min-w-0 overflow-hidden whitespace-nowrap',
+                  collapsed ? 'hidden' : 'ml-2 flex flex-1 flex-col'
                 )}
                 aria-hidden={collapsed}
               >

@@ -12,8 +12,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const EXTRACTION_FILE = join(__dirname, '..', 'figma-extraction-report.json');
-const OUTPUT_FILE = join(__dirname, '..', 'src', 'components', 'BootScreen.tsx');
+const EXTRACTION_FILE = join(__dirname, '..', 'docs', 'artifacts', 'figma-extraction-report.json');
+const OUTPUT_FILE = join(__dirname, '..', 'src', 'components', 'ui', 'BootScreen.tsx');
 
 // Utility functions
 function hexToRgb(hex) {
@@ -290,7 +290,7 @@ function main() {
   // Check if extraction file exists
   if (!existsSync(EXTRACTION_FILE)) {
     console.error('❌ Error: Figma extraction report not found!');
-    console.log('Please run: npm run figma:extract');
+    console.log('Please run: corepack pnpm run figma:extract');
     console.log();
     process.exit(1);
   }
@@ -333,7 +333,7 @@ function main() {
     console.log('   3. Download screenshot from extraction report if needed');
     console.log('   4. Import and use in your app:');
     console.log();
-    console.log('      import { BootScreen } from "@/components/BootScreen";');
+    console.log('      import { BootScreen } from "@/components/ui/BootScreen";');
     console.log();
     console.log('      <BootScreen onComplete={() => console.log("Done!")} />');
     console.log();

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { writeFileSync, readFileSync, existsSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -120,9 +120,11 @@ async function analyzeLogoStructure() {
     totalShapes: allShapes.length,
   };
 
-  const outputPath = join(__dirname, '..', 'logo-structure.json');
+  const outputDir = join(__dirname, '..', 'docs', 'artifacts');
+  mkdirSync(outputDir, { recursive: true });
+  const outputPath = join(outputDir, 'logo-structure.json');
   writeFileSync(outputPath, JSON.stringify(output, null, 2));
-  console.log(`💾 Saved structure to: logo-structure.json`);
+  console.log(`💾 Saved structure to: ${outputPath}`);
 
   return output;
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { writeFileSync, readFileSync, existsSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -133,9 +133,11 @@ async function analyzeCubeStructure() {
     totalPaths: allPaths.length,
   };
 
-  const outputPath = join(__dirname, '..', 'cube-structure.json');
+  const outputDir = join(__dirname, '..', 'docs', 'artifacts');
+  mkdirSync(outputDir, { recursive: true });
+  const outputPath = join(outputDir, 'cube-structure.json');
   writeFileSync(outputPath, JSON.stringify(output, null, 2));
-  console.log(`💾 Saved structure to: cube-structure.json`);
+  console.log(`💾 Saved structure to: ${outputPath}`);
 
   return output;
 }

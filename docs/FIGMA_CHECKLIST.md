@@ -17,30 +17,30 @@ Follow this checklist to extract your boot screen design from Figma and implemen
 ## Phase 2: Extraction (1 minute)
 
 - [ ] **2.1** Open terminal in project root
-- [ ] **2.2** Run: `npm run figma:extract`
+- [ ] **2.2** Run: `corepack pnpm run figma:extract`
 - [ ] **2.3** Wait for extraction to complete (should take ~10 seconds)
-- [ ] **2.4** Verify file exists: `figma-extraction-report.json`
+- [ ] **2.4** Verify file exists: `docs/artifacts/figma-extraction-report.json`
 - [ ] **2.5** Review the extraction report:
   ```bash
-  cat figma-extraction-report.json | head -50
+  cat docs/artifacts/figma-extraction-report.json | head -50
   ```
 - [ ] **2.6** Check the screenshot URL in the report
 - [ ] **2.7** Open screenshot URL in browser to verify
 
 ## Phase 3: Component Generation (1 minute)
 
-- [ ] **3.1** Run: `npm run figma:generate`
+- [ ] **3.1** Run: `corepack pnpm run figma:generate`
 - [ ] **3.2** Wait for generation to complete (should take ~1 second)
-- [ ] **3.3** Verify component exists: `src/components/BootScreen.tsx`
+- [ ] **3.3** Verify component exists: `src/components/ui/BootScreen.tsx`
 - [ ] **3.4** Review the generated component:
   ```bash
-  cat src/components/BootScreen.tsx | head -100
+  cat src/components/ui/BootScreen.tsx | head -100
   ```
 - [ ] **3.5** Check component documentation at bottom of file
 
 ## Phase 4: Asset Preparation (5 minutes)
 
-- [ ] **4.1** Download screenshot from URL (found in `figma-extraction-report.json`)
+- [ ] **4.1** Download screenshot from URL (found in `docs/artifacts/figma-extraction-report.json`)
 - [ ] **4.2** Save screenshot to: `public/images/boot-screen-reference.png`
 - [ ] **4.3** Open Figma design in browser
 - [ ] **4.4** Export logo as SVG from Figma:
@@ -51,7 +51,7 @@ Follow this checklist to extract your boot screen design from Figma and implemen
 
 ## Phase 5: Component Customization (10 minutes)
 
-- [ ] **5.1** Open `src/components/BootScreen.tsx` in editor
+- [ ] **5.1** Open `src/components/ui/BootScreen.tsx` in editor
 - [ ] **5.2** Update logo section:
   ```tsx
   // Replace placeholder SVG with your logo
@@ -72,14 +72,14 @@ Follow this checklist to extract your boot screen design from Figma and implemen
 - [ ] **6.2** Add code:
 
   ```tsx
-  import { BootScreen } from '@/components/BootScreen';
+  import { BootScreen } from '@/components/ui/BootScreen';
 
   export default function BootTestPage() {
     return <BootScreen />;
   }
   ```
 
-- [ ] **6.3** Start dev server: `npm run dev`
+- [ ] **6.3** Start dev server: `corepack pnpm run dev`
 - [ ] **6.4** Visit: http://localhost:3000/boot-test
 - [ ] **6.5** Verify boot screen displays correctly
 - [ ] **6.6** Check console for errors
@@ -92,7 +92,7 @@ Follow this checklist to extract your boot screen design from Figma and implemen
   ```tsx
   'use client';
   import { useState } from 'react';
-  import { BootScreen } from '@/components/BootScreen';
+  import { BootScreen } from '@/components/ui/BootScreen';
 
   export default function Home() {
     const [showBoot, setShowBoot] = useState(true);
@@ -129,7 +129,7 @@ Follow this checklist to extract your boot screen design from Figma and implemen
   - Timing correct
 - [ ] **7.8** Test onComplete callback works
 - [ ] **7.9** Check no console errors
-- [ ] **7.10** Verify TypeScript compiles: `npm run typecheck`
+- [ ] **7.10** Verify TypeScript compiles: `corepack pnpm run typecheck`
 
 ## Phase 8: Fine-tuning (Optional, 15 minutes)
 
@@ -157,8 +157,8 @@ Follow this checklist to extract your boot screen design from Figma and implemen
 - [ ] **10.1** Ensure `.env` is in `.gitignore`
 - [ ] **10.2** Add FIGMA_TOKEN to `.env.example` (as placeholder)
 - [ ] **10.3** Verify assets are in `public/images/`
-- [ ] **10.4** Run production build: `npm run build`
-- [ ] **10.5** Test production build: `npm run start`
+- [ ] **10.4** Run production build: `corepack pnpm run build`
+- [ ] **10.5** Test production build: `corepack pnpm run start`
 - [ ] **10.6** Verify boot screen works in production mode
 - [ ] **10.7** Check bundle size (if concerned)
 - [ ] **10.8** Commit changes to git (if satisfied)
@@ -177,9 +177,9 @@ If something goes wrong, check these:
 
 ### Generation Issues
 
-- [ ] `figma-extraction-report.json` exists
+- [ ] `docs/artifacts/figma-extraction-report.json` exists
 - [ ] JSON file is valid (not corrupted)
-- [ ] `src/components/` directory exists
+- [ ] `src/components/ui/` directory exists
 - [ ] No file permission issues
 
 ### Display Issues
@@ -217,20 +217,20 @@ You're done when:
 
 ```bash
 # Complete workflow
-npm run figma:build              # Extract + Generate
+corepack pnpm run figma:build              # Extract + Generate
 
 # Individual steps
-npm run figma:extract            # Extract from Figma
-npm run figma:generate           # Generate component
+corepack pnpm run figma:extract            # Extract from Figma
+corepack pnpm run figma:generate           # Generate component
 
 # Development
-npm run dev                      # Start dev server
-npm run typecheck                # Check types
-npm run build                    # Production build
+corepack pnpm run dev                      # Start dev server
+corepack pnpm run typecheck                # Check types
+corepack pnpm run build                    # Production build
 
 # View files
-cat figma-extraction-report.json # View extraction data
-cat src/components/BootScreen.tsx # View component
+cat docs/artifacts/figma-extraction-report.json # View extraction data
+cat src/components/ui/BootScreen.tsx # View component
 ```
 
 ## Time Estimates
@@ -264,6 +264,6 @@ cat src/components/BootScreen.tsx # View component
 
 - [Quick Reference](./QUICK_REFERENCE.md)
 - [Full Guide](./FIGMA_TO_REACT_SUMMARY.md)
-- [Implementation Details](./docs/boot-screen-implementation.md)
+- [Implementation Details](./boot-screen-implementation.md)
 
 **Ready to start?** Begin with Phase 1! 🚀

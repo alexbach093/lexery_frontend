@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
-
 /**
  * Export chat action icons from Figma.
  * Node 122:303 (node-id=122-303) — Frame 36733 with 4 icons, bolder stroke (0.9).

@@ -337,8 +337,9 @@ async function main() {
     console.log();
 
     // Save to file
-    const outputPath = './figma-extraction-report.json';
+    const outputPath = './docs/artifacts/figma-extraction-report.json';
     const fs = await import('fs');
+    fs.mkdirSync('./docs/artifacts', { recursive: true });
     fs.writeFileSync(outputPath, JSON.stringify(report, null, 2));
     console.log(`💾 Full report saved to: ${outputPath}`);
     console.log();

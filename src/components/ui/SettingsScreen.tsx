@@ -1,12 +1,11 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { SettingsGearIcon, SettingsDatabaseIcon, SettingsShieldIcon } from '@/components/icons';
+import { useSettingsOpen } from '@/contexts/settings-open';
 import { getAppPreferences, setMemoryEnabledPreference } from '@/lib/app-preferences';
-import { getSettingsPath, getWorkspaceHomePath } from '@/lib/app-routes';
 import { clearChatLibrary } from '@/lib/chat-library';
 import type { SectionId, SettingRow } from '@/types';
 
@@ -27,7 +26,7 @@ interface SettingsScreenProps {
 }
 
 export function SettingsScreen({ activeSection }: SettingsScreenProps) {
-  const router = useRouter();
+  const { close: closeSettings, open: openSettings } = useSettingsOpen();
   const [memoryEnabled, setMemoryEnabled] = useState(() => getAppPreferences().memoryEnabled);
   const [deleteChatsConfirmOpen, setDeleteChatsConfirmOpen] = useState(false);
   const [deleteAccountConfirmOpen, setDeleteAccountConfirmOpen] = useState(false);
@@ -43,19 +42,15 @@ export function SettingsScreen({ activeSection }: SettingsScreenProps) {
 
   const activeSectionData = SECTIONS.find((section) => section.id === activeSection) ?? SECTIONS[0];
 
-  const handleClose = useCallback(() => {
-    router.replace(getWorkspaceHomePath());
-  }, [router]);
-
   const handleSectionSelect = useCallback(
     (sectionId: SectionId) => {
       if (sectionId === activeSection) {
         return;
       }
 
-      router.push(getSettingsPath(sectionId));
+      openSettings(sectionId, { replace: true });
     },
-    [activeSection, router]
+    [activeSection, openSettings]
   );
 
   useEffect(() => {
@@ -68,25 +63,25 @@ export function SettingsScreen({ activeSection }: SettingsScreenProps) {
         return;
       }
 
-      handleClose();
+      closeSettings();
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [deleteAccountConfirmOpen, deleteChatsConfirmOpen, handleClose]);
+  }, [closeSettings, deleteAccountConfirmOpen, deleteChatsConfirmOpen]);
 
   const handleDeleteChatsConfirm = useCallback(async () => {
     try {
       await clearChatLibrary();
     } finally {
       setDeleteChatsConfirmOpen(false);
-      router.replace(getWorkspaceHomePath());
+      closeSettings();
     }
-  }, [router]);
+  }, [closeSettings]);
 
   const handleBackdropClick = (event: ReactMouseEvent<HTMLElement>) => {
     if (event.target !== event.currentTarget) return;
-    handleClose();
+    closeSettings();
   };
 
   const renderControl = (row: SettingRow) => {
@@ -168,7 +163,7 @@ export function SettingsScreen({ activeSection }: SettingsScreenProps) {
 
         <aside className="flex min-h-141 flex-col border-r border-[#ECECEC] bg-[#FDFDFD]">
           <div className="px-3 pt-3 pb-2.5">
-            <SettingsCloseButton onClick={handleClose} />
+            <SettingsCloseButton onClick={closeSettings} />
           </div>
 
           <div

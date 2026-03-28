@@ -14,21 +14,21 @@ lexery/
 │   ├── generate-boot-screen.mjs       ✅ Generates React component from data
 │   └── README.md                      ✅ Script documentation
 │
-├── src/components/
-│   └── BootScreen.tsx                 ✅ Template component (will be replaced)
-│
 ├── docs/
-│   └── boot-screen-implementation.md  ✅ Complete implementation guide
+│   ├── artifacts/
+│   │   └── figma-extraction-report.json  ✅ Generated extraction report
+│   ├── FIGMA_EXTRACTION_GUIDE.md         ✅ Quick start guide
+│   ├── FIGMA_TO_REACT_SUMMARY.md         ⬅️ You are here
+│   └── boot-screen-implementation.md     ✅ Complete implementation guide
 │
-├── FIGMA_EXTRACTION_GUIDE.md         ✅ Quick start guide
-└── FIGMA_TO_REACT_SUMMARY.md         ⬅️ You are here
+└── src/components/ui/BootScreen.tsx      ✅ Generated component
 ```
 
 ### NPM Scripts Added
 
 ```json
 {
-  "figma:extract": "Extract design from Figma → figma-extraction-report.json",
+  "figma:extract": "Extract design from Figma → docs/artifacts/figma-extraction-report.json",
   "figma:generate": "Generate React component from extraction report",
   "figma:build": "Extract + Generate in one command"
 }
@@ -44,7 +44,7 @@ lexery/
 └─────────────────────────────────────────────────────────────────────┘
 
 1. EXTRACTION                    2. GENERATION                3. USAGE
-   (npm run figma:extract)          (npm run figma:generate)     (Import & Use)
+   (corepack pnpm run figma:extract)          (corepack pnpm run figma:generate)     (Import & Use)
 
    Figma API                        Read JSON Report            Your App
       ↓                                    ↓                         ↓
@@ -52,12 +52,12 @@ lexery/
       ↓                                    ↓                         ↓
    • Screenshot URL                 Generate TSX Code         Rendered UI
    • Colors (hex/rgba)                     ↓                         ↓
-   • Text + Fonts                   src/components/           Perfect Match!
+   • Text + Fonts                   src/components/ui/        Perfect Match!
    • Layout (flex/gap/padding)         BootScreen.tsx
    • SVG elements
    • Node structure
       ↓
-   figma-extraction-report.json
+   docs/artifacts/figma-extraction-report.json
 ```
 
 ### Step-by-Step Process
@@ -74,10 +74,10 @@ FIGMA_TOKEN=figd_your_token_here
 **STEP 2: Extract Design**
 
 ```bash
-npm run figma:extract
+corepack pnpm run figma:extract
 ```
 
-This creates `figma-extraction-report.json` with:
+This creates `docs/artifacts/figma-extraction-report.json` with:
 
 - ✅ Node info (name, type, size)
 - ✅ Screenshot URL (downloadable PNG)
@@ -90,10 +90,10 @@ This creates `figma-extraction-report.json` with:
 **STEP 3: Generate Component**
 
 ```bash
-npm run figma:generate
+corepack pnpm run figma:generate
 ```
 
-This creates `src/components/BootScreen.tsx` with:
+This creates `src/components/ui/BootScreen.tsx` with:
 
 - ✅ TypeScript interfaces
 - ✅ Tailwind CSS classes (auto-mapped from Figma colors)
@@ -106,7 +106,7 @@ This creates `src/components/BootScreen.tsx` with:
 **STEP 4: Use in App**
 
 ```tsx
-import { BootScreen } from '@/components/BootScreen';
+import { BootScreen } from '@/components/ui/BootScreen';
 
 <BootScreen onComplete={() => console.log('Done!')} />;
 ```
@@ -224,7 +224,7 @@ interface BootScreenProps {
 ```tsx
 'use client';
 import { useState } from 'react';
-import { BootScreen } from '@/components/BootScreen';
+import { BootScreen } from '@/components/ui/BootScreen';
 
 export default function App() {
   const [showBoot, setShowBoot] = useState(true);
@@ -252,16 +252,16 @@ The extraction script targets this specific node and extracts all its properties
 
 ```bash
 # Complete workflow (recommended)
-npm run figma:build
+corepack pnpm run figma:build
 
 # Or step by step:
-npm run figma:extract     # Extract from Figma
-npm run figma:generate    # Generate component
+corepack pnpm run figma:extract     # Extract from Figma
+corepack pnpm run figma:generate    # Generate component
 
 # Development
-npm run dev              # Start Next.js dev server
-npm run typecheck        # Check TypeScript
-npm run lint             # Lint code
+corepack pnpm run dev              # Start Next.js dev server
+corepack pnpm run typecheck        # Check TypeScript
+corepack pnpm run lint             # Lint code
 ```
 
 ## 📚 Documentation Reference
@@ -295,14 +295,14 @@ npm run lint             # Lint code
 1. **Download Screenshot** - Save high-res PNG for reference
 
    ```bash
-   # URL will be in figma-extraction-report.json
+   # URL will be in docs/artifacts/figma-extraction-report.json
    # Download and save to: public/images/boot-screen.png
    ```
 
 2. **Add Logo** - Replace placeholder SVG in component
 
    ```tsx
-   // In BootScreen.tsx, replace the SVG with your logo
+   // In src/components/ui/BootScreen.tsx, replace the SVG with your logo
    <Image src="/images/logo.svg" alt="Logo" width={80} height={80} />
    ```
 
@@ -321,7 +321,7 @@ npm run lint             # Lint code
 ### Change Colors
 
 ```tsx
-// In BootScreen.tsx
+// In src/components/ui/BootScreen.tsx
 <div
   className="bg-indigo-600"     // Tailwind class
   style={{ backgroundColor: '#4F46E5' }}  // Exact color
@@ -385,20 +385,20 @@ const fadeTimer = setTimeout(() => {
 2. **Run the Extraction**
 
    ```bash
-   npm run figma:build
+   corepack pnpm run figma:build
    ```
 
 3. **Review the Component**
 
    ```bash
    # Check generated component:
-   cat src/components/BootScreen.tsx
+   cat src/components/ui/BootScreen.tsx
    ```
 
 4. **Download Screenshot**
 
    ```bash
-   # URL is in figma-extraction-report.json
+   # URL is in docs/artifacts/figma-extraction-report.json
    # Save to: public/images/boot-screen.png
    ```
 
@@ -413,7 +413,7 @@ const fadeTimer = setTimeout(() => {
 6. **Test the Component**
 
    ```bash
-   npm run dev
+   corepack pnpm run dev
    # Visit http://localhost:3000
    # Import and test BootScreen component
    ```
@@ -448,4 +448,4 @@ You now have:
 
 **Questions?** Review the docs in `docs/` folder or check `FIGMA_EXTRACTION_GUIDE.md`.
 
-**Ready?** Run: `npm run figma:build` 🚀
+**Ready?** Run: `corepack pnpm run figma:build` 🚀

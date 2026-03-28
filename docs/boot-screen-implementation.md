@@ -41,19 +41,19 @@ echo "FIGMA_TOKEN=figd_your_token_here" >> .env
 
 ```bash
 # Extract design data from Figma
-npm run figma:extract
+corepack pnpm run figma:extract
 
 # Generate React component from extracted data
-npm run figma:generate
+corepack pnpm run figma:generate
 
 # Or do both at once:
-npm run figma:build
+corepack pnpm run figma:build
 ```
 
 ### 3. Use in Your App
 
 ```tsx
-import { BootScreen } from '@/components/BootScreen';
+import { BootScreen } from '@/components/ui/BootScreen';
 
 export default function App() {
   return <BootScreen onComplete={() => console.log('Boot complete!')} />;
@@ -62,7 +62,7 @@ export default function App() {
 
 ## Detailed Steps
 
-### Step 1: Extraction (npm run figma:extract)
+### Step 1: Extraction (corepack pnpm run figma:extract)
 
 This script (`scripts/extract-figma-design.mjs`):
 
@@ -76,7 +76,7 @@ This script (`scripts/extract-figma-design.mjs`):
    - Layout structure (flexbox, spacing, padding)
    - SVG/vector elements
    - Complete node tree
-5. Saves to `figma-extraction-report.json`
+5. Saves to `docs/artifacts/figma-extraction-report.json`
 
 **Output Example:**
 
@@ -115,14 +115,14 @@ This script (`scripts/extract-figma-design.mjs`):
 }
 ```
 
-### Step 2: Generation (npm run figma:generate)
+### Step 2: Generation (corepack pnpm run figma:generate)
 
 This script (`scripts/generate-boot-screen.mjs`):
 
-1. Reads `figma-extraction-report.json`
+1. Reads `docs/artifacts/figma-extraction-report.json`
 2. Maps Figma styles to Tailwind classes
 3. Generates React component code
-4. Writes to `src/components/BootScreen.tsx`
+4. Writes to `src/components/ui/BootScreen.tsx`
 
 **Features:**
 
@@ -151,7 +151,7 @@ interface BootScreenProps {
 ### Basic Usage
 
 ```tsx
-import { BootScreen } from '@/components/BootScreen';
+import { BootScreen } from '@/components/ui/BootScreen';
 
 export default function Home() {
   return <BootScreen />;
@@ -164,7 +164,7 @@ export default function Home() {
 'use client';
 
 import { useState } from 'react';
-import { BootScreen } from '@/components/BootScreen';
+import { BootScreen } from '@/components/ui/BootScreen';
 
 export default function App() {
   const [showBoot, setShowBoot] = useState(true);
@@ -184,7 +184,7 @@ export default function App() {
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BootScreen } from '@/components/BootScreen';
+import { BootScreen } from '@/components/ui/BootScreen';
 
 export default function App() {
   const [isReady, setIsReady] = useState(false);
@@ -215,7 +215,7 @@ export default function App() {
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BootScreen } from '@/components/BootScreen';
+import { BootScreen } from '@/components/ui/BootScreen';
 
 export default function RootLayout({ children }) {
   const [firstVisit, setFirstVisit] = useState(true);
@@ -260,7 +260,7 @@ export default function RootLayout({ children }) {
 
 ### Add Custom Logo
 
-Edit `src/components/BootScreen.tsx`:
+Edit `src/components/ui/BootScreen.tsx`:
 
 ```tsx
 {
@@ -307,12 +307,12 @@ lexery/
 │   ├── extract-figma-design.mjs      # Extraction script
 │   ├── generate-boot-screen.mjs      # Generation script
 │   └── README.md                      # Script documentation
-├── src/
-│   └── components/
-│       └── BootScreen.tsx             # Generated component
-├── figma-extraction-report.json       # Extracted design data
+├── src/components/ui/BootScreen.tsx   # Generated component
+├── docs/
+│   ├── artifacts/figma-extraction-report.json  # Extracted design data
+│   └── FIGMA_EXTRACTION_GUIDE.md      # Supporting guide
 ├── .env                               # Contains FIGMA_TOKEN
-└── FIGMA_EXTRACTION_GUIDE.md         # This guide
+└── docs/boot-screen-implementation.md # This guide
 ```
 
 ## Troubleshooting
@@ -444,24 +444,24 @@ useEffect(() => {
 - **Documentation:**
   - Script README: `scripts/README.md`
   - Extraction Guide: `FIGMA_EXTRACTION_GUIDE.md`
-- **Component:** `src/components/BootScreen.tsx`
-- **Data:** `figma-extraction-report.json`
+- **Component:** `src/components/ui/BootScreen.tsx`
+- **Data:** `docs/artifacts/figma-extraction-report.json`
 
 ## NPM Scripts Reference
 
 ```bash
 # Extract design data from Figma
-npm run figma:extract
+corepack pnpm run figma:extract
 
 # Generate React component from extracted data
-npm run figma:generate
+corepack pnpm run figma:generate
 
 # Extract and generate in one command
-npm run figma:build
+corepack pnpm run figma:build
 ```
 
 ---
 
 **Questions?** Check the troubleshooting section or review `FIGMA_EXTRACTION_GUIDE.md` for more details.
 
-**Ready to start?** Run `npm run figma:build` after adding your FIGMA_TOKEN! 🚀
+**Ready to start?** Run `corepack pnpm run figma:build` after adding your FIGMA_TOKEN! 🚀
