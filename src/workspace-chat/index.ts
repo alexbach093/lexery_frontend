@@ -58,6 +58,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
   const [value, setValue] = useState('');
   const [targetValue, setTargetValue] = useState('');
   const [tipsButtonCompact, setTipsButtonCompact] = useState(false);
+  const [thinkingPreviewPinned, setThinkingPreviewPinned] = useState(false);
 
   const [systemPromptEditorOpen, setSystemPromptEditorOpen] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState('');
@@ -81,6 +82,10 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
 
   const requestScrollToBottom = useCallback(() => {
     setScrollToBottomRequest((currentRequest) => currentRequest + 1);
+  }, []);
+
+  const clearThinkingPreview = useCallback(() => {
+    setThinkingPreviewPinned(false);
   }, []);
 
   const persistExistingChat = useCallback(
@@ -127,6 +132,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     regeneratingMessageId,
     setRegeneratingMessageId,
     streamChatResponse,
+    handleStopGeneration,
     streamAbortControllerRef,
     streamingChatIdRef,
   } = streamData;
@@ -244,6 +250,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
       setRegeneratingMessageId(null);
       setSystemPromptEditorOpen(false);
       setSuppressAutoScroll(false);
+      clearThinkingPreview();
       resetComposer(false);
 
       if (!chatId) {
@@ -292,6 +299,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     },
     [
       commitMessages,
+      clearThinkingPreview,
       repository,
       requestScrollToBottom,
       resetComposer,
@@ -373,6 +381,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     skipHydrationChatIdRef.current = null;
     setCurrentChatId(null);
     setIsHydratingChat(false);
+    clearThinkingPreview();
     setIsAssistantTyping(false);
     setIsStoppingGeneration(false);
     setRegeneratingMessageId(null);
@@ -383,6 +392,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     resetComposer(false);
     startTransition(() => router.replace(getWorkspaceHomePath()));
   }, [
+    clearThinkingPreview,
     commitMessages,
     currentChatId,
     resetComposer,
@@ -447,6 +457,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
       }
 
       commitMessages(nextMessages);
+      clearThinkingPreview();
       if (shouldRequestBottomScroll) {
         setSuppressAutoScroll(false);
         if (nextChatTitle) queuePendingComposerScroll(chatId);
@@ -489,6 +500,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     },
     [
       attachedFiles,
+      clearThinkingPreview,
       createChatSession,
       currentChatId,
       messages,
@@ -530,6 +542,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
         item.id === assistantMessageId ? { ...item, content: '' } : item
       );
       commitMessages(nextMessages);
+      clearThinkingPreview();
       setIsStoppingGeneration(false);
       setRegeneratingMessageId(assistantMessageId);
       void persistExistingChat(currentChatId, nextMessages);
@@ -555,6 +568,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     },
     [
       commitMessages,
+      clearThinkingPreview,
       currentChatId,
       messages,
       persistExistingChat,
@@ -615,6 +629,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
       const nextMessages: Message[] = [...upToEdited, newAssistantMessage, ...after];
 
       commitMessages(nextMessages);
+      clearThinkingPreview();
       setIsStoppingGeneration(false);
       setIsAssistantTyping(true);
       void persistExistingChat(currentChatId, nextMessages);
@@ -635,6 +650,7 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     },
     [
       commitMessages,
+      clearThinkingPreview,
       currentChatId,
       messages,
       persistExistingChat,
@@ -684,6 +700,11 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
       void persistExistingChat(currentChatId, messages, { systemPrompt: systemPromptDraft });
   }, [currentChatId, messages, persistExistingChat, systemPromptDraft]);
 
+  const handleTemporaryStopForThinkingPreview = useCallback(() => {
+    setThinkingPreviewPinned(true);
+    handleStopGeneration();
+  }, [handleStopGeneration]);
+
   return {
     value,
     targetValue,
@@ -705,6 +726,8 @@ export function useWorkspaceChat({ routeChatId }: { routeChatId: string | null }
     openSystemPromptEditor,
     handleSystemPromptCancel,
     handleSystemPromptApply,
+    thinkingPreviewPinned,
+    handleTemporaryStopForThinkingPreview,
     textareaRef,
     handleChange,
     handleKeyDown,

@@ -16,6 +16,7 @@ export interface MessageListProps {
   onRegenerate?: (assistantMessageId: string, modifier?: string) => void;
   onEditMessage?: (messageId: string, newContent: string) => void;
   onSetActiveVersion?: (assistantMessageId: string, index: number) => void;
+  thinkingPreviewPinned?: boolean;
   /** Optional custom classes for the list container */
   className?: string;
 }
@@ -31,6 +32,7 @@ export function MessageList({
   onRegenerate,
   onEditMessage,
   onSetActiveVersion,
+  thinkingPreviewPinned = false,
   className,
 }: MessageListProps) {
   const messages = messagesProp ?? [];
@@ -50,9 +52,9 @@ export function MessageList({
     listEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length, scrollToBottomRequest, suppressAutoScroll]);
 
-  const lastIsEmptyAssistant = lastMsg?.role === 'assistant' && !(lastMsg.content ?? '').trim();
-  const showTypingInsideLast = isAssistantTyping && lastIsEmptyAssistant;
-  const showTypingAsSeparate = false;
+  const showTypingInsideLast =
+    (isAssistantTyping || thinkingPreviewPinned) && lastMsg?.role === 'assistant';
+  const showTypingAsSeparate = thinkingPreviewPinned && lastMsg?.role !== 'assistant';
 
   return (
     <div className={cn('mx-auto box-border flex w-full max-w-180 flex-col gap-6 pt-13', className)}>
@@ -76,6 +78,9 @@ export function MessageList({
               !(msg.content ?? '').trim()) ||
             (showTypingInsideLast && lastMsg?.id === msg.id)
           }
+          thinkingPreviewPinned={
+            msg.role === 'assistant' && thinkingPreviewPinned && lastMsg?.id === msg.id
+          }
           messageId={msg.id}
           onEditMessage={msg.role === 'user' ? onEditMessage : undefined}
           versions={msg.role === 'assistant' ? msg.versions : undefined}
@@ -87,7 +92,9 @@ export function MessageList({
           }
         />
       ))}
-      {showTypingAsSeparate && <ChatMessage role="assistant" content="" isTyping />}
+      {showTypingAsSeparate && (
+        <ChatMessage role="assistant" content="" isTyping thinkingPreviewPinned />
+      )}
       <div ref={listEndRef} aria-hidden="true" />
     </div>
   );
