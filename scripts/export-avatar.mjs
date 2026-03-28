@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { writeFileSync, readFileSync, existsSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -53,10 +53,13 @@ async function exportAvatar() {
   const imageResponse = await fetch(imageUrl);
   const buffer = await imageResponse.arrayBuffer();
 
-  const outputPath = join(__dirname, '..', 'public', 'images', 'workspace', 'avatar.png');
+  const outputDir = join(__dirname, '..', 'public', 'images');
+  mkdirSync(outputDir, { recursive: true });
+
+  const outputPath = join(outputDir, 'avatar.png');
   writeFileSync(outputPath, Buffer.from(buffer));
 
-  console.log(`✅ Saved: avatar.png (2x scale for Retina)`);
+  console.log(`✅ Saved: public/images/avatar.png (2x scale for Retina)`);
 }
 
 exportAvatar().catch(console.error);

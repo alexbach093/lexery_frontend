@@ -10,7 +10,7 @@ I've created a complete **Figma-to-React** extraction and generation system:
 ✅ Extraction script    → Pulls design data from Figma API
 ✅ Generation script    → Creates React component automatically
 ✅ Template component   → Ready-to-use BootScreen component
-✅ NPM scripts          → Simple commands to run everything
+✅ pnpm scripts         → Simple commands to run everything
 ✅ Documentation        → Complete guides and references
 ```
 
@@ -31,16 +31,16 @@ I've created a complete **Figma-to-React** extraction and generation system:
 FIGMA_TOKEN=figd_paste_your_token_here
 
 # 2. Run extraction + generation:
-npm run figma:build
+corepack pnpm run figma:build
 
-# Done! Component is generated at: src/components/BootScreen.tsx
+# Done! Component is generated at: src/components/ui/BootScreen.tsx
 ```
 
 ## 📊 What Happens When You Run It
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  npm run figma:build                            │
+│  corepack pnpm run figma:build                            │
 └─────────────────────────────────────────────────┘
            │
            ├─→ 1. Connects to Figma API
@@ -55,7 +55,7 @@ npm run figma:build
            │      • SVG elements
            │
            ├─→ 3. Saves extraction report
-           │      → figma-extraction-report.json
+           │      → docs/artifacts/figma-extraction-report.json
            │
            ├─→ 4. Generates React component
            │      • Maps colors → Tailwind classes
@@ -64,16 +64,16 @@ npm run figma:build
            │      • Adds props interface
            │
            └─→ 5. Creates component file
-                  → src/components/BootScreen.tsx
+                  → src/components/ui/BootScreen.tsx
 
 ✅ Ready to use!
 ```
 
 ## 🎯 What You Get
 
-After running `npm run figma:build`, you'll have:
+After running `corepack pnpm run figma:build`, you'll have:
 
-### 1. Extraction Report (`figma-extraction-report.json`)
+### 1. Extraction Report (`docs/artifacts/figma-extraction-report.json`)
 
 Contains:
 
@@ -84,7 +84,7 @@ Contains:
 - ✅ Complete node hierarchy
 - ✅ SVG elements identified
 
-### 2. React Component (`src/components/BootScreen.tsx`)
+### 2. React Component (`src/components/ui/BootScreen.tsx`)
 
 Features:
 
@@ -99,7 +99,7 @@ Features:
 ### 3. Usage Example
 
 ```tsx
-import { BootScreen } from '@/components/BootScreen';
+import { BootScreen } from '@/components/ui/BootScreen';
 
 // Basic usage
 <BootScreen />
@@ -116,30 +116,30 @@ import { BootScreen } from '@/components/BootScreen';
 
 I've created comprehensive documentation:
 
-| Document                                                                   | Purpose                | Read When         |
-| -------------------------------------------------------------------------- | ---------------------- | ----------------- |
-| **START_HERE.md**                                                          | Quick overview         | ⬅️ You are here   |
-| [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)                                 | Commands & examples    | Quick lookup      |
-| [FIGMA_CHECKLIST.md](./FIGMA_CHECKLIST.md)                                 | Step-by-step checklist | Doing the work    |
-| [FIGMA_EXTRACTION_GUIDE.md](./FIGMA_EXTRACTION_GUIDE.md)                   | Getting started guide  | First time        |
-| [FIGMA_TO_REACT_SUMMARY.md](./FIGMA_TO_REACT_SUMMARY.md)                   | Complete overview      | Full details      |
-| [docs/boot-screen-implementation.md](./docs/boot-screen-implementation.md) | Implementation guide   | Integration       |
-| [scripts/README.md](./scripts/README.md)                                   | Script documentation   | Technical details |
+| Document                                                         | Purpose                | Read When         |
+| ---------------------------------------------------------------- | ---------------------- | ----------------- |
+| **START_HERE.md**                                                | Quick overview         | ⬅️ You are here   |
+| [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)                       | Commands & examples    | Quick lookup      |
+| [FIGMA_CHECKLIST.md](./FIGMA_CHECKLIST.md)                       | Step-by-step checklist | Doing the work    |
+| [FIGMA_EXTRACTION_GUIDE.md](./FIGMA_EXTRACTION_GUIDE.md)         | Getting started guide  | First time        |
+| [FIGMA_TO_REACT_SUMMARY.md](./FIGMA_TO_REACT_SUMMARY.md)         | Complete overview      | Full details      |
+| [boot-screen-implementation.md](./boot-screen-implementation.md) | Implementation guide   | Integration       |
+| [scripts/README.md](../scripts/README.md)                        | Script documentation   | Technical details |
 
 ## 🛠️ Available Commands
 
 ```bash
 # Complete workflow (recommended)
-npm run figma:build         # Extract + Generate
+corepack pnpm run figma:build         # Extract + Generate
 
 # Or run individually:
-npm run figma:extract       # Extract from Figma → JSON
-npm run figma:generate      # Generate component from JSON
+corepack pnpm run figma:extract       # Extract from Figma → JSON
+corepack pnpm run figma:generate      # Generate component from JSON
 
 # Development
-npm run dev                 # Start dev server
-npm run typecheck           # Check TypeScript
-npm run lint                # Lint code
+corepack pnpm run dev                 # Start dev server
+corepack pnpm run typecheck           # Check TypeScript
+corepack pnpm run lint                # Lint code
 ```
 
 ## 🎨 Your Figma Design
@@ -163,7 +163,7 @@ Follow this path:
    ↓
 3. 🔑 Get Figma token (2 min)
    ↓
-4. 🚀 Run npm run figma:build (1 min)
+4. 🚀 Run corepack pnpm run figma:build (1 min)
    ↓
 5. 👀 Review generated component
    ↓
@@ -174,7 +174,7 @@ Follow this path:
 
 ## 💡 Example Output
 
-When you run `npm run figma:extract`, you'll see:
+When you run `corepack pnpm run figma:extract`, you'll see:
 
 ```
 🎨 Extracting Figma Design...
@@ -220,7 +220,7 @@ Node ID: 0-1283
    Gap: 24px
    Padding: 48px 24px 48px 24px
 
-💾 Full report saved to: ./figma-extraction-report.json
+💾 Full report saved to: docs/artifacts/figma-extraction-report.json
 
 ✅ Extraction complete!
 ```
@@ -256,7 +256,7 @@ More help: See [Troubleshooting](./FIGMA_EXTRACTION_GUIDE.md#troubleshooting)
 1. **Quick answers:** [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
 2. **Step-by-step:** [FIGMA_CHECKLIST.md](./FIGMA_CHECKLIST.md)
 3. **Full guide:** [FIGMA_TO_REACT_SUMMARY.md](./FIGMA_TO_REACT_SUMMARY.md)
-4. **Implementation:** [docs/boot-screen-implementation.md](./docs/boot-screen-implementation.md)
+4. **Implementation:** [boot-screen-implementation.md](./boot-screen-implementation.md)
 
 ## 🎯 Success Checklist
 
@@ -275,7 +275,7 @@ You're ready to proceed if:
 FIGMA_TOKEN=figd_your_token
 
 # 3. Run:
-npm run figma:build
+corepack pnpm run figma:build
 
 # 4. Success! 🎉
 ```

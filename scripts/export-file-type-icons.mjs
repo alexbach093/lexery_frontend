@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
-
 /**
  * Export file type icons from Figma File-Type-Icon-Pack.
  * Node 238:989 — Frame with 4 Icon Frame components (document + icon inside).

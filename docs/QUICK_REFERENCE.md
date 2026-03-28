@@ -8,13 +8,13 @@
 echo "FIGMA_TOKEN=figd_your_token_here" >> .env
 
 # 3. Extract & Generate:
-npm run figma:build
+corepack pnpm run figma:build
 ```
 
 ## 📦 What You Get
 
 ```tsx
-import { BootScreen } from '@/components/BootScreen';
+import { BootScreen } from '@/components/ui/BootScreen';
 
 // Basic usage
 <BootScreen />
@@ -29,17 +29,17 @@ import { BootScreen } from '@/components/BootScreen';
 
 ## 🛠️ Commands
 
-| Command                  | What It Does                       |
-| ------------------------ | ---------------------------------- |
-| `npm run figma:extract`  | Extract design from Figma → JSON   |
-| `npm run figma:generate` | Generate component from JSON → TSX |
-| `npm run figma:build`    | Extract + Generate (recommended)   |
+| Command                            | What It Does                       |
+| ---------------------------------- | ---------------------------------- |
+| `corepack pnpm run figma:extract`  | Extract design from Figma → JSON   |
+| `corepack pnpm run figma:generate` | Generate component from JSON → TSX |
+| `corepack pnpm run figma:build`    | Extract + Generate (recommended)   |
 
 ## 📊 Extraction Output
 
-After running `npm run figma:extract`, you get:
+After running `corepack pnpm run figma:extract`, you get:
 
-**File:** `figma-extraction-report.json`
+**File:** `docs/artifacts/figma-extraction-report.json`
 
 **Contains:**
 
@@ -70,14 +70,14 @@ interface BootScreenProps {
 ### Change Logo
 
 ```tsx
-// In BootScreen.tsx, replace SVG with:
+// In src/components/ui/BootScreen.tsx, replace SVG with:
 <Image src="/images/logo.png" alt="Logo" width={120} height={120} />
 ```
 
 ### Change Text
 
 ```tsx
-// In BootScreen.tsx:
+// In src/components/ui/BootScreen.tsx:
 <h1>Your Title</h1>
 <p>Your subtitle</p>
 ```
@@ -85,7 +85,7 @@ interface BootScreenProps {
 ### Change Colors
 
 ```tsx
-// In BootScreen.tsx:
+// In src/components/ui/BootScreen.tsx:
 <div className="bg-indigo-600" style={{ backgroundColor: '#4F46E5' }} />
 ```
 
@@ -124,7 +124,7 @@ interface BootScreenProps {
 ```tsx
 'use client';
 import { useState } from 'react';
-import { BootScreen } from '@/components/BootScreen';
+import { BootScreen } from '@/components/ui/BootScreen';
 import { Dashboard } from '@/components/Dashboard';
 
 export default function App() {
@@ -146,10 +146,10 @@ scripts/
   ├── extract-figma-design.mjs    ← Extraction script
   └── generate-boot-screen.mjs    ← Generator script
 
-src/components/
+src/components/ui/
   └── BootScreen.tsx              ← Your component
 
-figma-extraction-report.json      ← Design data
+docs/artifacts/figma-extraction-report.json      ← Design data
 ```
 
 ## ⚡ TL;DR
@@ -159,10 +159,10 @@ figma-extraction-report.json      ← Design data
 FIGMA_TOKEN=figd_xxx
 
 # 2. Run:
-npm run figma:build
+corepack pnpm run figma:build
 
 # 3. Use:
-import { BootScreen } from '@/components/BootScreen';
+import { BootScreen } from '@/components/ui/BootScreen';
 <BootScreen />
 
 # Done! 🎉

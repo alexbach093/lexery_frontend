@@ -1,231 +1,100 @@
-# Lexery Frontend
+# Lexery
 
-Frontend application for Lexery - Legal AI platform.
+Frontend repository for the Lexery workspace experience, built with Next.js 16, React 19, and TypeScript.
 
 ## Prerequisites
 
-- Node.js >= 22.x (see `.nvmrc`)
-- pnpm (via corepack)
+- Node.js 22 or newer
+- Corepack-enabled `pnpm`
 
-## Quick Start
+## Quick start
 
 ```bash
-# Enable pnpm (if not already enabled)
 corepack enable
-
-# Install dependencies
-pnpm install
-
-# Run development server
-pnpm dev
+corepack pnpm install
+cp .env.example .env
+corepack pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Available Scripts
+## Environment
+
+The frontend repo currently uses:
+
+- `OPENROUTER_API_KEY` for the built-in Next.js server routes in this repository
+- `FIGMA_TOKEN` for optional Figma extraction scripts
+
+`.env.example` is documentation-only. Copy it to `.env` when you want the app runtime and local scripts to share the same values.
+
+## Scripts
 
 ```bash
-# Development
-pnpm dev              # Start dev server with hot reload
+corepack pnpm dev
+corepack pnpm build
+corepack pnpm start
 
-# Production
-pnpm build            # Build for production
-pnpm start            # Start production server
+corepack pnpm typecheck
+corepack pnpm lint
+corepack pnpm format:check
+corepack pnpm check
 
-# Code Quality
-pnpm lint             # Run ESLint
-pnpm lint:fix         # Fix ESLint issues
-pnpm typecheck        # Run TypeScript type checking
-pnpm format           # Format code with Prettier
-pnpm format:check     # Check code formatting
-
-# Figma Design Extraction
-npm run figma:extract    # Extract design data from Figma
-npm run figma:generate   # Generate React component from extracted data
-npm run figma:build      # Extract + Generate in one command
+corepack pnpm run figma:extract
+corepack pnpm run figma:generate
+corepack pnpm run figma:build
 ```
 
-### 🎨 Figma to React Workflow
+## Figma workflow
 
-This project includes tools to extract designs from Figma and automatically generate React components:
+The repository includes Figma extraction helpers for the boot screen flow.
 
-```bash
-# 1. Set up your Figma token in .env
-FIGMA_TOKEN=figd_your_token_here
+- Extraction report: `docs/artifacts/figma-extraction-report.json`
+- Generated component target: `src/components/ui/BootScreen.tsx`
+- Script reference: [scripts/README.md](./scripts/README.md)
 
-# 2. Extract and generate component
-npm run figma:build
+Additional docs:
 
-# 3. Use the component
-import { BootScreen } from '@/components/BootScreen';
-```
+- [Start Here](./docs/START_HERE.md)
+- [Figma Extraction Guide](./docs/FIGMA_EXTRACTION_GUIDE.md)
+- [Figma to React Summary](./docs/FIGMA_TO_REACT_SUMMARY.md)
+- [Quick Reference](./docs/QUICK_REFERENCE.md)
+- [Boot Screen Implementation Guide](./docs/boot-screen-implementation.md)
 
-**Documentation:**
+## Project structure
 
-- 📚 [Figma Extraction Guide](./FIGMA_EXTRACTION_GUIDE.md) - Quick start
-- 🚀 [Complete Summary](./FIGMA_TO_REACT_SUMMARY.md) - Full workflow details
-- ⚡ [Quick Reference](./QUICK_REFERENCE.md) - Commands and examples
-- 📖 [Implementation Guide](./docs/boot-screen-implementation.md) - Detailed usage
-
-## Tech Stack
-
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript 5
-- **Styling**: Tailwind CSS 4
-- **UI Components**: shadcn/ui (to be initialized)
-- **Package Manager**: pnpm 10.x
-- **Code Quality**: ESLint, Prettier, Husky (to be configured)
-- **CI/CD**: GitHub Actions
-- **Deployment**: Azure-ready (Docker)
-
-## Project Structure
-
-```
-lexery-frontend/
-├── .github/          # GitHub workflows and templates
-├── docs/             # Project documentation
-├── public/           # Static assets
-├── scripts/          # Build and utility scripts
-│   ├── extract-figma-design.mjs    # Figma API extraction
-│   └── generate-boot-screen.mjs    # Component generator
+```text
+lexery/
+├── docs/
+│   ├── artifacts/      # Generated design artifacts kept in-repo
+│   └── *.md            # Project and Figma workflow docs
+├── public/             # Static assets
+├── scripts/            # Local developer scripts
 ├── src/
-│   ├── app/          # Next.js App Router pages & layouts
-│   ├── components/   # React components
-│   │   └── BootScreen.tsx          # Boot screen component
-│   ├── lib/          # Utilities and helpers
-│   ├── styles/       # Global styles
-│   └── types/        # TypeScript type definitions
-├── .editorconfig     # Editor configuration
-├── .env.example      # Environment variables template
-├── .nvmrc            # Node version
-├── figma-extraction-report.json    # Generated design data
-└── package.json      # Dependencies and scripts
+│   ├── app/            # App Router routes and layouts
+│   ├── components/     # UI and feature components
+│   ├── contexts/       # Client-side React contexts
+│   ├── lib/            # Utilities and repositories
+│   ├── workspace-chat/ # Workspace chat hooks and helpers
+│   └── types/          # Shared TypeScript types
+├── .env.example
+├── Dockerfile
+└── package.json
 ```
 
-## Development Workflow
+## Quality gates
 
-This repository follows a structured development process:
-
-1. **No arbitrary UI implementation** - All components will be imported from Figma Dev Mode
-2. **Git workflow** - Feature branches → PR → Review → Merge
-3. **Conventional commits** - Follow commit message conventions (enforced by commitlint)
-4. **Pre-commit hooks** - Automated linting and formatting
-5. **CI validation** - All PRs must pass lint, typecheck, and build
-
-### Commit Message Format
-
-We use [Conventional Commits](https://www.conventionalcommits.org/). Format: `type(scope): subject`
-
-**Types:**
-
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc.)
-- `refactor`: Code refactoring
-- `perf`: Performance improvements
-- `test`: Adding or updating tests
-- `build`: Build system changes
-- `ci`: CI/CD changes
-- `chore`: Other changes (dependencies, configs)
-
-**Examples:**
+Before transfer, use the same local checks the repo expects:
 
 ```bash
-feat(auth): add login form validation
-fix(ui): correct button alignment on mobile
-docs: update deployment instructions
-chore: upgrade next.js to v16
+corepack pnpm typecheck
+corepack pnpm lint
+corepack pnpm format:check
+corepack pnpm build
 ```
 
-Commits are validated automatically via git hooks.
-
-## Documentation
-
-- [Bootstrap Process](./docs/BOOTSTRAP.md) - Detailed setup documentation
-
-## Environment Variables
-
-Copy `.env.example` to `.env.local` and configure:
+## Docker
 
 ```bash
-cp .env.example .env.local
+docker build -t lexery .
+docker run -p 3000:3000 lexery
 ```
-
-See `.env.example` for available variables.
-
-## Deployment
-
-### Docker (Local Testing)
-
-```bash
-# Build image
-docker build -t lexery-frontend .
-
-# Run container
-docker run -p 3000:3000 lexery-frontend
-
-# Test
-curl http://localhost:3000
-```
-
-### Azure Container Apps / App Service
-
-The application is ready for Azure deployment with Docker:
-
-**Prerequisites:**
-
-- Azure Container Registry (ACR) or Docker Hub
-- Azure Container Apps or App Service with container support
-
-**Deployment Steps:**
-
-1. Build and push image:
-
-```bash
-# Login to ACR
-az acr login --name <your-acr-name>
-
-# Build and tag
-docker build -t <your-acr-name>.azurecr.io/lexery-frontend:latest .
-
-# Push
-docker push <your-acr-name>.azurecr.io/lexery-frontend:latest
-```
-
-2. Deploy to Azure Container Apps:
-
-```bash
-az containerapp create \
-  --name lexery-frontend \
-  --resource-group <resource-group> \
-  --image <your-acr-name>.azurecr.io/lexery-frontend:latest \
-  --target-port 3000 \
-  --ingress external \
-  --environment <environment-name>
-```
-
-3. Set environment variables in Azure Portal or CLI:
-
-```bash
-az containerapp update \
-  --name lexery-frontend \
-  --resource-group <resource-group> \
-  --set-env-vars \
-    NEXT_PUBLIC_API_BASE_URL=<api-url> \
-    NEXT_PUBLIC_APP_ENV=production
-```
-
-**CI/CD Integration:**
-GitHub Actions workflow template for automated deployment can be added to `.github/workflows/deploy.yml` (requires Azure credentials as secrets).
-
-## Contributing
-
-1. Create a feature branch from `main`
-2. Make your changes following code style guidelines
-3. Ensure all checks pass (`lint`, `typecheck`, `build`)
-4. Submit a PR using the provided template
-
-## License
-
-MIT - See [LICENSE](./LICENSE) file for details

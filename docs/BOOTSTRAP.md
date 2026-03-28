@@ -161,18 +161,18 @@ The next phase will import UI components from Figma using:
 
 ### Environment Configuration
 
-Copy `.env.example` to `.env.local` and configure:
+Copy `.env.example` to `.env` and configure the values you need:
 \`\`\`bash
-NEXT_PUBLIC_API_BASE_URL=http://localhost:4000/api
-NEXT_PUBLIC_APP_ENV=development
+OPENROUTER_API_KEY=your_openrouter_key_here
+FIGMA_TOKEN=your_figma_token_here
 \`\`\`
 
 ### Adding shadcn Components
 
 When needed (after Figma import):
 \`\`\`bash
-pnpm dlx shadcn@latest add button
-pnpm dlx shadcn@latest add card
+corepack pnpm dlx shadcn@latest add button
+corepack pnpm dlx shadcn@latest add card
 
 # etc.
 

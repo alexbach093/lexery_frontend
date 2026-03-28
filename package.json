@@ -1,5 +1,5 @@
 {
-  "name": "lexery-frontend",
+  "name": "lexery",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,11 +17,11 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm typecheck && pnpm lint && pnpm format:check",
+    "check": "corepack pnpm typecheck && corepack pnpm lint && corepack pnpm format:check",
     "prepare": "husky",
     "figma:extract": "node scripts/extract-figma-design.mjs",
     "figma:generate": "node scripts/generate-boot-screen.mjs",
-    "figma:build": "npm run figma:extract && npm run figma:generate",
+    "figma:build": "node scripts/extract-figma-design.mjs && node scripts/generate-boot-screen.mjs",
     "figma:chat-icons": "node scripts/export-chat-action-icons.mjs",
     "figma:file-icons": "node scripts/export-file-type-icons.mjs"
   },

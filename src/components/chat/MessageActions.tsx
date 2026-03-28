@@ -279,7 +279,7 @@ export function MessageActions({
             className={cn(
               baseBtnClasses,
               feedbackLike === 'like'
-                ? 'text-[#898989] hover:bg-transparent active:scale-100'
+                ? 'text-[#16a34a] hover:bg-transparent active:scale-100'
                 : 'hover:bg-transparent hover:text-[#333] active:scale-[0.92]'
             )}
             aria-label="Подобається"

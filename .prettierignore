@@ -11,6 +11,8 @@ dist/
 
 # Production
 *.log
+test-results/
+playwright-report/
 
 # Misc
 pnpm-lock.yaml

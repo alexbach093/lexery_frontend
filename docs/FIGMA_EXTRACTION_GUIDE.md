@@ -23,7 +23,7 @@ FIGMA_TOKEN=figd_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ### Step 3: Run the Extraction
 
 ```bash
-npm run figma:extract
+corepack pnpm run figma:extract
 ```
 
 This will:
@@ -32,7 +32,7 @@ This will:
 - ✅ Extract the boot screen design (node 0-1283)
 - ✅ Download screenshot URL
 - ✅ Extract colors, fonts, and layout
-- ✅ Generate `figma-extraction-report.json`
+- ✅ Generate `docs/artifacts/figma-extraction-report.json`
 
 ## 📊 What Gets Extracted
 
@@ -191,7 +191,7 @@ Node ID: 0-1283
       Size: 327x24px
       Text: "Your AI-powered learning companion"
 
-💾 Full report saved to: ./figma-extraction-report.json
+💾 Full report saved to: docs/artifacts/figma-extraction-report.json
 
 ═══════════════════════════════════════════════════════════
 ✅ Extraction complete!
@@ -199,7 +199,7 @@ Node ID: 0-1283
 
 📋 Next steps:
    1. Download the screenshot from the URL above
-   2. Review the figma-extraction-report.json file
+   2. Review the docs/artifacts/figma-extraction-report.json file
    3. Generate the React component based on this data
 ```
 
@@ -210,10 +210,8 @@ After extraction, we'll:
 1. **Create the component structure**
 
    ```
-   src/components/BootScreen/
-   ├── BootScreen.tsx          # Main component
-   ├── BootScreen.module.css   # Styles (if needed)
-   └── index.ts                # Export
+   src/components/ui/
+   └── BootScreen.tsx          # Generated component
    ```
 
 2. **Match the design exactly**
@@ -225,7 +223,7 @@ After extraction, we'll:
 3. **Add to the app**
 
    ```tsx
-   import { BootScreen } from '@/components/BootScreen';
+   import { BootScreen } from '@/components/ui/BootScreen';
 
    export default function App() {
      return <BootScreen />;
@@ -263,7 +261,7 @@ node --version  # Should be >= 18.0.0
 - **Figma File URL**: https://www.figma.com/design/IO0sKndZpfYlW5OVXoIpuC/Untitled?node-id=0-1283&m=dev
 - **Figma API Docs**: https://www.figma.com/developers/api
 - **Extraction Script**: `scripts/extract-figma-design.mjs`
-- **Output Report**: `figma-extraction-report.json`
+- **Output Report**: `docs/artifacts/figma-extraction-report.json`
 
 ## ❓ FAQ
 
@@ -281,4 +279,4 @@ A: Yes, if you have the Figma MCP server configured in Cursor. See `scripts/READ
 
 ---
 
-**Ready?** Get your Figma token and run `npm run figma:extract`! 🚀
+**Ready?** Get your Figma token and run `corepack pnpm run figma:extract`! 🚀

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 /** Fetch a Figma node and print structure (for implementing design). */
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
